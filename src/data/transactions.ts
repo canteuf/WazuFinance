@@ -110,7 +110,15 @@ export async function update(
 }
 
 export async function remove(id: string): Promise<void> {
-  const { error } = await supabase.from('transactions').delete().eq('id', id);
+  // .select().single() force une erreur si RLS a filtré la ligne cible (id
+  // erroné, appartenance périmée) : sans lui, zéro ligne supprimée serait
+  // encore un succès silencieux, contrairement à update().
+  const { error } = await supabase
+    .from('transactions')
+    .delete()
+    .eq('id', id)
+    .select('id')
+    .single();
 
   if (error) {
     throw error;

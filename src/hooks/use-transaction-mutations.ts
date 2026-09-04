@@ -7,26 +7,24 @@ import {
   type CreateTransactionInput,
   type UpdateTransactionInput,
 } from '@/data/transactions';
-import { useActiveGroup } from '@/hooks/use-active-group';
 import { writeLastCategory } from '@/lib/last-used';
 import { queryKeys } from '@/lib/query-keys';
 
 /**
  * Création, modification et suppression d'une transaction.
  *
- * Chaque mutation invalide la liste récente du groupe : le dashboard se
- * rafraîchit sans qu'un écran ait à propager quoi que ce soit.
+ * Chaque mutation invalide le préfixe ['transactions'] : ça touche à la fois
+ * la liste récente et les détails en cache (queryKeys.transaction), et ça ne
+ * dépend pas du groupe actif au moment où la réponse arrive — le mutate()
+ * peut avoir été déclenché sous un autre groupe entre-temps.
  */
 export function useTransactionMutations() {
   const queryClient = useQueryClient();
-  const { activeGroupId } = useActiveGroup();
 
   function invalidate() {
-    if (activeGroupId) {
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.recentTransactions(activeGroupId),
-      });
-    }
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.transactions(),
+    });
   }
 
   const createTransaction = useMutation({

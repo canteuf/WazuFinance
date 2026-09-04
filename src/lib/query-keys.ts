@@ -8,6 +8,7 @@
 export const queryKeys = {
   memberships: () => ['memberships'] as const,
   categories: (groupId: string) => ['categories', groupId] as const,
+  transactions: () => ['transactions'] as const,
   recentTransactions: (groupId: string) => ['transactions', 'recent', groupId] as const,
   transaction: (id: string) => ['transactions', 'detail', id] as const,
 };
