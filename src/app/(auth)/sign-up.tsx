@@ -1,0 +1,160 @@
+import { useRouter } from 'expo-router';
+import { useRef, useState } from 'react';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
+
+import { Button } from '@/components/ui/button';
+import { Screen } from '@/components/ui/screen';
+import { TextField } from '@/components/ui/text-field';
+import { useAuth } from '@/hooks/use-auth';
+import { authErrorMessage } from '@/lib/auth-errors';
+import { validateDisplayName, validateEmail, validatePassword } from '@/lib/validation';
+import { spacing, useColors } from '@/theme/tokens';
+
+type FieldErrors = {
+  displayName?: string;
+  email?: string;
+  password?: string;
+  confirmation?: string;
+};
+
+export default function SignUpScreen() {
+  const colors = useColors();
+  const router = useRouter();
+  const { signUp } = useAuth();
+
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const confirmationRef = useRef<TextInput>(null);
+
+  const [displayName, setDisplayName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmation, setConfirmation] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [formError, setFormError] = useState<string>();
+  const [notice, setNotice] = useState<string>();
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit() {
+    const errors: FieldErrors = {
+      displayName: validateDisplayName(displayName),
+      email: validateEmail(email),
+      password: validatePassword(password),
+      confirmation: password === confirmation ? undefined : 'Les mots de passe ne correspondent pas.',
+    };
+    setFieldErrors(errors);
+    setFormError(undefined);
+    setNotice(undefined);
+
+    if (Object.values(errors).some(Boolean)) {
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const { needsEmailConfirmation } = await signUp(email, password, displayName);
+      if (needsEmailConfirmation) {
+        setNotice(
+          `Compte créé. Confirmez votre email (${email.trim()}) puis connectez-vous.`
+        );
+        return;
+      }
+      // Session immédiate : la garde du layout racine bascule seule sur (app).
+    } catch (error) {
+      setFormError(authErrorMessage(error));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Screen>
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: colors.text }]}>Créer un compte</Text>
+        <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+          Votre compte personnel est privé. Vous pourrez ensuite partager un budget.
+        </Text>
+      </View>
+
+      <TextField
+        label="Nom affiché"
+        value={displayName}
+        onChangeText={setDisplayName}
+        errorText={fieldErrors.displayName}
+        autoCapitalize="words"
+        autoComplete="name"
+        textContentType="name"
+        returnKeyType="next"
+        onSubmitEditing={() => emailRef.current?.focus()}
+        placeholder="Camille"
+      />
+
+      <TextField
+        ref={emailRef}
+        label="Email"
+        value={email}
+        onChangeText={setEmail}
+        errorText={fieldErrors.email}
+        autoCapitalize="none"
+        autoComplete="email"
+        autoCorrect={false}
+        keyboardType="email-address"
+        textContentType="emailAddress"
+        returnKeyType="next"
+        onSubmitEditing={() => passwordRef.current?.focus()}
+        placeholder="vous@exemple.fr"
+      />
+
+      <TextField
+        ref={passwordRef}
+        label="Mot de passe"
+        value={password}
+        onChangeText={setPassword}
+        errorText={fieldErrors.password}
+        autoCapitalize="none"
+        autoComplete="new-password"
+        secureTextEntry
+        textContentType="newPassword"
+        returnKeyType="next"
+        onSubmitEditing={() => confirmationRef.current?.focus()}
+      />
+
+      <TextField
+        ref={confirmationRef}
+        label="Confirmation"
+        value={confirmation}
+        onChangeText={setConfirmation}
+        errorText={fieldErrors.confirmation}
+        autoCapitalize="none"
+        autoComplete="new-password"
+        secureTextEntry
+        textContentType="newPassword"
+        returnKeyType="go"
+        onSubmitEditing={() => void handleSubmit()}
+      />
+
+      {formError ? <Text style={[styles.message, { color: colors.danger }]}>{formError}</Text> : null}
+      {notice ? <Text style={[styles.message, { color: colors.primary }]}>{notice}</Text> : null}
+
+      <Button title="Créer mon compte" loading={submitting} onPress={() => void handleSubmit()} />
+      <Button title="J’ai déjà un compte" variant="ghost" onPress={() => router.back()} />
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  header: {
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+  },
+  subtitle: {
+    fontSize: 15,
+  },
+  message: {
+    fontSize: 14,
+  },
+});
