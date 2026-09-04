@@ -1,9 +1,13 @@
 import { Stack } from 'expo-router';
 
+import { ActiveGroupProvider } from '@/providers/active-group-provider';
+
 export default function AppLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-    </Stack>
+    <ActiveGroupProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+      </Stack>
+    </ActiveGroupProvider>
   );
 }
