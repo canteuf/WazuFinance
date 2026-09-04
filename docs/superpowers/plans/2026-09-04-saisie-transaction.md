@@ -2273,7 +2273,7 @@ npx expo install @react-native-community/datetimepicker
 
 - [ ] **Step 2: Ajouter le formatage de date**
 
-Ajouter à la fin de `src/lib/money.ts` — non, créer `src/lib/dates.ts` :
+Créer `src/lib/dates.ts`. Ne pas toucher `src/lib/money.ts` : les dates n'ont rien à faire dans un module de montants.
 
 ```ts
 /**
