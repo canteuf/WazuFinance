@@ -32,6 +32,18 @@ export function CategoryPicker({ categories, selectedId, onSelect }: CategoryPic
               },
             ]}
           >
+            {selected ? (
+              // La sélection ne doit pas reposer sur la seule couleur : ce badge
+              // donne un repère de forme, indépendant du sens de la couleur.
+              <MaterialCommunityIcons
+                name="check-circle"
+                size={16}
+                color={colors.primaryText}
+                style={styles.badge}
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              />
+            ) : null}
             <MaterialCommunityIcons
               // Le nom vient de la base ; @expo/vector-icons le type de façon
               // stricte, d'où la conversion explicite.
@@ -66,6 +78,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     alignItems: 'center',
     gap: spacing.xs,
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
   },
   label: {
     fontSize: 11,
