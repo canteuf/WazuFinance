@@ -12,6 +12,10 @@ npm run android          # expo start --android
 npm run web              # expo start --web
 npm run lint             # expo lint (eslint-config-expo)
 npx tsc --noEmit         # typecheck
+
+npm run test:db          # pgTAP tests — needs Docker Desktop running + `npx supabase start`
+npx supabase start       # local stack: applies all migrations from scratch
+npx supabase stop
 npx expo export --platform android --output-dir <dir>   # bundle check, no device needed
 
 npx supabase db push                # apply pending migrations to the linked project
@@ -21,7 +25,9 @@ npx supabase gen types typescript --linked > src/types/database.ts
 
 The project is linked to Supabase ref `ozwltxywsqvgmefuqvfv`. Migration files must keep the CLI's `<14-digit timestamp>_name.sql` naming or `db push` skips them.
 
-No test runner is configured yet.
+Database tests are pgTAP files under `supabase/tests/`, run against the local stack. There is no JS test runner yet.
+
+`handle_new_user()` runs inside Supabase Auth's signup transaction; when it fails the client only sees an opaque `Database error saving new user`. Any change to `users`, `budget_groups`, or `account_memberships` must be re-run against `npm run test:db`.
 
 Requires `.env` (copy from `.env.example`) with `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`. [src/lib/env.ts](src/lib/env.ts) throws at startup if either is missing. Env vars are inlined at build time — after editing `.env`, restart with `npx expo start --clear`.
 
