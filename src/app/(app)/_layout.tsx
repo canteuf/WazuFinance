@@ -7,6 +7,15 @@ export default function AppLayout() {
     <ActiveGroupProvider>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
+        <Stack.Screen
+          name="transaction"
+          options={{
+            presentation: 'formSheet',
+            sheetAllowedDetents: 'fitToContents',
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 24,
+          }}
+        />
       </Stack>
     </ActiveGroupProvider>
   );
