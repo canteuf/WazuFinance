@@ -1,74 +1,54 @@
-import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Link } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { RecentTransactions } from '@/components/dashboard/recent-transactions';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
+import { useActiveGroup } from '@/hooks/use-active-group';
 import { useAuth } from '@/hooks/use-auth';
-import { supabase } from '@/lib/supabase';
-import { spacing, useColors } from '@/theme/tokens';
+import { useRecentTransactions } from '@/hooks/use-recent-transactions';
+import { dataErrorMessage } from '@/lib/data-errors';
+import { radius, spacing, useColors } from '@/theme/tokens';
 
 /**
- * Placeholder de l'écran 2 (tableau de bord).
- *
- * Il sert pour l'instant de vérification de bout en bout : si le nom et le
- * groupe personnel s'affichent, c'est que la session, le trigger d'inscription
- * et les policies RLS fonctionnent. Il sera remplacé par la vue patrimoine.
+ * Point d'entrée de la saisie. Le solde et le résumé du mois appartiennent à
+ * l'écran 2 et ne sont pas encore là : cette passe ne montre que le nom du
+ * groupe, les dernières opérations et le bouton d'ajout.
  */
 export default function DashboardScreen() {
   const colors = useColors();
-  const { session, signOut } = useAuth();
-  const [profile, setProfile] = useState<{ displayName: string; groupName: string }>();
-  const [error, setError] = useState<string>();
-
-  useEffect(() => {
-    const userId = session?.user.id;
-    if (!userId) {
-      return;
-    }
-
-    let active = true;
-
-    async function load(id: string) {
-      const [user, group] = await Promise.all([
-        supabase.from('users').select('display_name').eq('id', id).single(),
-        supabase.from('budget_groups').select('name').eq('owner_id', id).eq('is_personal', true).single(),
-      ]);
-
-      if (!active) {
-        return;
-      }
-
-      if (user.error || group.error) {
-        setError(user.error?.message ?? group.error?.message);
-        return;
-      }
-
-      setProfile({ displayName: user.data.display_name, groupName: group.data.name });
-    }
-
-    void load(userId);
-
-    return () => {
-      active = false;
-    };
-  }, [session?.user.id]);
+  const { signOut } = useAuth();
+  const { activeGroup } = useActiveGroup();
+  const { transactions, error } = useRecentTransactions();
 
   return (
-    <Screen>
-      <View style={styles.block}>
-        <Text style={[styles.title, { color: colors.text }]}>
-          Bonjour {profile?.displayName ?? '…'}
-        </Text>
-        <Text style={[styles.body, { color: colors.textMuted }]}>{session?.user.email}</Text>
-        <Text style={[styles.body, { color: colors.textMuted }]}>
-          Groupe : {profile?.groupName ?? '…'}
-        </Text>
-        {error ? <Text style={[styles.body, { color: colors.danger }]}>{error}</Text> : null}
+    <Screen
+      floatingAction={
+        <Link href="/transaction" asChild>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Ajouter une opération"
+            style={[styles.fab, { backgroundColor: colors.primary }]}
+          >
+            <Text style={[styles.fabLabel, { color: colors.primaryText }]}>+</Text>
+          </Pressable>
+        </Link>
+      }
+    >
+      <View style={styles.header}>
+        <Text style={[styles.groupName, { color: colors.text }]}>{activeGroup?.name ?? '…'}</Text>
+        {/* Le changement de groupe arrive à l'écran 7. Tant que ce contrôle
+            n'existe pas, on n'affiche aucun repère visuel (ex. un chevron) qui
+            laisserait croire à un bouton alors qu'il n'y a rien à toucher. */}
       </View>
 
-      <Text style={[styles.body, { color: colors.textMuted }]}>
-        Tableau de bord, transactions, budgets et objectifs arrivent dans la passe suivante.
-      </Text>
+      <Text style={[styles.section, { color: colors.textMuted }]}>Dernières opérations</Text>
+
+      {error ? (
+        <Text style={[styles.error, { color: colors.danger }]}>{dataErrorMessage(error)}</Text>
+      ) : (
+        <RecentTransactions transactions={transactions} />
+      )}
 
       <Button title="Se déconnecter" variant="ghost" onPress={() => void signOut()} />
     </Screen>
@@ -76,14 +56,31 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  block: {
+  header: {
     gap: spacing.xs,
   },
-  title: {
-    fontSize: 26,
+  groupName: {
+    fontSize: 24,
     fontWeight: '700',
   },
-  body: {
-    fontSize: 15,
+  section: {
+    fontSize: 13,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  error: {
+    fontSize: 14,
+  },
+  fab: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.lg + 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fabLabel: {
+    fontSize: 30,
+    fontWeight: '600',
+    lineHeight: 34,
   },
 });
