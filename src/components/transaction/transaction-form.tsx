@@ -1,12 +1,12 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AmountInput } from '@/components/transaction/amount-input';
 import { CategoryPicker } from '@/components/transaction/category-picker';
+import { DateField } from '@/components/transaction/date-field';
 import { Button } from '@/components/ui/button';
 import { useCategories } from '@/hooks/use-categories';
-import { dateToIso, formatOccurredOn, isoToDate, todayIso } from '@/lib/dates';
+import { formatOccurredOn, todayIso } from '@/lib/dates';
 import { readLastCategory } from '@/lib/last-used';
 import { parseAmount } from '@/lib/money';
 import { radius, spacing, useColors } from '@/theme/tokens';
@@ -58,7 +58,6 @@ export function TransactionForm({
   );
   const [note, setNote] = useState(initialValues?.note ?? '');
   const [occurredOn, setOccurredOn] = useState(initialValues?.occurredOn ?? todayIso());
-  const [pickerOpen, setPickerOpen] = useState(false);
   const [touched, setTouched] = useState(false);
   // Deuxième étape de confirmation avant suppression, voir le bloc de rendu
   // plus bas pour la justification de ce choix.
@@ -140,32 +139,12 @@ export function TransactionForm({
         <Text style={[styles.error, { color: colors.danger }]}>{categoryError}</Text>
       ) : null}
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Date : ${formatOccurredOn(occurredOn)}`}
-        onPress={() => setPickerOpen(true)}
-        style={[styles.dateRow, { backgroundColor: colors.surface, borderColor: colors.border }]}
-      >
-        <Text style={[styles.dateLabel, { color: colors.text }]}>
-          {formatOccurredOn(occurredOn)}
-        </Text>
-        <Text style={[styles.dateChevron, { color: colors.textMuted }]}>›</Text>
-      </Pressable>
-
-      {pickerOpen ? (
-        <DateTimePicker
-          value={isoToDate(occurredOn)}
-          mode="date"
-          // Une opération future n'a pas de sens dans un suivi de dépenses.
-          maximumDate={new Date()}
-          onChange={(_event, date) => {
-            setPickerOpen(false);
-            if (date) {
-              setOccurredOn(dateToIso(date));
-            }
-          }}
-        />
-      ) : null}
+      <DateField
+        value={occurredOn}
+        label={formatOccurredOn(occurredOn)}
+        onChange={setOccurredOn}
+        maximumDate={new Date()}
+      />
 
       <TextInput
         accessibilityLabel="Note"
@@ -234,22 +213,6 @@ const styles = StyleSheet.create({
   },
   error: {
     fontSize: 13,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-  },
-  dateLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  dateChevron: {
-    fontSize: 20,
   },
   note: {
     borderWidth: StyleSheet.hairlineWidth * 2,
