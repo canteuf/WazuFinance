@@ -30,6 +30,12 @@ export function useTransactionsRealtime(): void {
       return;
     }
 
+    function invalidate() {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.transactions(),
+      });
+    }
+
     const channel = supabase
       .channel(`transactions:${activeGroupId}`)
       .on(
@@ -40,13 +46,37 @@ export function useTransactionsRealtime(): void {
           table: 'transactions',
           filter: `group_id=eq.${activeGroupId}`,
         },
-        () => {
-          void queryClient.invalidateQueries({
-            queryKey: queryKeys.transactions(),
-          });
-        }
+        invalidate
       )
-      .subscribe();
+      // Second abonnement DELETE, volontairement sans filtre serveur.
+      // La migration de schéma n'active pas `replica identity full` sur
+      // `transactions` (choix délibéré : Supabase n'applique pas RLS aux
+      // événements DELETE, donc une identité complète diffuserait la ligne
+      // entière — tous ses champs, pas seulement l'id — à tout abonné). Sans
+      // elle, l'ancien tuple d'un DELETE ne porte que la clé primaire, sans
+      // `group_id` : le filtre `group_id=eq.…` de l'abonnement ci-dessus ne
+      // peut donc jamais correspondre à une suppression, et un membre voit
+      // une ligne que l'autre a déjà supprimée. Cet abonnement-ci ne reçoit
+      // que des identifiants (aucune fuite) et se contente d'invalider,
+      // quitte à recharger pour un groupe qui n'est pas affiché. Ne pas le
+      // fusionner dans l'abonnement filtré au-dessus : ça réintroduirait le
+      // bug (en gardant le filtre) ou la fuite (en posant l'identité complète).
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'transactions' },
+        invalidate
+      )
+      .subscribe((status) => {
+        // CHANNEL_ERROR et TIMED_OUT seraient sinon silencieux. SUBSCRIBED se
+        // déclenche aussi bien à la connexion initiale qu'à une reconnexion
+        // après une coupure : invalider à ce moment-là rattrape tout ce qui a
+        // pu changer côté serveur pendant le trou, que la reconnexion vienne
+        // du retour au premier plan (focusManager, voir query-provider.tsx)
+        // ou du réseau qui revient.
+        if (status === 'SUBSCRIBED') {
+          invalidate();
+        }
+      });
 
     return () => {
       void supabase.removeChannel(channel);
