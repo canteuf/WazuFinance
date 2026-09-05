@@ -60,6 +60,9 @@ export function TransactionForm({
   );
   const [note, setNote] = useState(initialValues?.note ?? '');
   const [touched, setTouched] = useState(false);
+  // Deuxième étape de confirmation avant suppression, voir le bloc de rendu
+  // plus bas pour la justification de ce choix.
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const { categories, isLoading: categoriesLoading } = useCategories(type);
 
@@ -152,7 +155,39 @@ export function TransactionForm({
       {errorText ? <Text style={[styles.error, { color: colors.danger }]}>{errorText}</Text> : null}
 
       <Button title={submitLabel} loading={submitting} onPress={handleSubmit} />
-      {onDelete ? <Button title="Supprimer" variant="ghost" onPress={onDelete} /> : null}
+
+      {onDelete ? (
+        confirmingDelete ? (
+          // Confirmation portée par l'état du composant, pas par Alert.alert :
+          // cette app est aussi testée dans un navigateur, où Alert.alert ne
+          // fait rien — une confirmation qui en dépendrait rendrait la
+          // suppression silencieusement impossible sur le web.
+          <View style={styles.deleteRow}>
+            <Button
+              title="Confirmer la suppression"
+              variant="danger"
+              loading={submitting}
+              disabled={submitting}
+              accessibilityLabel="Confirmer la suppression définitive de cette opération"
+              onPress={onDelete}
+            />
+            <Button
+              title="Annuler"
+              variant="ghost"
+              disabled={submitting}
+              onPress={() => setConfirmingDelete(false)}
+            />
+          </View>
+        ) : (
+          <Button
+            title="Supprimer"
+            variant="ghost"
+            loading={submitting}
+            disabled={submitting}
+            onPress={() => setConfirmingDelete(true)}
+          />
+        )
+      ) : null}
     </View>
   );
 }
@@ -163,6 +198,10 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   segmented: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  deleteRow: {
     flexDirection: 'row',
     gap: spacing.sm,
   },

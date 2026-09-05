@@ -7,6 +7,7 @@ import {
   TransactionForm,
   type TransactionFormValues,
 } from '@/components/transaction/transaction-form';
+import { Button } from '@/components/ui/button';
 import { getById } from '@/data/transactions';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useAuth } from '@/hooks/use-auth';
@@ -47,6 +48,21 @@ export default function TransactionScreen() {
     return (
       <View style={styles.centered}>
         <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
+
+  // React Query v5 laisse isLoading à false une fois l'échec établi : sans ce
+  // garde, un fetch en échec (réseau, ligne supprimée, accès révoqué) laisse
+  // passer un formulaire vide sous le titre « Modifier », et l'enregistrer
+  // écraserait la vraie transaction avec des valeurs ressaisies de zéro.
+  if (typeof id === 'string' && existing.isError) {
+    return (
+      <View style={styles.centered}>
+        <Text style={[styles.errorTitle, { color: colors.danger }]}>
+          {dataErrorMessage(existing.error)}
+        </Text>
+        <Button title="Retour" variant="ghost" onPress={() => router.back()} />
       </View>
     );
   }
@@ -124,11 +140,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.xl,
+    gap: spacing.md,
   },
   title: {
     fontSize: 18,
     fontWeight: '700',
     paddingTop: spacing.lg,
     paddingHorizontal: spacing.lg,
+  },
+  errorTitle: {
+    fontSize: 15,
+    textAlign: 'center',
   },
 });

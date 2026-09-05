@@ -4,7 +4,7 @@ import { radius, spacing, useColors } from '@/theme/tokens';
 
 type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   title: string;
-  variant?: 'primary' | 'ghost';
+  variant?: 'primary' | 'ghost' | 'danger';
   loading?: boolean;
 };
 
@@ -12,6 +12,10 @@ export function Button({ title, variant = 'primary', loading = false, disabled, 
   const colors = useColors();
   const isDisabled = disabled === true || loading;
   const isPrimary = variant === 'primary';
+  const isDanger = variant === 'danger';
+  // primary et danger sont tous deux des fonds pleins avec du texte clair ;
+  // seule la couleur de fond change entre confirmation neutre et destructive.
+  const isSolid = isPrimary || isDanger;
 
   return (
     <Pressable
@@ -21,14 +25,15 @@ export function Button({ title, variant = 'primary', loading = false, disabled, 
       style={({ pressed }) => [
         styles.base,
         isPrimary && { backgroundColor: colors.primary },
+        isDanger && { backgroundColor: colors.danger },
         (pressed || isDisabled) && styles.dimmed,
       ]}
       {...rest}
     >
       {loading ? (
-        <ActivityIndicator color={isPrimary ? colors.primaryText : colors.primary} />
+        <ActivityIndicator color={isSolid ? colors.primaryText : colors.primary} />
       ) : (
-        <Text style={[styles.label, { color: isPrimary ? colors.primaryText : colors.primary }]}>
+        <Text style={[styles.label, { color: isSolid ? colors.primaryText : colors.primary }]}>
           {title}
         </Text>
       )}
