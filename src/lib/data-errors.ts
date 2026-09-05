@@ -1,8 +1,14 @@
 /**
  * Messages français pour les erreurs de données.
  *
- * On mappe les codes SQLSTATE, jamais les messages : ceux-ci changent entre
- * versions de Postgres et de PostgREST. Même règle que src/lib/auth-errors.ts.
+ * On mappe d'abord les codes SQLSTATE, qui ne changent pas entre versions de
+ * Postgres et de PostgREST — même règle que src/lib/auth-errors.ts. Une panne
+ * de transport (connexion perdue) ne porte jamais de SQLSTATE : le client
+ * PostgREST installé l'attrape et renvoie un objet littéral avec `code: ""`
+ * et un `message` du type `"TypeError: Network request failed"` (React
+ * Native) ou `"TypeError: Failed to fetch"` (navigateur). Pour ce seul cas on
+ * retombe sur le message, faute d'alternative : le code reste prioritaire dès
+ * qu'il est renseigné.
  */
 
 const MESSAGES: Record<string, string> = {
@@ -15,22 +21,37 @@ const MESSAGES: Record<string, string> = {
 
 const GENERIC = 'Une erreur inattendue est survenue.';
 
+const NETWORK_MESSAGE_PATTERNS = ['Network request failed', 'Failed to fetch'];
+
 function hasCode(error: unknown): error is { code: string } {
   return (
     typeof error === 'object' &&
     error !== null &&
     'code' in error &&
-    typeof (error as { code: unknown }).code === 'string'
+    typeof (error as { code: unknown }).code === 'string' &&
+    (error as { code: string }).code !== ''
+  );
+}
+
+function hasMessage(error: unknown): error is { message: string } {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof (error as { message: unknown }).message === 'string'
   );
 }
 
 export function dataErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message.includes('Network request failed')) {
-    return 'Pas de connexion. Réessayez.';
-  }
-
   if (hasCode(error)) {
     return MESSAGES[error.code] ?? GENERIC;
+  }
+
+  if (
+    hasMessage(error) &&
+    NETWORK_MESSAGE_PATTERNS.some((pattern) => error.message.includes(pattern))
+  ) {
+    return 'Pas de connexion. Réessayez.';
   }
 
   return GENERIC;

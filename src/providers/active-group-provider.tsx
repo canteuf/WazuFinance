@@ -10,6 +10,7 @@ export type ActiveGroupState = {
   activeGroup: MembershipSummary | null;
   setActiveGroupId: (groupId: string) => void;
   isLoading: boolean;
+  error: unknown;
 };
 
 export const ActiveGroupContext = createContext<ActiveGroupState | null>(null);
@@ -21,7 +22,7 @@ export const ActiveGroupContext = createContext<ActiveGroupState | null>(null);
  * de la liste et sert de valeur initiale, sans chemin de code distinct.
  */
 export function ActiveGroupProvider({ children }: { children: ReactNode }) {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.memberships(),
     queryFn: listMemberships,
   });
@@ -48,8 +49,9 @@ export function ActiveGroupProvider({ children }: { children: ReactNode }) {
       activeGroup: groups.find((group) => group.groupId === activeGroupId) ?? null,
       setActiveGroupId: setSelectedGroupId,
       isLoading,
+      error,
     }),
-    [groups, activeGroupId, isLoading]
+    [groups, activeGroupId, isLoading, error]
   );
 
   return <ActiveGroupContext.Provider value={value}>{children}</ActiveGroupContext.Provider>;

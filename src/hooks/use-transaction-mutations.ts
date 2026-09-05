@@ -52,9 +52,10 @@ export function useTransactionMutations() {
     createTransaction,
     updateTransaction,
     deleteTransaction,
-    isPending:
-      createTransaction.isPending ||
-      updateTransaction.isPending ||
-      deleteTransaction.isPending,
+    // Deux indicateurs distincts plutôt qu'un seul agrégé : un indicateur
+    // unique faisait tourner le bouton Supprimer pendant l'enregistrement, et
+    // inversement, chaque bouton reflétant l'état de l'autre.
+    isSaving: createTransaction.isPending || updateTransaction.isPending,
+    isDeleting: deleteTransaction.isPending,
   };
 }

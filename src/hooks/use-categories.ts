@@ -13,10 +13,11 @@ import type { TransactionType } from '@/types/database';
 export function useCategories(type: TransactionType): {
   categories: Category[];
   isLoading: boolean;
+  error: unknown;
 } {
   const { activeGroupId } = useActiveGroup();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.categories(activeGroupId ?? ''),
     queryFn: () => listForGroup(activeGroupId as string),
     enabled: activeGroupId !== null,
@@ -27,5 +28,5 @@ export function useCategories(type: TransactionType): {
     [data, type]
   );
 
-  return { categories, isLoading };
+  return { categories, isLoading, error };
 }

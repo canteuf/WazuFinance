@@ -1,19 +1,25 @@
-import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
 import {
   TransactionForm,
   type TransactionFormValues,
 } from '@/components/transaction/transaction-form';
 import { Button } from '@/components/ui/button';
-import { getById } from '@/data/transactions';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useAuth } from '@/hooks/use-auth';
+import { useTransaction } from '@/hooks/use-transaction';
 import { useTransactionMutations } from '@/hooks/use-transaction-mutations';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { queryKeys } from '@/lib/query-keys';
 import { spacing, useColors } from '@/theme/tokens';
 
 /**
@@ -23,25 +29,41 @@ import { spacing, useColors } from '@/theme/tokens';
 export default function TransactionScreen() {
   const colors = useColors();
   const router = useRouter();
+  const { height: windowHeight } = useWindowDimensions();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { session } = useAuth();
-  const { activeGroupId } = useActiveGroup();
-  const { createTransaction, updateTransaction, deleteTransaction, isPending } =
+  const { activeGroupId, isLoading: groupLoading, error: groupError } = useActiveGroup();
+  const { createTransaction, updateTransaction, deleteTransaction, isSaving, isDeleting } =
     useTransactionMutations();
   const [errorText, setErrorText] = useState<string>();
 
-  const existing = useQuery({
-    queryKey: queryKeys.transaction(id ?? ''),
-    queryFn: () => getById(id as string),
-    enabled: typeof id === 'string',
-  });
+  const existing = useTransaction(id);
 
   const userId = session?.user.id;
 
   // Tous les hooks ci-dessus s'exécutent à chaque rendu ; les retours
   // conditionnels qui suivent n'en court-circuitent aucun.
-  if (!activeGroupId || !userId) {
-    return null;
+  if (groupLoading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
+
+  // Sans cette branche, un chargement des adhésions en échec (ou l'absence
+  // de groupe actif) tombait sur une feuille fitToContents vide : ni
+  // contenu, ni message, ni sortie. Le bouton Retour reste la seule issue
+  // fiable, la poignée de la feuille ne l'étant pas sur toutes les plateformes.
+  if (groupError || !activeGroupId || !userId) {
+    return (
+      <View style={styles.centered}>
+        <Text style={[styles.errorTitle, { color: colors.danger }]}>
+          {groupError ? dataErrorMessage(groupError) : 'Aucun groupe actif.'}
+        </Text>
+        <Button title="Retour" variant="ghost" onPress={() => router.back()} />
+      </View>
+    );
   }
 
   if (typeof id === 'string' && existing.isLoading) {
@@ -111,30 +133,71 @@ export default function TransactionScreen() {
     : undefined;
 
   return (
-    <View style={[styles.sheet, { backgroundColor: colors.background }]}>
-      {/* Une formSheet n'accepte pas de header natif : le titre est du contenu. */}
-      <Text style={[styles.title, { color: colors.text }]}>
-        {typeof id === 'string' ? 'Modifier l’opération' : 'Nouvelle opération'}
-      </Text>
+    // sheetAllowedDetents: 'fitToContents' calcule la hauteur de la feuille à
+    // partir de celle du contenu ; flex: 1 empêcherait cette mesure (la vue
+    // s'étirerait pour remplir un espace disponible qui n'existe pas encore).
+    // maxHeight borne la feuille à une fraction de l'écran : le ScrollView
+    // ci-dessous devient alors le seul à défiler, clavier ouvert compris, au
+    // lieu que fitToContents mesure un contenu plus haut que l'écran.
+    <View style={[styles.sheet, { backgroundColor: colors.background, maxHeight: windowHeight * 0.92 }]}>
+      {/* Une formSheet n'accepte pas de header natif : le titre et la
+          fermeture sont du contenu ordinaire (spec, contrainte Android). Sur
+          le web, la présentation retombe sur un écran plein sans navigation
+          native : ce bouton est la seule sortie hors du retour navigateur. */}
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: colors.text }]}>
+          {typeof id === 'string' ? 'Modifier l’opération' : 'Nouvelle opération'}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Fermer"
+          hitSlop={spacing.sm}
+          onPress={() => router.back()}
+          style={styles.closeButton}
+        >
+          <Text style={[styles.closeLabel, { color: colors.textMuted }]}>✕</Text>
+        </Pressable>
+      </View>
 
-      <TransactionForm
-        groupId={activeGroupId}
-        initialValues={initialValues}
-        submitLabel={typeof id === 'string' ? 'Enregistrer' : 'Ajouter'}
-        submitting={isPending}
-        errorText={errorText}
-        onSubmit={handleSubmit}
-        onDelete={typeof id === 'string' ? handleDelete : undefined}
-      />
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
+        <TransactionForm
+          groupId={activeGroupId}
+          initialValues={initialValues}
+          submitLabel={typeof id === 'string' ? 'Enregistrer' : 'Ajouter'}
+          submitting={isSaving}
+          deleting={isDeleting}
+          errorText={errorText}
+          onSubmit={handleSubmit}
+          onDelete={typeof id === 'string' ? handleDelete : undefined}
+        />
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // sheetAllowedDetents: 'fitToContents' calcule la hauteur de la feuille à
-  // partir de celle du contenu ; flex: 1 empêcherait cette mesure (la vue
-  // s'étirerait pour remplir un espace disponible qui n'existe pas encore).
   sheet: {},
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: spacing.lg,
+    paddingHorizontal: spacing.lg,
+  },
+  closeButton: {
+    padding: spacing.xs,
+  },
+  closeLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
   centered: {
     minHeight: 200,
     alignItems: 'center',
@@ -143,10 +206,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   title: {
+    flexShrink: 1,
     fontSize: 18,
     fontWeight: '700',
-    paddingTop: spacing.lg,
-    paddingHorizontal: spacing.lg,
   },
   errorTitle: {
     fontSize: 15,

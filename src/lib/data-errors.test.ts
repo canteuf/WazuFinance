@@ -25,10 +25,36 @@ describe('dataErrorMessage', () => {
     );
   });
 
-  it("reconnaît une panne réseau", () => {
+  it("reconnaît une panne réseau à la forme réellement renvoyée par postgrest-js", () => {
+    // Le client installé attrape toute panne de transport et renvoie un objet
+    // littéral, pas une Error : code vide, message préfixé par le nom de
+    // l'exception JS d'origine.
+    expect(
+      dataErrorMessage({
+        message: 'TypeError: Network request failed',
+        details: '',
+        hint: '',
+        code: '',
+      })
+    ).toBe('Pas de connexion. Réessayez.');
+  });
+
+  it("reconnaît une panne réseau du navigateur (Failed to fetch)", () => {
+    expect(
+      dataErrorMessage({ message: 'TypeError: Failed to fetch', details: '', hint: '', code: '' })
+    ).toBe('Pas de connexion. Réessayez.');
+  });
+
+  it("reconnaît aussi une vraie Error réseau", () => {
     expect(dataErrorMessage(new TypeError('Network request failed'))).toBe(
       'Pas de connexion. Réessayez.'
     );
+  });
+
+  it("un vrai SQLSTATE l'emporte toujours sur un message évoquant le réseau", () => {
+    expect(
+      dataErrorMessage({ code: '42501', message: 'Network request failed' })
+    ).toBe("Vous n'avez pas accès à ce budget.");
   });
 
   it("retombe sur un message générique", () => {

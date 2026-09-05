@@ -71,7 +71,7 @@ Invalidating a key only reaches keys it's a prefix of, never the other way round
 
 `ActiveGroupProvider` holds the active group for the whole app, initialised on the personal account (first in the membership list). Screens write into that group; they never pick a `group_id` themselves.
 
-Data errors are mapped by SQLSTATE code in `src/lib/data-errors.ts`, never by message — same rule as `auth-errors.ts`.
+Data errors are mapped by SQLSTATE code in `src/lib/data-errors.ts` first — that rule doesn't change — with a message-based fallback for transport failures only, which reach the client as an object with `code: ""` and no SQLSTATE to key off. Same priority order as `auth-errors.ts`.
 
 ## RLS
 

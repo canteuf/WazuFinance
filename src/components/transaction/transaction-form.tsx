@@ -6,6 +6,7 @@ import { CategoryPicker } from '@/components/transaction/category-picker';
 import { DateField } from '@/components/transaction/date-field';
 import { Button } from '@/components/ui/button';
 import { useCategories } from '@/hooks/use-categories';
+import { dataErrorMessage } from '@/lib/data-errors';
 import { formatOccurredOn, todayIso } from '@/lib/dates';
 import { readLastCategory } from '@/lib/last-used';
 import { parseAmount } from '@/lib/money';
@@ -24,7 +25,10 @@ type TransactionFormProps = {
   groupId: string;
   initialValues?: TransactionFormValues;
   submitLabel: string;
+  /** Création ou modification en cours : fait tourner le bouton de validation. */
   submitting: boolean;
+  /** Suppression en cours : fait tourner les boutons de suppression, pas celui de validation. */
+  deleting: boolean;
   errorText?: string;
   onSubmit: (values: TransactionFormValues) => void;
   onDelete?: () => void;
@@ -41,6 +45,7 @@ export function TransactionForm({
   initialValues,
   submitLabel,
   submitting,
+  deleting,
   errorText,
   onSubmit,
   onDelete,
@@ -63,7 +68,7 @@ export function TransactionForm({
   // plus bas pour la justification de ce choix.
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
-  const { categories, isLoading: categoriesLoading } = useCategories(type);
+  const { categories, isLoading: categoriesLoading, error: categoriesError } = useCategories(type);
 
   // Présélection de la dernière catégorie, uniquement en création.
   useEffect(() => {
@@ -130,6 +135,15 @@ export function TransactionForm({
       <AmountInput value={amountText} onChangeText={setAmountText} autoFocus={!initialValues} />
       {amountError ? <Text style={[styles.error, { color: colors.danger }]}>{amountError}</Text> : null}
 
+      {categoriesError ? (
+        // Sans ce message, un chargement des catégories en échec rend la
+        // grille vide sans explication : valider affiche « Choisissez une
+        // catégorie » alors qu'il n'y a rien à choisir.
+        <Text style={[styles.error, { color: colors.danger }]}>
+          {dataErrorMessage(categoriesError)}
+        </Text>
+      ) : null}
+
       <CategoryPicker
         categories={categories}
         selectedId={categoryId}
@@ -160,7 +174,12 @@ export function TransactionForm({
 
       {errorText ? <Text style={[styles.error, { color: colors.danger }]}>{errorText}</Text> : null}
 
-      <Button title={submitLabel} loading={submitting} onPress={handleSubmit} />
+      <Button
+        title={submitLabel}
+        loading={submitting}
+        disabled={deleting}
+        onPress={handleSubmit}
+      />
 
       {onDelete ? (
         confirmingDelete ? (
@@ -172,15 +191,15 @@ export function TransactionForm({
             <Button
               title="Confirmer la suppression"
               variant="danger"
-              loading={submitting}
-              disabled={submitting}
+              loading={deleting}
+              disabled={submitting || deleting}
               accessibilityLabel="Confirmer la suppression définitive de cette opération"
               onPress={onDelete}
             />
             <Button
               title="Annuler"
               variant="ghost"
-              disabled={submitting}
+              disabled={submitting || deleting}
               onPress={() => setConfirmingDelete(false)}
             />
           </View>
@@ -188,8 +207,8 @@ export function TransactionForm({
           <Button
             title="Supprimer"
             variant="ghost"
-            loading={submitting}
-            disabled={submitting}
+            loading={deleting}
+            disabled={submitting || deleting}
             onPress={() => setConfirmingDelete(true)}
           />
         )

@@ -1,5 +1,5 @@
 import { Link } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { RecentTransactions } from '@/components/dashboard/recent-transactions';
 import { Button } from '@/components/ui/button';
@@ -18,8 +18,14 @@ import { radius, spacing, useColors } from '@/theme/tokens';
 export default function DashboardScreen() {
   const colors = useColors();
   const { signOut } = useAuth();
-  const { activeGroup } = useActiveGroup();
-  const { transactions, error } = useRecentTransactions();
+  const { activeGroup, error: groupError } = useActiveGroup();
+  const { transactions, isLoading: transactionsLoading, error: transactionsError } =
+    useRecentTransactions();
+
+  // Un chargement des adhésions en échec prime : sans groupe résolu, il n'y a
+  // rien de fiable à tirer des transactions (la requête est de toute façon
+  // désactivée tant qu'aucun groupe actif n'existe).
+  const error = groupError ?? transactionsError;
 
   return (
     <Screen
@@ -46,6 +52,11 @@ export default function DashboardScreen() {
 
       {error ? (
         <Text style={[styles.error, { color: colors.danger }]}>{dataErrorMessage(error)}</Text>
+      ) : transactionsLoading ? (
+        // Sans cette branche, le premier rendu affichait « Aucune opération »
+        // avant de basculer sur les données une fois arrivées : un faux état
+        // vide à chaque démarrage à froid.
+        <ActivityIndicator color={colors.primary} />
       ) : (
         <RecentTransactions transactions={transactions} />
       )}
