@@ -28,7 +28,12 @@ export function RecentTransactions({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Modifier ${transaction.category?.name ?? 'opération'}`}
-            style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            // Aplati : <Link asChild> transmet le style à son enfant et avertit
+            // s'il reçoit un tableau.
+            style={StyleSheet.flatten([
+              styles.row,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ])}
           >
             <MaterialCommunityIcons
               // Le nom vient de la base ; @expo/vector-icons le type de façon

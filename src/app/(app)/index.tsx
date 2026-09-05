@@ -34,7 +34,9 @@ export default function DashboardScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Ajouter une opération"
-            style={[styles.fab, { backgroundColor: colors.primary }]}
+            // Aplati : <Link asChild> transmet le style à son enfant et avertit
+            // s'il reçoit un tableau.
+            style={StyleSheet.flatten([styles.fab, { backgroundColor: colors.primary }])}
           >
             <Text style={[styles.fabLabel, { color: colors.primaryText }]}>+</Text>
           </Pressable>
