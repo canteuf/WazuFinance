@@ -94,7 +94,7 @@ Out, with reasons:
 
 - **Expense entry in ≤3 taps** from the main screen (amount, category, confirm). Retention depends on it — it drives navigation and form design. `Screen`'s optional `floatingAction` renders outside the `ScrollView`, pinned in place, so a lengthening list can't scroll it out of reach.
 - Transaction history must be paginated (`transactions_group_occurred_idx` covers the filter + sort).
-- Forms default to smart values: last-used category, today's date — the date stays editable (`src/lib/dates.ts`), the others don't.
+- Forms default to smart values: last-used category, today's date — both are editable, just pre-filled to save a tap.
 - Shared budgets sync live via Supabase Realtime (`transactions`, `budgets`, `savings_goals`, `account_memberships` are in the publication).
 
 ## Conventions
