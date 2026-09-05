@@ -1,10 +1,12 @@
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AmountInput } from '@/components/transaction/amount-input';
 import { CategoryPicker } from '@/components/transaction/category-picker';
 import { Button } from '@/components/ui/button';
 import { useCategories } from '@/hooks/use-categories';
+import { dateToIso, formatOccurredOn, isoToDate, todayIso } from '@/lib/dates';
 import { readLastCategory } from '@/lib/last-used';
 import { parseAmount } from '@/lib/money';
 import { radius, spacing, useColors } from '@/theme/tokens';
@@ -27,10 +29,6 @@ type TransactionFormProps = {
   onSubmit: (values: TransactionFormValues) => void;
   onDelete?: () => void;
 };
-
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 /**
  * Formulaire partagé entre création et édition.
@@ -59,6 +57,8 @@ export function TransactionForm({
     initialValues?.categoryId ?? null
   );
   const [note, setNote] = useState(initialValues?.note ?? '');
+  const [occurredOn, setOccurredOn] = useState(initialValues?.occurredOn ?? todayIso());
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [touched, setTouched] = useState(false);
   // Deuxième étape de confirmation avant suppression, voir le bloc de rendu
   // plus bas pour la justification de ce choix.
@@ -108,7 +108,7 @@ export function TransactionForm({
       type,
       amount,
       categoryId,
-      occurredOn: initialValues?.occurredOn ?? today(),
+      occurredOn,
       note: note.trim() === '' ? null : note.trim(),
     });
   }
@@ -138,6 +138,33 @@ export function TransactionForm({
       />
       {categoryError ? (
         <Text style={[styles.error, { color: colors.danger }]}>{categoryError}</Text>
+      ) : null}
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Date : ${formatOccurredOn(occurredOn)}`}
+        onPress={() => setPickerOpen(true)}
+        style={[styles.dateRow, { backgroundColor: colors.surface, borderColor: colors.border }]}
+      >
+        <Text style={[styles.dateLabel, { color: colors.text }]}>
+          {formatOccurredOn(occurredOn)}
+        </Text>
+        <Text style={[styles.dateChevron, { color: colors.textMuted }]}>›</Text>
+      </Pressable>
+
+      {pickerOpen ? (
+        <DateTimePicker
+          value={isoToDate(occurredOn)}
+          mode="date"
+          // Une opération future n'a pas de sens dans un suivi de dépenses.
+          maximumDate={new Date()}
+          onChange={(_event, date) => {
+            setPickerOpen(false);
+            if (date) {
+              setOccurredOn(dateToIso(date));
+            }
+          }}
+        />
       ) : null}
 
       <TextInput
@@ -207,6 +234,22 @@ const styles = StyleSheet.create({
   },
   error: {
     fontSize: 13,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+  },
+  dateLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  dateChevron: {
+    fontSize: 20,
   },
   note: {
     borderWidth: StyleSheet.hairlineWidth * 2,
