@@ -75,7 +75,7 @@ Chaque couche se lit et se teste sans monter la suivante.
 
 Retenu pour trois raisons concrètes :
 
-1. **Mutation optimiste** — après « Valider », la feuille se ferme et la ligne apparaît sans attendre le réseau. Sur échec, le cache revient en arrière. Écrit à la main, c'est le genre de code qu'on rate.
+1. **Mutation optimiste** — TanStack Query rend possible l'insertion dans le cache dès « Valider », feuille fermée sans attendre le réseau, avec retour arrière sur échec. **Disponible mais délibérément inutilisée pour l'instant** (relecture finale du 2026-09-05, voir la décision sous « Flux de création ») : le retour arrière est le genre de code qu'on rate, et personne n'a pu l'exercer sur un appareil. La possibilité reste ouverte le jour où la latence perçue sur réseau lent justifie de la reprendre.
 2. **Realtime** — un abonnement appelle `invalidateQueries` ; tous les écrans montés se rafraîchissent. Pas de propagation manuelle d'état.
 3. **Partage entre écrans** — les catégories sont chargées une fois et servies aux écrans 3, 4 et 5.
 
@@ -146,13 +146,17 @@ Le sélecteur de catégories filtre sur le type courant : basculer sur Revenu mo
 
 ### Flux de création
 
-1. L'utilisateur ouvre la feuille, saisit un montant, valide
-2. La mutation optimiste insère la ligne dans le cache et ferme la feuille
-3. La catégorie retenue est enregistrée comme dernière utilisée pour ce groupe
-4. L'insertion part vers Supabase
-5. En cas d'échec, le cache revient en arrière, la feuille se rouvre avec les valeurs saisies, et l'erreur s'affiche
+Séquence réellement implémentée par `src/hooks/use-transaction-mutations.ts` et
+`src/app/(app)/transaction.tsx` :
 
-Rien n'est perdu en silence.
+1. L'utilisateur ouvre la feuille, saisit un montant, valide ; le bouton de validation passe en chargement
+2. L'insertion part vers Supabase
+3. En cas de succès : la catégorie retenue est enregistrée comme dernière utilisée pour ce groupe, le cache est invalidé (préfixe `transactions`, qui touche aussi bien la liste récente que les détails), et la feuille se ferme
+4. En cas d'échec : la feuille reste ouverte, les valeurs saisies restent intactes, et l'erreur s'affiche au-dessus du bouton de validation
+
+Rien n'est perdu en silence — mais la fermeture attend la réponse réseau, contrairement à ce que décrivait une version antérieure de cette spec.
+
+**Décision (relecture finale, 2026-09-05)** : la fermeture immédiate décrite plus haut dans les versions précédentes de cette section — insertion optimiste dans le cache, fermeture avant la réponse réseau, retour arrière sur échec — n'a jamais été implémentée, et ne le sera pas pour cette passe. Le comportement livré est sûr (rien n'est perdu, l'erreur s'affiche dans la feuille avec la saisie intacte) et vérifiable ; un retour arrière de cache que personne n'a pu exercer sur un appareil aurait été un risque non vérifié pour un gain perceptible seulement sur réseau lent. La décision n'efface pas l'exigence : elle est consignée ici plutôt que silencieusement abandonnée, et reste ouverte à reprise si le besoin se confirme.
 
 ## Erreurs
 
@@ -186,15 +190,17 @@ Les policies sont exercées en basculant `role` et `request.jwt.claims` dans la 
 
 Nouveau runner, limité aux modules purs :
 
-- `src/lib/money.ts` — analyse fr-FR, arrondis, refus des valeurs invalides. Logique pure qui se casse en silence.
-- `src/lib/validation.ts` — étendu aux règles de transaction
+- `src/lib/money.ts` — analyse fr-FR, arrondis, refus des valeurs invalides (règles du montant comprises : strictement positif, deux décimales au plus). Logique pure qui se casse en silence.
+- `src/lib/dates.ts` — formatage relatif (« Aujourd'hui », « Hier »), conversion ISO sans décalage de fuseau
 - `src/lib/data-errors.ts` — correspondance code vers message
 
 Pas de test de rendu ni de mock de Supabase dans cette passe : le coût de maintenance dépasse le bénéfice tant que les écrans bougent. Les tests de composants viendront quand l'interface se stabilisera.
 
+**Correction (relecture finale, 2026-09-05)** : une version antérieure de cette section annonçait que `src/lib/validation.ts` serait « étendu aux règles de transaction ». Ce n'est pas ce qui a été construit, et ça n'a pas besoin de l'être : les règles de montant vivent dans `src/lib/money.ts`, à côté de `parseAmount`/`formatAmount` qu'elles contraignent, et l'obligation de catégorie est vérifiée directement dans `transaction-form.tsx`, pas dans un module de validation générique séparé du formulaire qu'il valide. Ce placement est meilleur — chaque règle reste à côté du code qu'elle protège plutôt que dans un module partagé sans rapport direct — donc la spec est corrigée pour décrire ce qui existe.
+
 ## Risques
 
-**La dépendance TanStack Query.** Une bibliothèque de plus à suivre. Acceptée parce que trois écrans à venir partagent les mêmes données et que la mutation optimiste sert directement la contrainte des trois taps.
+**La dépendance TanStack Query.** Une bibliothèque de plus à suivre. Acceptée parce que trois écrans à venir partagent les mêmes données et que Realtime a besoin d'un point d'invalidation central. La mutation optimiste reste une capacité disponible mais non exploitée pour l'instant (voir « Flux de création ») : elle ne pèse donc plus dans cette justification tant qu'elle n'est pas reprise.
 
 **Le groupe actif est construit avant d'être vraiment utile.** L'utilisateur n'a qu'un groupe tant que l'écran 7 n'existe pas. Le provider est écrit maintenant pour éviter de reprendre chaque écran plus tard ; son coût est faible et le sélecteur reste invisible.
 

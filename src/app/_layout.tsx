@@ -4,7 +4,9 @@ import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { useAuth } from '@/hooks/use-auth';
+import { useClearCacheOnUserChange } from '@/hooks/use-clear-cache-on-user-change';
 import { AuthProvider } from '@/providers/auth-provider';
+import { QueryProvider } from '@/providers/query-provider';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -12,12 +14,24 @@ export default function RootLayout() {
   const scheme = useColorScheme();
 
   return (
-    <AuthProvider>
-      <ThemeProvider value={scheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <RootNavigator />
-      </ThemeProvider>
-    </AuthProvider>
+    <QueryProvider>
+      <AuthProvider>
+        <CacheSessionGuard />
+        <ThemeProvider value={scheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <RootNavigator />
+        </ThemeProvider>
+      </AuthProvider>
+    </QueryProvider>
   );
+}
+
+/**
+ * Composant sans rendu : isolé de RootNavigator pour que la logique de garde
+ * de navigation reste indépendante de la gestion du cache TanStack Query.
+ */
+function CacheSessionGuard() {
+  useClearCacheOnUserChange();
+  return null;
 }
 
 /**
