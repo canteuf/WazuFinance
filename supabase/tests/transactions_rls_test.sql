@@ -10,7 +10,7 @@
 create extension if not exists pgtap with schema extensions;
 
 BEGIN;
-SELECT plan(9);
+SELECT plan(11);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures, créées en tant que postgres (RLS contourné)
@@ -52,10 +52,28 @@ SELECT is(
   'Un membre lit les transactions de son groupe'
 );
 
-SELECT is(
-  (select count(*)::int from public.categories where group_id is null),
-  14,
+-- Le compte exact dépend du seed, pas des policies : figer 14 ici casserait
+-- ce test dès qu'une catégorie par défaut de plus serait ajoutée, sans
+-- rapport avec ce que la policy garantit réellement (la lisibilité).
+SELECT ok(
+  (select count(*)::int from public.categories where group_id is null) > 0,
   'Les catégories par défaut sont lisibles par tout utilisateur authentifié'
+);
+
+-- Lisibles, mais non modifiables : categories_update_member exige
+-- group_id is not null, qu'aucune catégorie par défaut ne satisfait — même
+-- un membre authentifié ne peut donc pas en modifier une.
+-- Le WITH modifiant doit être au premier niveau de la requête (règle
+-- Postgres), d'où ce bloc plutôt qu'une sous-requête passée à is().
+WITH attempt AS (
+  UPDATE public.categories SET icon = 'edited-by-member'
+   WHERE group_id IS NULL AND name = 'Alimentation'
+  RETURNING id
+)
+SELECT is(
+  (select count(*)::int from attempt),
+  0,
+  'Un membre authentifié ne peut pas modifier une catégorie par défaut'
 );
 
 SELECT lives_ok(
@@ -147,6 +165,23 @@ SELECT is(
     where id = '00000000-0000-0000-0000-0000000000e1'),
   30.00::numeric(12,2),
   'Un membre corrige une ligne créée par un autre membre du même groupe'
+);
+
+-- Même chose pour la suppression : Bob (membre, pas créateur) supprime la
+-- ligne qu'Alice a créée puis que lui-même a corrigée ci-dessus.
+set local role authenticated;
+select set_config('request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-0000000000c2","role":"authenticated"}', true);
+
+delete from public.transactions where id = '00000000-0000-0000-0000-0000000000e1';
+
+set local role postgres;
+
+SELECT is(
+  (select count(*)::int from public.transactions
+    where id = '00000000-0000-0000-0000-0000000000e1'),
+  0,
+  'Un membre supprime une ligne créée par un autre membre du même groupe'
 );
 
 SELECT * FROM finish();
