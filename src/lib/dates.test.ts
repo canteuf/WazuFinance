@@ -23,6 +23,12 @@ describe('dates', () => {
   });
 
   it('formate une date plus ancienne', () => {
-    expect(formatOccurredOn('2026-01-15')).toContain('2026');
+    // Dérivée de la date du jour plutôt que fixée en dur : une valeur figée
+    // finirait, une fois « aujourd'hui » ou « hier », par faire échouer ce
+    // test précis plutôt que celui qu'elle est censée couvrir. 400 jours
+    // exclut toute coïncidence.
+    const old = new Date();
+    old.setDate(old.getDate() - 400);
+    expect(formatOccurredOn(dateToIso(old))).toContain(String(old.getFullYear()));
   });
 });

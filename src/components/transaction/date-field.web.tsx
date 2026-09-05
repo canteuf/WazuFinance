@@ -1,18 +1,11 @@
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import type { DateFieldProps } from '@/components/transaction/date-field-props';
 import { dateToIso } from '@/lib/dates';
 import { radius, spacing, useColors } from '@/theme/tokens';
 
-export type DateFieldProps = {
-  /** Date choisie, au format ISO `YYYY-MM-DD`. */
-  value: string;
-  /** Texte déjà formaté à afficher (« Aujourd'hui », « Hier », ...). */
-  label: string;
-  onChange: (iso: string) => void;
-  /** Borne haute du sélecteur : pas d'opération future dans un suivi de dépenses. */
-  maximumDate: Date;
-};
+export type { DateFieldProps };
 
 /**
  * Variante web : `@react-native-community/datetimepicker` n'a pas
@@ -23,9 +16,17 @@ export type DateFieldProps = {
  */
 export function DateField({ value, label, onChange, maximumDate }: DateFieldProps) {
   const colors = useColors();
+  // L'input superposé est en opacity 0 : sans cet état, un utilisateur
+  // clavier voyant n'a aucun repère de focus sur la rangée visible.
+  const [focused, setFocused] = useState(false);
 
   return (
-    <View style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+    <View
+      style={[
+        styles.row,
+        { backgroundColor: colors.surface, borderColor: focused ? colors.primary : colors.border },
+      ]}
+    >
       <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
       <Text style={[styles.chevron, { color: colors.textMuted }]}>›</Text>
       <input
@@ -40,6 +41,8 @@ export function DateField({ value, label, onChange, maximumDate }: DateFieldProp
             onChange(event.target.value);
           }
         }}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         style={overlayStyle}
       />
     </View>

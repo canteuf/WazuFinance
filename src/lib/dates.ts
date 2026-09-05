@@ -24,6 +24,15 @@ export function dateToIso(date: Date): string {
   return `${date.getFullYear()}-${month}-${day}`;
 }
 
+// Hissé au niveau du module comme le formateur de src/lib/money.ts : la
+// construction d'un Intl.DateTimeFormat est coûteuse, et sa config ne dépend
+// d'aucun argument d'appel.
+const dateFormatter = new Intl.DateTimeFormat('fr-FR', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+});
+
 /** « Aujourd'hui », « Hier », sinon « 2 sept. 2026 ». */
 export function formatOccurredOn(iso: string): string {
   if (iso === todayIso()) {
@@ -36,9 +45,5 @@ export function formatOccurredOn(iso: string): string {
     return 'Hier';
   }
 
-  return new Intl.DateTimeFormat('fr-FR', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(isoToDate(iso));
+  return dateFormatter.format(isoToDate(iso));
 }

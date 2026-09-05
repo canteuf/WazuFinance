@@ -2,18 +2,11 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
+import type { DateFieldProps } from '@/components/transaction/date-field-props';
 import { dateToIso, isoToDate } from '@/lib/dates';
 import { radius, spacing, useColors } from '@/theme/tokens';
 
-export type DateFieldProps = {
-  /** Date choisie, au format ISO `YYYY-MM-DD`. */
-  value: string;
-  /** Texte déjà formaté à afficher (« Aujourd'hui », « Hier », ...). */
-  label: string;
-  onChange: (iso: string) => void;
-  /** Borne haute du sélecteur : pas d'opération future dans un suivi de dépenses. */
-  maximumDate: Date;
-};
+export type { DateFieldProps };
 
 /**
  * Variante native (iOS/Android) : un appui ouvre le sélecteur de date natif
