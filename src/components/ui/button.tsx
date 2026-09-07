@@ -1,6 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, type PressableProps } from 'react-native';
 
-import { radius, spacing, useColors } from '@/theme/tokens';
+import { font, radius, spacing, useColors } from '@/theme/tokens';
 
 type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   title: string;
@@ -43,7 +43,7 @@ export function Button({ title, variant = 'primary', loading = false, disabled, 
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: 50,
+    minHeight: 52,
     borderRadius: radius.md,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
@@ -53,7 +53,8 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontFamily: font.bold,
+    fontSize: 15.5,
+    letterSpacing: -0.1,
   },
 });

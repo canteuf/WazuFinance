@@ -2,7 +2,8 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Category } from '@/data/categories';
-import { radius, spacing, useColors } from '@/theme/tokens';
+import { categoryTone } from '@/theme/category-colors';
+import { font, radius, spacing, useColors, useIsDark } from '@/theme/tokens';
 
 type CategoryPickerProps = {
   categories: Category[];
@@ -10,13 +11,23 @@ type CategoryPickerProps = {
   onSelect: (categoryId: string) => void;
 };
 
+/**
+ * Grille de catégories.
+ *
+ * Chaque tuile porte la couleur de sa catégorie, pas l'accent générique de
+ * l'app : sélectionnée, elle se remplit de sa propre teinte. C'est ce qui rend
+ * la couleur reconnaissable d'un écran à l'autre plutôt que décorative.
+ */
 export function CategoryPicker({ categories, selectedId, onSelect }: CategoryPickerProps) {
   const colors = useColors();
+  const isDark = useIsDark();
 
   return (
     <View style={styles.grid}>
       {categories.map((category) => {
         const selected = category.id === selectedId;
+        const tone = categoryTone(category, isDark);
+
         return (
           <Pressable
             key={category.id}
@@ -27,8 +38,8 @@ export function CategoryPicker({ categories, selectedId, onSelect }: CategoryPic
             style={[
               styles.item,
               {
-                backgroundColor: selected ? colors.primary : colors.surface,
-                borderColor: selected ? colors.primary : colors.border,
+                backgroundColor: selected ? tone.tint : tone.surface,
+                borderColor: selected ? tone.tint : 'transparent',
               },
             ]}
           >
@@ -37,23 +48,24 @@ export function CategoryPicker({ categories, selectedId, onSelect }: CategoryPic
               // donne un repère de forme, indépendant du sens de la couleur.
               <MaterialCommunityIcons
                 name="check-circle"
-                size={16}
-                color={colors.primaryText}
+                size={15}
+                color={colors.surface}
                 style={styles.badge}
                 accessibilityElementsHidden
                 importantForAccessibility="no-hide-descendants"
               />
             ) : null}
+
             <MaterialCommunityIcons
               // Le nom vient de la base ; @expo/vector-icons le type de façon
               // stricte, d'où la conversion explicite.
               name={category.icon as React.ComponentProps<typeof MaterialCommunityIcons>['name']}
               size={22}
-              color={selected ? colors.primaryText : colors.text}
+              color={selected ? colors.surface : tone.tint}
             />
             <Text
               numberOfLines={1}
-              style={[styles.label, { color: selected ? colors.primaryText : colors.textMuted }]}
+              style={[styles.label, { color: selected ? colors.surface : colors.textMuted }]}
             >
               {category.name}
             </Text>
@@ -72,21 +84,21 @@ const styles = StyleSheet.create({
   },
   item: {
     width: 84,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.xs,
     borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: radius.md,
+    borderRadius: radius.sm + 3,
     alignItems: 'center',
     gap: spacing.xs,
     position: 'relative',
   },
   badge: {
     position: 'absolute',
-    top: 4,
-    right: 4,
+    top: 3,
+    right: 3,
   },
   label: {
+    fontFamily: font.semibold,
     fontSize: 11,
-    fontWeight: '600',
   },
 });

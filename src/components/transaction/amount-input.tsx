@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { spacing, useColors } from '@/theme/tokens';
+import { font, spacing, useColors } from '@/theme/tokens';
 
 type AmountInputProps = {
   value: string;
@@ -38,19 +38,24 @@ export function AmountInput({ value, onChangeText, autoFocus = false }: AmountIn
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'baseline',
     justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
+    gap: spacing.xs + 2,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
   },
   input: {
-    fontSize: 44,
-    fontWeight: '700',
+    // La famille porte la graisse : avec une police chargée fichier par
+    // fichier, fontWeight déclencherait un gras synthétique.
+    fontFamily: font.black,
+    fontSize: 46,
+    letterSpacing: -1.5,
     textAlign: 'right',
     minWidth: 120,
+    fontVariant: ['tabular-nums'],
   },
   currency: {
-    fontSize: 28,
-    fontWeight: '600',
+    fontFamily: font.semibold,
+    fontSize: 24,
   },
 });

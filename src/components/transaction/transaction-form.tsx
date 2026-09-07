@@ -10,7 +10,7 @@ import { dataErrorMessage } from '@/lib/data-errors';
 import { formatOccurredOn, todayIso } from '@/lib/dates';
 import { readLastCategory } from '@/lib/last-used';
 import { parseAmount } from '@/lib/money';
-import { radius, spacing, useColors } from '@/theme/tokens';
+import { font, radius, spacing, useColors } from '@/theme/tokens';
 import type { TransactionType } from '@/types/database';
 
 export type TransactionFormValues = {
@@ -231,9 +231,11 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   error: {
+    fontFamily: font.medium,
     fontSize: 13,
   },
   note: {
+    fontFamily: font.medium,
     borderWidth: StyleSheet.hairlineWidth * 2,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,

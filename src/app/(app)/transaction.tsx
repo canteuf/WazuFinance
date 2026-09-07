@@ -20,7 +20,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useTransaction } from '@/hooks/use-transaction';
 import { useTransactionMutations } from '@/hooks/use-transaction-mutations';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { spacing, useColors } from '@/theme/tokens';
+import { font, spacing, useColors } from '@/theme/tokens';
 
 /**
  * Une seule route pour les deux modes : création sans paramètre, édition avec
@@ -192,8 +192,8 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
   },
   closeLabel: {
+    fontFamily: font.semibold,
     fontSize: 18,
-    fontWeight: '600',
   },
   scrollContent: {
     flexGrow: 1,
@@ -207,10 +207,12 @@ const styles = StyleSheet.create({
   },
   title: {
     flexShrink: 1,
+    fontFamily: font.bold,
     fontSize: 18,
-    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   errorTitle: {
+    fontFamily: font.medium,
     fontSize: 15,
     textAlign: 'center',
   },

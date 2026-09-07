@@ -8,7 +8,7 @@ import { useActiveGroup } from '@/hooks/use-active-group';
 import { useAuth } from '@/hooks/use-auth';
 import { useRecentTransactions } from '@/hooks/use-recent-transactions';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { radius, spacing, useColors } from '@/theme/tokens';
+import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 
 /**
  * Point d'entrée de la saisie. Le solde et le résumé du mois appartiennent à
@@ -17,6 +17,7 @@ import { radius, spacing, useColors } from '@/theme/tokens';
  */
 export default function DashboardScreen() {
   const colors = useColors();
+  const elevation = useElevation();
   const { signOut } = useAuth();
   const { activeGroup, error: groupError } = useActiveGroup();
   const { transactions, isLoading: transactionsLoading, error: transactionsError } =
@@ -36,7 +37,11 @@ export default function DashboardScreen() {
             accessibilityLabel="Ajouter une opération"
             // Aplati : <Link asChild> transmet le style à son enfant et avertit
             // s'il reçoit un tableau.
-            style={StyleSheet.flatten([styles.fab, { backgroundColor: colors.primary }])}
+            style={StyleSheet.flatten([
+              styles.fab,
+              elevation.floating,
+              { backgroundColor: colors.primary },
+            ])}
           >
             <Text style={[styles.fabLabel, { color: colors.primaryText }]}>+</Text>
           </Pressable>
@@ -73,15 +78,18 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   groupName: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontFamily: font.black,
+    fontSize: 26,
+    letterSpacing: -0.6,
   },
   section: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontFamily: font.semibold,
+    fontSize: 11.5,
+    letterSpacing: 0.9,
     textTransform: 'uppercase',
   },
   error: {
+    fontFamily: font.medium,
     fontSize: 14,
   },
   fab: {
@@ -92,8 +100,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   fabLabel: {
+    fontFamily: font.medium,
     fontSize: 30,
-    fontWeight: '600',
     lineHeight: 34,
   },
 });

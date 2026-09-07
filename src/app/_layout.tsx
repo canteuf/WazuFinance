@@ -1,3 +1,11 @@
+import {
+  BricolageGrotesque_400Regular,
+  BricolageGrotesque_500Medium,
+  BricolageGrotesque_600SemiBold,
+  BricolageGrotesque_700Bold,
+  BricolageGrotesque_800ExtraBold,
+  useFonts,
+} from '@expo-google-fonts/bricolage-grotesque';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
@@ -40,14 +48,30 @@ function CacheSessionGuard() {
  */
 function RootNavigator() {
   const { session, isLoading } = useAuth();
+  // React Native n'a pas de police de repli par famille : tant que Bricolage
+  // Grotesque n'est pas chargée, chaque écran s'afficherait dans la police
+  // système puis se recomposerait. On garde donc le splash sur les deux
+  // attentes à la fois.
+  const [fontsLoaded, fontError] = useFonts({
+    BricolageGrotesque_400Regular,
+    BricolageGrotesque_500Medium,
+    BricolageGrotesque_600SemiBold,
+    BricolageGrotesque_700Bold,
+    BricolageGrotesque_800ExtraBold,
+  });
+
+  // Un échec de chargement ne doit pas laisser l'app derrière son splash :
+  // mieux vaut la police système que rien.
+  const fontsSettled = fontsLoaded || fontError !== null;
+  const ready = !isLoading && fontsSettled;
 
   useEffect(() => {
-    if (!isLoading) {
+    if (ready) {
       void SplashScreen.hideAsync();
     }
-  }, [isLoading]);
+  }, [ready]);
 
-  if (isLoading) {
+  if (!ready) {
     return null;
   }
 

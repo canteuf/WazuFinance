@@ -8,7 +8,7 @@ import { TextField } from '@/components/ui/text-field';
 import { useAuth } from '@/hooks/use-auth';
 import { authErrorMessage } from '@/lib/auth-errors';
 import { validateEmail, validatePassword } from '@/lib/validation';
-import { spacing, useColors } from '@/theme/tokens';
+import { font, spacing, useColors } from '@/theme/tokens';
 
 type FieldErrors = {
   email?: string;
@@ -108,13 +108,16 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   title: {
-    fontSize: 30,
-    fontWeight: '700',
+    fontFamily: font.black,
+    fontSize: 32,
+    letterSpacing: -0.8,
   },
   subtitle: {
+    fontFamily: font.regular,
     fontSize: 15,
   },
   formError: {
+    fontFamily: font.medium,
     fontSize: 14,
   },
   footer: {
@@ -124,10 +127,11 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   footerText: {
+    fontFamily: font.regular,
     fontSize: 14,
   },
   footerLink: {
+    fontFamily: font.bold,
     fontSize: 14,
-    fontWeight: '600',
   },
 });

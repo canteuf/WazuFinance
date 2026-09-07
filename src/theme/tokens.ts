@@ -1,8 +1,13 @@
 import { useColorScheme } from 'react-native';
 
 /**
- * Jetons de design partagés. Volontairement minimal pour la première passe :
- * il grandira avec les écrans 2 à 8.
+ * Jetons de design partagés.
+ *
+ * Deux palettes, une seule grammaire de formes. En clair, « Carnet » : fond
+ * vert-gris pâle, cartes blanches, ombres basses. En sombre, « Nocturne » :
+ * fond profond, surfaces en élévation, accent menthe. La typographie, les
+ * rayons et les densités ne changent pas avec le thème — les faire varier
+ * imposerait deux mises en page à tenir et rendrait la bascule visible.
  */
 
 export const spacing = {
@@ -13,46 +18,144 @@ export const spacing = {
   xl: 32,
 } as const;
 
+/** Formes généreuses : 16 px est le rayon de référence des cartes et champs. */
 export const radius = {
-  sm: 8,
-  md: 12,
-  lg: 20,
+  sm: 10,
+  md: 16,
+  lg: 22,
+  pill: 999,
+} as const;
+
+/**
+ * Bricolage Grotesque, chargée dans le layout racine.
+ *
+ * React Native n'a pas d'héritage de police : chaque `Text` doit porter sa
+ * famille. D'où ces constantes, à utiliser partout plutôt que `fontWeight`,
+ * qui ne sélectionne pas la bonne graisse d'une famille chargée fichier par
+ * fichier.
+ */
+export const font = {
+  regular: 'BricolageGrotesque_400Regular',
+  medium: 'BricolageGrotesque_500Medium',
+  semibold: 'BricolageGrotesque_600SemiBold',
+  bold: 'BricolageGrotesque_700Bold',
+  black: 'BricolageGrotesque_800ExtraBold',
 } as const;
 
 export type Colors = {
   background: string;
   surface: string;
+  /** Surface secondaire : fonds de segments, pastilles neutres. */
+  surfaceMuted: string;
   border: string;
   text: string;
   textMuted: string;
   primary: string;
   primaryText: string;
+  /** Revenus. Distinct de `primary` : une couleur sémantique, pas l'accent. */
+  positive: string;
   danger: string;
 };
 
 const palette: Record<'light' | 'dark', Colors> = {
+  // Carnet
   light: {
-    background: '#F7F8FA',
+    background: '#EDF1F0',
     surface: '#FFFFFF',
-    border: '#DFE3EA',
-    text: '#111827',
-    textMuted: '#6B7280',
-    primary: '#137A5F',
+    surfaceMuted: '#E3E9E7',
+    border: '#DDE5E2',
+    text: '#12201C',
+    textMuted: '#5E6E69',
+    primary: '#0EA47A',
     primaryText: '#FFFFFF',
-    danger: '#B42318',
+    positive: '#0B8F6A',
+    danger: '#C4362B',
   },
+  // Nocturne
   dark: {
-    background: '#0E1116',
-    surface: '#171B22',
-    border: '#2A303B',
-    text: '#F3F4F6',
-    textMuted: '#9BA3AF',
-    primary: '#2DBE95',
+    background: '#0B0F14',
+    surface: '#151B23',
+    surfaceMuted: '#1C242E',
+    border: '#212A34',
+    text: '#EEF2F6',
+    textMuted: '#8894A2',
+    primary: '#3DDC97',
     primaryText: '#05231B',
+    positive: '#3DDC97',
     danger: '#F97066',
   },
 };
 
+/**
+ * Élévation. En clair, une ombre basse détache la carte du fond ; en sombre,
+ * une ombre portée ne se voit pas — c'est la surface plus claire qui fait
+ * l'élévation, et l'ombre ne sert qu'à ancrer les éléments flottants.
+ */
+export type Elevation = {
+  card: {
+    shadowColor: string;
+    shadowOpacity: number;
+    shadowRadius: number;
+    shadowOffset: { width: number; height: number };
+    elevation: number;
+  };
+  floating: {
+    shadowColor: string;
+    shadowOpacity: number;
+    shadowRadius: number;
+    shadowOffset: { width: number; height: number };
+    elevation: number;
+  };
+};
+
+const elevation: Record<'light' | 'dark', Elevation> = {
+  light: {
+    card: {
+      shadowColor: '#12201C',
+      shadowOpacity: 0.06,
+      shadowRadius: 3,
+      shadowOffset: { width: 0, height: 1 },
+      elevation: 1,
+    },
+    floating: {
+      shadowColor: '#0EA47A',
+      shadowOpacity: 0.35,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 6,
+    },
+  },
+  dark: {
+    card: {
+      shadowColor: '#000000',
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 1 },
+      elevation: 1,
+    },
+    floating: {
+      shadowColor: '#3DDC97',
+      shadowOpacity: 0.3,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 8,
+    },
+  },
+};
+
+function scheme(value: ReturnType<typeof useColorScheme>): 'light' | 'dark' {
+  return value === 'dark' ? 'dark' : 'light';
+}
+
 export function useColors(): Colors {
-  return useColorScheme() === 'dark' ? palette.dark : palette.light;
+  return palette[scheme(useColorScheme())];
+}
+
+export function useElevation(): Elevation {
+  return elevation[scheme(useColorScheme())];
+}
+
+/** Le thème courant, pour les rares composants qui doivent trancher eux-mêmes. */
+export function useIsDark(): boolean {
+  return scheme(useColorScheme()) === 'dark';
 }

@@ -1,7 +1,7 @@
 import { forwardRef } from 'react';
 import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 
-import { radius, spacing, useColors } from '@/theme/tokens';
+import { font, radius, spacing, useColors } from '@/theme/tokens';
 
 type TextFieldProps = TextInputProps & {
   label: string;
@@ -39,20 +39,22 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
 
 const styles = StyleSheet.create({
   container: {
-    gap: spacing.xs,
+    gap: spacing.xs + 2,
   },
   label: {
+    fontFamily: font.semibold,
     fontSize: 13,
-    fontWeight: '600',
   },
   input: {
+    fontFamily: font.medium,
     borderWidth: StyleSheet.hairlineWidth * 2,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md - 4,
+    paddingVertical: spacing.md - 2,
     fontSize: 16,
   },
   error: {
+    fontFamily: font.medium,
     fontSize: 12,
   },
 });

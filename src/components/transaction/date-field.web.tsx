@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import type { DateFieldProps } from '@/components/transaction/date-field-props';
 import { dateToIso } from '@/lib/dates';
-import { radius, spacing, useColors } from '@/theme/tokens';
+import { font, radius, spacing, useColors } from '@/theme/tokens';
 
 export type { DateFieldProps };
 
@@ -74,8 +74,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   label: {
+    fontFamily: font.semibold,
     fontSize: 15,
-    fontWeight: '600',
   },
   chevron: {
     fontSize: 20,

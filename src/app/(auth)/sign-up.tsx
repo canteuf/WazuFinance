@@ -8,7 +8,7 @@ import { TextField } from '@/components/ui/text-field';
 import { useAuth } from '@/hooks/use-auth';
 import { authErrorMessage } from '@/lib/auth-errors';
 import { validateDisplayName, validateEmail, validatePassword } from '@/lib/validation';
-import { spacing, useColors } from '@/theme/tokens';
+import { font, spacing, useColors } from '@/theme/tokens';
 
 type FieldErrors = {
   displayName?: string;
@@ -148,13 +148,16 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontFamily: font.black,
+    fontSize: 30,
+    letterSpacing: -0.7,
   },
   subtitle: {
+    fontFamily: font.regular,
     fontSize: 15,
   },
   message: {
+    fontFamily: font.medium,
     fontSize: 14,
   },
 });
