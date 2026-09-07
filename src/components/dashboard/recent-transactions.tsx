@@ -1,11 +1,21 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Link } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import type { TransactionWithCategory } from '@/data/transactions';
 import { formatSigned } from '@/lib/money';
 import { categoryTone } from '@/theme/category-colors';
 import { font, radius, spacing, useColors, useElevation, useIsDark } from '@/theme/tokens';
+
+/**
+ * Seuil d'empilement du montant sous le nom de la catégorie.
+ *
+ * En dessous, nom et montant tiennent côte à côte. Au-delà, le montant garde
+ * sa largeur intrinsèque et écrasait le nom, qui se faisait tronquer. On
+ * empile plutôt que de couper : un montant partiellement affiché serait pire
+ * encore, et le nom tronqué rend deux catégories indiscernables.
+ */
+const STACK_AT_FONT_SCALE = 1.5;
 
 export function RecentTransactions({
   transactions,
@@ -17,6 +27,10 @@ export function RecentTransactions({
   // Un seul appel pour toute la liste : categoryTone est une fonction, pas un
   // hook, précisément pour pouvoir être appelée dans la boucle ci-dessous.
   const isDark = useIsDark();
+  // useWindowDimensions() re-rend quand le réglage système change, à la
+  // différence de PixelRatio.getFontScale(), lu une fois pour toutes.
+  const { fontScale } = useWindowDimensions();
+  const stacked = fontScale >= STACK_AT_FONT_SCALE;
 
   if (transactions.length === 0) {
     return (
@@ -32,6 +46,20 @@ export function RecentTransactions({
         const icon = transaction.category?.icon ?? 'tag';
         const tone = categoryTone({ id: transaction.category_id ?? transaction.id, icon }, isDark);
 
+        // Même nœud dans les deux dispositions : sous le nom quand on empile,
+        // en bout de ligne sinon.
+        const amount = (
+          <Text
+            style={[
+              styles.amount,
+              stacked && styles.amountStacked,
+              { color: transaction.type === 'income' ? colors.positive : colors.text },
+            ]}
+          >
+            {formatSigned(Number(transaction.amount), transaction.type)}
+          </Text>
+        );
+
         return (
           <Link key={transaction.id} href={`/transaction?id=${transaction.id}`} asChild>
             <Pressable
@@ -41,6 +69,7 @@ export function RecentTransactions({
               // s'il reçoit un tableau.
               style={StyleSheet.flatten([
                 styles.row,
+                stacked && styles.rowStacked,
                 elevation.card,
                 { backgroundColor: colors.surface },
               ])}
@@ -56,24 +85,24 @@ export function RecentTransactions({
               </View>
 
               <View style={styles.rowText}>
-                <Text numberOfLines={1} style={[styles.name, { color: colors.text }]}>
+                <Text
+                  numberOfLines={stacked ? 2 : 1}
+                  style={[styles.name, { color: colors.text }]}
+                >
                   {transaction.category?.name ?? 'Sans catégorie'}
                 </Text>
                 {transaction.note ? (
-                  <Text numberOfLines={1} style={[styles.note, { color: colors.textMuted }]}>
+                  <Text
+                    numberOfLines={stacked ? 2 : 1}
+                    style={[styles.note, { color: colors.textMuted }]}
+                  >
                     {transaction.note}
                   </Text>
                 ) : null}
+                {stacked ? amount : null}
               </View>
 
-              <Text
-                style={[
-                  styles.amount,
-                  { color: transaction.type === 'income' ? colors.positive : colors.text },
-                ]}
-              >
-                {formatSigned(Number(transaction.amount), transaction.type)}
-              </Text>
+              {stacked ? null : amount}
             </Pressable>
           </Link>
         );
@@ -93,6 +122,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.md - 2,
     borderRadius: radius.md,
+  },
+  rowStacked: {
+    // La pastille reste en haut du bloc de texte, qui compte alors trois
+    // lignes au lieu d'une.
+    alignItems: 'flex-start',
   },
   glyph: {
     width: 36,
@@ -119,6 +153,9 @@ const styles = StyleSheet.create({
     // Les montants s'alignent en colonne : sans chiffres tabulaires, la
     // virgule danse d'une ligne à l'autre.
     fontVariant: ['tabular-nums'],
+  },
+  amountStacked: {
+    marginTop: 2,
   },
   empty: {
     fontFamily: font.regular,

@@ -48,6 +48,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
+    // Deux boutons côte à côte (Dépense/Revenu, Confirmer/Annuler) gardaient
+    // leur largeur intrinsèque : à forte échelle de police, la rangée
+    // débordait de l'écran. Avec flexShrink, le bouton se resserre et son
+    // libellé passe à la ligne — minHeight étant un minimum, la hauteur suit.
+    flexShrink: 1,
   },
   dimmed: {
     opacity: 0.6,
@@ -56,5 +61,7 @@ const styles = StyleSheet.create({
     fontFamily: font.bold,
     fontSize: 15.5,
     letterSpacing: -0.1,
+    // Centre le texte quand le libellé se replie sur deux lignes.
+    textAlign: 'center',
   },
 });
