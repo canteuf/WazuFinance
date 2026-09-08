@@ -3,6 +3,7 @@ import { Link } from 'expo-router';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import type { TransactionWithCategory } from '@/data/transactions';
+import { formatOccurredOn } from '@/lib/dates';
 import { formatSigned } from '@/lib/money';
 import { categoryTone } from '@/theme/category-colors';
 import {
@@ -43,6 +44,12 @@ export function RecentTransactions({
     <View style={styles.list}>
       {transactions.map((transaction) => {
         const icon = transaction.category?.icon ?? 'tag';
+        // « Carrefour · aujourd'hui », ou la seule date quand il n'y a pas de
+        // note. Sans la date, deux lignes de la même catégorie étaient
+        // indiscernables dans la liste.
+        const meta = [transaction.note, formatOccurredOn(transaction.occurred_on)]
+          .filter((part): part is string => Boolean(part))
+          .join(' · ');
         const tone = categoryTone({ id: transaction.category_id ?? transaction.id, icon }, isDark);
 
         // Même nœud dans les deux dispositions : sous le nom quand on empile,
@@ -78,7 +85,7 @@ export function RecentTransactions({
                   // Le nom vient de la base ; @expo/vector-icons le type de façon
                   // stricte, d'où la conversion explicite.
                   name={icon as React.ComponentProps<typeof MaterialCommunityIcons>['name']}
-                  size={18}
+                  size={16}
                   color={tone.tint}
                 />
               </View>
@@ -90,14 +97,12 @@ export function RecentTransactions({
                 >
                   {transaction.category?.name ?? 'Sans catégorie'}
                 </Text>
-                {transaction.note ? (
-                  <Text
-                    numberOfLines={stacked ? 2 : 1}
-                    style={[styles.note, { color: colors.textMuted }]}
-                  >
-                    {transaction.note}
-                  </Text>
-                ) : null}
+                <Text
+                  numberOfLines={stacked ? 2 : 1}
+                  style={[styles.note, { color: colors.textMuted }]}
+                >
+                  {meta}
+                </Text>
                 {stacked ? amount : null}
               </View>
 
@@ -112,15 +117,15 @@ export function RecentTransactions({
 
 const styles = StyleSheet.create({
   list: {
-    gap: spacing.sm,
+    gap: spacing.sm - 1,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm + 2,
     paddingVertical: spacing.sm + 2,
-    paddingHorizontal: spacing.md - 2,
-    borderRadius: radius.md,
+    paddingHorizontal: spacing.sm + 3,
+    borderRadius: radius.sm + 3,
   },
   rowStacked: {
     // La pastille reste en haut du bloc de texte, qui compte alors trois
@@ -128,9 +133,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   glyph: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.sm + 1,
+    width: 30,
+    height: 30,
+    borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -140,15 +145,17 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: font.semibold,
-    fontSize: 15,
+    fontSize: 13,
+    letterSpacing: -0.07,
   },
   note: {
     fontFamily: font.regular,
-    fontSize: 12,
+    fontSize: 11,
   },
   amount: {
     fontFamily: font.bold,
-    fontSize: 15,
+    fontSize: 13,
+    letterSpacing: -0.13,
     // Les montants s'alignent en colonne : sans chiffres tabulaires, la
     // virgule danse d'une ligne à l'autre.
     fontVariant: ['tabular-nums'],

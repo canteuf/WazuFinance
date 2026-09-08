@@ -9,7 +9,7 @@ import { useActiveGroup } from '@/hooks/use-active-group';
 import { useAuth } from '@/hooks/use-auth';
 import { useRecentTransactions } from '@/hooks/use-recent-transactions';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
+import { font, radius, useColors, useElevation } from '@/theme/tokens';
 
 /**
  * Point d'entrée de la saisie, avec le solde de la période en cours.
@@ -50,11 +50,18 @@ export default function DashboardScreen() {
         </Link>
       }
     >
+      {/* Le nom du groupe est une étiquette, pas un titre : c'est le solde
+          qui domine l'écran. Le mettre en grand inversait la hiérarchie et
+          faisait passer l'information principale au second plan.
+
+          Le changement de groupe arrive à l'écran 7. Tant que ce contrôle
+          n'existe pas, on n'affiche aucun repère visuel (ex. un chevron) qui
+          laisserait croire à un bouton alors qu'il n'y a rien à toucher. */}
       <View style={styles.header}>
-        <Text style={[styles.groupName, { color: colors.text }]}>{activeGroup?.name ?? '…'}</Text>
-        {/* Le changement de groupe arrive à l'écran 7. Tant que ce contrôle
-            n'existe pas, on n'affiche aucun repère visuel (ex. un chevron) qui
-            laisserait croire à un bouton alors qu'il n'y a rien à toucher. */}
+        <View style={[styles.groupDot, { backgroundColor: colors.primary }]} />
+        <Text style={[styles.groupName, { color: colors.textMuted }]}>
+          {activeGroup?.name ?? '…'}
+        </Text>
       </View>
 
       {/* La carte porte ses propres états de chargement et d'erreur : un
@@ -81,17 +88,25 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    gap: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  groupDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   groupName: {
-    fontFamily: font.black,
-    fontSize: 26,
-    letterSpacing: -0.6,
+    fontFamily: font.semibold,
+    fontSize: 11,
+    letterSpacing: 0.66,
+    textTransform: 'uppercase',
   },
   section: {
     fontFamily: font.semibold,
-    fontSize: 11.5,
-    letterSpacing: 0.9,
+    fontSize: 10.5,
+    letterSpacing: 0.95,
     textTransform: 'uppercase',
   },
   error: {

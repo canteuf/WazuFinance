@@ -1,4 +1,4 @@
-import { useColorScheme } from 'react-native';
+import { StyleSheet, useColorScheme } from 'react-native';
 
 /**
  * Jetons de design partagés.
@@ -98,6 +98,11 @@ export type Elevation = {
     shadowRadius: number;
     shadowOffset: { width: number; height: number };
     elevation: number;
+    // Une ombre noire sur fond sombre ne se voit pas : en Nocturne, la
+    // séparation d'une surface vient d'un liseré, pas d'une ombre. En Carnet
+    // l'ombre suffit et le liseré est à zéro.
+    borderWidth: number;
+    borderColor: string;
   };
   floating: {
     shadowColor: string;
@@ -116,6 +121,8 @@ const elevation: Record<'light' | 'dark', Elevation> = {
       shadowRadius: 3,
       shadowOffset: { width: 0, height: 1 },
       elevation: 1,
+      borderWidth: 0,
+      borderColor: 'transparent',
     },
     floating: {
       shadowColor: '#0EA47A',
@@ -132,6 +139,8 @@ const elevation: Record<'light' | 'dark', Elevation> = {
       shadowRadius: 4,
       shadowOffset: { width: 0, height: 1 },
       elevation: 1,
+      borderWidth: StyleSheet.hairlineWidth * 2,
+      borderColor: '#212A34',
     },
     floating: {
       shadowColor: '#3DDC97',

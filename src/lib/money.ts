@@ -35,8 +35,28 @@ export function formatAmount(value: number): string {
   return formatter.format(value);
 }
 
-/** « -24,90 € » pour une dépense, « +1 500,00 € » pour un revenu. */
+/**
+ * Signe moins typographique (U+2212), et non le trait d'union.
+ *
+ * Il a la même chasse que le plus et s'aligne sur la hauteur des chiffres :
+ * dans une colonne de montants en chiffres tabulaires, un trait d'union se
+ * voit trop court et casse l'alignement optique.
+ */
+const MINUS = '−';
+
+/** « −24,90 € » pour une dépense, « +1 500,00 € » pour un revenu. */
 export function formatSigned(value: number, type: TransactionType): string {
-  const sign = type === 'expense' ? '-' : '+';
+  const sign = type === 'expense' ? MINUS : '+';
   return `${sign}${formatAmount(value)} €`;
+}
+
+/** Même chose sans symbole monétaire, le « € » étant porté à côté. */
+export function formatSignedBare(value: number, type: TransactionType): string {
+  const sign = type === 'expense' ? MINUS : '+';
+  return `${sign}${formatAmount(value)}`;
+}
+
+/** « 1 391,78 », « −788,22 » : signe seulement s'il est négatif, sans symbole. */
+export function formatBalance(value: number): string {
+  return value < 0 ? `${MINUS}${formatAmount(Math.abs(value))}` : formatAmount(value);
 }

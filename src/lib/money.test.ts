@@ -1,4 +1,4 @@
-import { formatAmount, formatSigned, parseAmount } from '@/lib/money';
+import { formatAmount, formatBalance, formatSigned, parseAmount } from '@/lib/money';
 
 describe('parseAmount', () => {
   it('accepte la virgule décimale française', () => {
@@ -54,10 +54,29 @@ describe('formatAmount', () => {
 
 describe('formatSigned', () => {
   it('préfixe une dépense d’un moins', () => {
-    expect(formatSigned(24.9, 'expense')).toBe('-24,90 €');
+    expect(formatSigned(24.9, 'expense')).toBe('−24,90 €');
   });
 
   it('préfixe un revenu d’un plus', () => {
     expect(formatSigned(1500, 'income')).toBe('+1 500,00 €');
+  });
+});
+
+describe('formatBalance', () => {
+  // Le séparateur de milliers de fr-FR est une espace fine insécable (U+202F),
+  // pas une espace ordinaire : écrite en clair, l'attente serait fausse alors
+  // que le code est juste.
+  it('laisse un solde positif sans signe', () => {
+    expect(formatBalance(1391.78)).toBe('1 391,78');
+  });
+
+  // Signe moins typographique (U+2212), pas trait d'union : c'est ce qui tient
+  // l'alignement d'une colonne de chiffres tabulaires.
+  it('préfixe un solde négatif du signe moins typographique', () => {
+    expect(formatBalance(-788.22)).toBe('−788,22');
+  });
+
+  it('ne signe pas un solde nul', () => {
+    expect(formatBalance(0)).toBe('0,00');
   });
 });
