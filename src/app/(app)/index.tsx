@@ -9,7 +9,7 @@ import { useActiveGroup } from '@/hooks/use-active-group';
 import { useAuth } from '@/hooks/use-auth';
 import { useRecentTransactions } from '@/hooks/use-recent-transactions';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { font, radius, useColors, useElevation } from '@/theme/tokens';
+import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 
 /**
  * Point d'entrée de la saisie, avec le solde de la période en cours.
@@ -68,7 +68,14 @@ export default function DashboardScreen() {
           résumé en échec ne doit pas emporter la liste, qui a pu aboutir. */}
       <PeriodSummary />
 
-      <Text style={[styles.section, { color: colors.textMuted }]}>Dernières opérations</Text>
+      <View style={styles.sectionRow}>
+        <Text style={[styles.section, { color: colors.textMuted }]}>Dernières opérations</Text>
+        {/* Ouvre l'historique aux filtres par défaut, dont la période coïncide
+            avec le solde affiché juste au-dessus. */}
+        <Link href="/history" style={[styles.sectionLink, { color: colors.primary }]}>
+          Tout voir
+        </Link>
+      </View>
 
       {error ? (
         <Text style={[styles.error, { color: colors.danger }]}>{dataErrorMessage(error)}</Text>
@@ -108,6 +115,16 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     letterSpacing: 0.95,
     textTransform: 'uppercase',
+  },
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  sectionLink: {
+    fontFamily: font.semibold,
+    fontSize: 12,
   },
   error: {
     fontFamily: font.medium,

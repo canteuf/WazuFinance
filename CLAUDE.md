@@ -77,6 +77,8 @@ Anything *derived* from transactions nests under that same root — `periodSumma
 
 Data errors are mapped by SQLSTATE code in `src/lib/data-errors.ts` first — that rule doesn't change — with a message-based fallback for transport failures only, which reach the client as an object with `code: ""` and no SQLSTATE to key off. Same priority order as `auth-errors.ts`.
 
+History pages are **cursor-paginated on `(occurred_on, id)`**, never `OFFSET` / `.range()`. Realtime inserts rows while the user scrolls, so an offset shifts every later page: a row appears twice, or is skipped. `transactions_group_occurred_idx` and the `id` tiebreak exist for exactly this. PostgREST cannot express row-value comparison, so `listPage()` builds the equivalent predicate with `.or()`; the cursor values always come from a row the server already returned.
+
 ## RLS
 
 Security lives in the database, not the client. Every policy resolves to "is the caller a member of this group?".
