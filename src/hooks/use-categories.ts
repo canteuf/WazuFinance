@@ -8,9 +8,10 @@ import type { TransactionType } from '@/types/database';
 
 /**
  * Catégories du groupe actif, filtrées par type : basculer sur Revenu ne doit
- * pas proposer Loyer.
+ * pas proposer Loyer. `null` les rend toutes, pour le filtre « Tout » de
+ * l'historique.
  */
-export function useCategories(type: TransactionType): {
+export function useCategories(type: TransactionType | null): {
   categories: Category[];
   isLoading: boolean;
   error: unknown;
@@ -24,7 +25,7 @@ export function useCategories(type: TransactionType): {
   });
 
   const categories = useMemo(
-    () => (data ?? []).filter((category) => category.type === type),
+    () => (data ?? []).filter((category) => type === null || category.type === type),
     [data, type]
   );
 
