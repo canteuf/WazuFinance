@@ -48,10 +48,13 @@ export function useTransactionHistory(filters: TransactionFilters): {
     transactions,
     isLoading: query.isLoading,
     error: query.error,
-    // On distingue les deux échecs par ce qui est déjà affiché plutôt que par
-    // un drapeau de TanStack : effacer trente lignes chargées parce que la
-    // trente-et-unième n'est pas venue serait une régression.
-    isEmptyError: query.isError && transactions.length === 0,
+    // `isError` seul ne distingue pas le premier chargement en échec
+    // d'un refetch en arrière-plan qui échoue après un filtre légitimement
+    // vide (zéro résultat n'est pas une erreur) : dans ce second cas,
+    // `transactions.length === 0` aussi vaudrait vrai et ferait passer
+    // l'écran en erreur plein cadre, emportant la barre de filtres avec elle.
+    // `isLoadingError` ne vaut vrai que si aucune page n'a jamais abouti.
+    isEmptyError: query.isLoadingError,
     hasNextPage: query.hasNextPage,
     isFetchingNextPage: query.isFetchingNextPage,
     loadMore: () => {

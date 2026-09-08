@@ -64,27 +64,19 @@ function Chip({
 export function FilterBar({
   state,
   presets,
+  effectiveCategoryId,
   onChange,
 }: {
   state: HistoryFilterState;
   presets: PeriodPreset[];
+  /** Catégorie corrigée par l'écran appelant : même valeur que celle qui alimente la requête. */
+  effectiveCategoryId: string | null;
   onChange: (next: HistoryFilterState) => void;
 }) {
   const colors = useColors();
-  const { categories, isLoading } = useCategories(state.type);
-
-  // Le type restreint les catégories proposées. Si la sélection courante n'y
-  // figure plus, elle tombe — dérivé au rendu plutôt que synchronisé par un
-  // effet, même forme que transaction-form.tsx pour le même problème.
-  // `isLoading` (pas `categories.length > 0`) : tant que la liste n'est pas
-  // arrivée, elle est vide sans rien prouver, et un type sans aucune
-  // catégorie seedée ne ferait jamais tomber une sélection obsolète.
-  const categoryId =
-    state.categoryId !== null &&
-    !isLoading &&
-    !categories.some((category) => category.id === state.categoryId)
-      ? null
-      : state.categoryId;
+  // Sert encore à afficher la liste des puces ; la correction d'une sélection
+  // devenue invalide est désormais fournie par l'écran via `effectiveCategoryId`.
+  const { categories } = useCategories(state.type);
 
   return (
     <View style={styles.bar}>
@@ -129,14 +121,14 @@ export function FilterBar({
       >
         <Chip
           label="Toutes"
-          selected={categoryId === null}
+          selected={effectiveCategoryId === null}
           onPress={() => onChange({ ...state, categoryId: null })}
         />
         {categories.map((category) => (
           <Chip
             key={category.id}
             label={category.name}
-            selected={categoryId === category.id}
+            selected={effectiveCategoryId === category.id}
             onPress={() => onChange({ ...state, categoryId: category.id })}
           />
         ))}

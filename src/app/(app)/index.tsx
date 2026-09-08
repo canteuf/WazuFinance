@@ -69,7 +69,12 @@ export default function DashboardScreen() {
       <PeriodSummary />
 
       <View style={styles.sectionRow}>
-        <Text style={[styles.section, { color: colors.textMuted }]}>Dernières opérations</Text>
+        <Text
+          style={[styles.section, { color: colors.textMuted }]}
+          numberOfLines={1}
+        >
+          Dernières opérations
+        </Text>
         {/* Ouvre l'historique aux filtres par défaut, dont la période coïncide
             avec le solde affiché juste au-dessus. */}
         <Link href="/history" style={[styles.sectionLink, { color: colors.primary }]}>
@@ -115,6 +120,9 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     letterSpacing: 0.95,
     textTransform: 'uppercase',
+    // Peut rétrécir jusqu'à tronquer plutôt que pousser « Tout voir » hors de
+    // l'écran à fort grossissement de police (RN met flexShrink à 0 par défaut).
+    flexShrink: 1,
   },
   sectionRow: {
     flexDirection: 'row',
@@ -125,6 +133,9 @@ const styles = StyleSheet.create({
   sectionLink: {
     fontFamily: font.semibold,
     fontSize: 12,
+    // Garde sa largeur : c'est le seul accès à l'historique, il ne doit
+    // jamais céder de place au libellé qui le précède.
+    flexShrink: 0,
   },
   error: {
     fontFamily: font.medium,

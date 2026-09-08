@@ -18,10 +18,17 @@ import {
 import { TransactionRow } from '@/components/transaction/transaction-row';
 import { Button } from '@/components/ui/button';
 import { useActiveGroup } from '@/hooks/use-active-group';
+import { useCategories } from '@/hooks/use-categories';
 import { useTransactionHistory } from '@/hooks/use-transaction-history';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { periodPresets, todayIso } from '@/lib/dates';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
+
+// Référence stable : une fonction inline recréée à chaque rendu ferait de
+// chaque séparateur un composant neuf, monté puis démonté à chaque frappe.
+function ItemSeparator() {
+  return <View style={styles.separator} />;
+}
 
 /**
  * Historique complet du groupe actif.
@@ -35,7 +42,7 @@ export default function HistoryScreen() {
   const elevation = useElevation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { activeGroup } = useActiveGroup();
+  const { activeGroup, isLoading: groupLoading } = useActiveGroup();
 
   // État local à l'écran : aucun autre n'en dépend, et le sortir d'ici
   // obligerait à décider quand le remettre à zéro entre deux visites.
@@ -43,6 +50,21 @@ export default function HistoryScreen() {
 
   const presets = periodPresets(todayIso(), activeGroup?.periodStartDay ?? 1);
   const preset = presets.find((item) => item.id === filters.presetId) ?? presets[0];
+
+  const { categories, isLoading: categoriesLoading } = useCategories(filters.type);
+
+  // La correction vit ici, pas dans `FilterBar` : c'est l'écran qui possède
+  // l'état à partir duquel la requête est construite, donc la sélection
+  // corrigée doit être calculée là où cet état est lu, pas seulement là où il
+  // est affiché — sinon les puces et la requête peuvent diverger (groupe actif
+  // changé, catégorie supprimée par un autre membre pendant que l'écran reste
+  // monté).
+  const effectiveCategoryId =
+    filters.categoryId !== null &&
+    !categoriesLoading &&
+    !categories.some((category) => category.id === filters.categoryId)
+      ? null
+      : filters.categoryId;
 
   const {
     transactions,
@@ -57,7 +79,7 @@ export default function HistoryScreen() {
   } = useTransactionHistory({
     from: preset.from,
     to: preset.to,
-    categoryId: filters.categoryId,
+    categoryId: effectiveCategoryId,
     type: filters.type,
   });
 
@@ -67,7 +89,10 @@ export default function HistoryScreen() {
     filters.categoryId !== DEFAULT_FILTERS.categoryId;
 
   function renderEmpty() {
-    if (isLoading) {
+    // Tant que le groupe actif n'est pas résolu, la requête d'historique est
+    // désactivée : `isLoading` reste à `false` et affichait un instant
+    // « Aucune opération » avant le premier vrai chargement.
+    if (isLoading || groupLoading) {
       return <ActivityIndicator color={colors.primary} style={styles.centered} />;
     }
 
@@ -130,6 +155,10 @@ export default function HistoryScreen() {
         <Text style={[styles.title, { color: colors.text }]}>Opérations</Text>
       </View>
 
+      {/* `isEmptyError` ne vaut vrai que pour l'échec du premier chargement
+          (voir use-transaction-history.ts) : un refetch en arrière-plan qui
+          échoue sur un filtre légitimement vide ne doit pas faire disparaître
+          la barre de filtres, seule issue pour l'élargir. */}
       {isEmptyError ? (
         <View style={styles.centered}>
           <Text style={[styles.error, { color: colors.danger }]}>{dataErrorMessage(error)}</Text>
@@ -141,7 +170,12 @@ export default function HistoryScreen() {
           keyExtractor={(transaction) => transaction.id}
           renderItem={({ item }) => <TransactionRow transaction={item} />}
           ListHeaderComponent={
-            <FilterBar state={filters} presets={presets} onChange={setFilters} />
+            <FilterBar
+              state={filters}
+              presets={presets}
+              effectiveCategoryId={effectiveCategoryId}
+              onChange={setFilters}
+            />
           }
           ListEmptyComponent={renderEmpty()}
           ListFooterComponent={renderFooter()}
@@ -151,7 +185,7 @@ export default function HistoryScreen() {
             styles.content,
             { paddingBottom: insets.bottom + spacing.xl * 2 },
           ]}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ItemSeparatorComponent={ItemSeparator}
         />
       )}
 
