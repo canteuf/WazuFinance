@@ -14,7 +14,7 @@ export function RecentTransactions({
   if (transactions.length === 0) {
     return (
       <Text style={[styles.empty, { color: colors.textMuted }]}>
-        Aucune opération pour l'instant. Touchez + pour en ajouter une.
+        Aucune opération pour l’instant. Touchez + pour en ajouter une.
       </Text>
     );
   }
