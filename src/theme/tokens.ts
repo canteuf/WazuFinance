@@ -159,3 +159,15 @@ export function useElevation(): Elevation {
 export function useIsDark(): boolean {
   return scheme(useColorScheme()) === 'dark';
 }
+
+/**
+ * Échelle de police système au-delà de laquelle une rangée de deux colonnes
+ * doit s'empiler.
+ *
+ * En dessous, deux blocs tiennent côte à côte sur un téléphone. Au-delà, le
+ * plus rigide des deux écrase l'autre, qui se fait tronquer — et un libellé
+ * coupé rend deux lignes indiscernables. La règle du projet est d'élargir ou
+ * de réagencer le conteneur, jamais de brider l'échelle : qui règle son
+ * téléphone à 200 % en a besoin.
+ */
+export const stackAtFontScale = 1.5;

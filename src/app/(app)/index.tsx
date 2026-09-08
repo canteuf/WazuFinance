@@ -1,6 +1,7 @@
 import { Link } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { PeriodSummary } from '@/components/dashboard/period-summary';
 import { RecentTransactions } from '@/components/dashboard/recent-transactions';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
@@ -11,9 +12,10 @@ import { dataErrorMessage } from '@/lib/data-errors';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 
 /**
- * Point d'entrée de la saisie. Le solde et le résumé du mois appartiennent à
- * l'écran 2 et ne sont pas encore là : cette passe ne montre que le nom du
- * groupe, les dernières opérations et le bouton d'ajout.
+ * Point d'entrée de la saisie, avec le solde de la période en cours.
+ *
+ * La répartition par catégorie et la comparaison entre périodes (spec 2.6)
+ * restent à faire ; elles n'ont pas été retenues pour cette passe.
  */
 export default function DashboardScreen() {
   const colors = useColors();
@@ -54,6 +56,10 @@ export default function DashboardScreen() {
             n'existe pas, on n'affiche aucun repère visuel (ex. un chevron) qui
             laisserait croire à un bouton alors qu'il n'y a rien à toucher. */}
       </View>
+
+      {/* La carte porte ses propres états de chargement et d'erreur : un
+          résumé en échec ne doit pas emporter la liste, qui a pu aboutir. */}
+      <PeriodSummary />
 
       <Text style={[styles.section, { color: colors.textMuted }]}>Dernières opérations</Text>
 

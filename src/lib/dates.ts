@@ -47,3 +47,53 @@ export function formatOccurredOn(iso: string): string {
 
   return dateFormatter.format(isoToDate(iso));
 }
+
+// Hissés au niveau du module pour la même raison que dateFormatter ci-dessus.
+const monthFormatter = new Intl.DateTimeFormat('fr-FR', { month: 'long' });
+const shortDateFormatter = new Intl.DateTimeFormat('fr-FR', {
+  day: 'numeric',
+  month: 'short',
+});
+
+/**
+ * Bornes de la période budgétaire en cours, intervalle semi-ouvert [from, to).
+ *
+ * `startDay` est le jour du mois où démarre la période (1 à 28, contraint en
+ * base). Si le jour courant l'a atteint, la période a commencé ce mois-ci ;
+ * sinon elle a commencé le mois dernier. Un salaire tombant le 27 rend la
+ * « fin de mois » calendaire dénuée de sens, d'où ce décalage.
+ *
+ * Le calcul vit ici et non côté serveur : Supabase tourne en UTC, et un
+ * `date_trunc` sur `now()` se tromperait de période pendant les premières
+ * heures du jour de bascule pour quiconque est à l'est de Greenwich.
+ */
+export function periodBounds(today: string, startDay: number): { from: string; to: string } {
+  const date = isoToDate(today);
+  const startedThisMonth = date.getDate() >= startDay;
+  const month = date.getMonth() - (startedThisMonth ? 0 : 1);
+
+  // Date normalise les débordements : le mois -1 devient décembre de l'année
+  // précédente, le mois 12 janvier de la suivante. Aucun cas limite à écrire.
+  return {
+    from: dateToIso(new Date(date.getFullYear(), month, startDay)),
+    to: dateToIso(new Date(date.getFullYear(), month + 1, startDay)),
+  };
+}
+
+/**
+ * Libellé d'une période, à placer derrière un nom : « Solde » + ce libellé.
+ *
+ * Démarrage le 1er : la période est un mois calendaire et se nomme par son
+ * mois. Sinon elle chevauche deux mois, et seul l'intervalle est exact. `to`
+ * étant exclue, la date affichée en fin de période est la veille.
+ */
+export function formatPeriodLabel(from: string, to: string): string {
+  const start = isoToDate(from);
+  if (start.getDate() === 1) {
+    return `de ${monthFormatter.format(start)}`;
+  }
+
+  const last = isoToDate(to);
+  last.setDate(last.getDate() - 1);
+  return `du ${shortDateFormatter.format(start)} au ${shortDateFormatter.format(last)}`;
+}

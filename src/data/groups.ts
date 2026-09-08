@@ -6,6 +6,8 @@ export type MembershipSummary = {
   name: string;
   isPersonal: boolean;
   role: MembershipRole;
+  /** Jour du mois où démarre la période budgétaire (1 à 28). 1 = mois calendaire. */
+  periodStartDay: number;
 };
 
 /**
@@ -18,7 +20,7 @@ export type MembershipSummary = {
 export async function listMemberships(): Promise<MembershipSummary[]> {
   const { data, error } = await supabase
     .from('account_memberships')
-    .select('role, budget_groups(id, name, is_personal)')
+    .select('role, budget_groups(id, name, is_personal, period_start_day)')
     .order('created_at', { ascending: true });
 
   if (error) {
@@ -37,6 +39,7 @@ export async function listMemberships(): Promise<MembershipSummary[]> {
           name: group.name,
           isPersonal: group.is_personal,
           role: row.role,
+          periodStartDay: group.period_start_day,
         },
       ];
     })

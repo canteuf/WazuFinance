@@ -5,17 +5,15 @@ import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-na
 import type { TransactionWithCategory } from '@/data/transactions';
 import { formatSigned } from '@/lib/money';
 import { categoryTone } from '@/theme/category-colors';
-import { font, radius, spacing, useColors, useElevation, useIsDark } from '@/theme/tokens';
-
-/**
- * Seuil d'empilement du montant sous le nom de la catégorie.
- *
- * En dessous, nom et montant tiennent côte à côte. Au-delà, le montant garde
- * sa largeur intrinsèque et écrasait le nom, qui se faisait tronquer. On
- * empile plutôt que de couper : un montant partiellement affiché serait pire
- * encore, et le nom tronqué rend deux catégories indiscernables.
- */
-const STACK_AT_FONT_SCALE = 1.5;
+import {
+  font,
+  radius,
+  spacing,
+  stackAtFontScale,
+  useColors,
+  useElevation,
+  useIsDark,
+} from '@/theme/tokens';
 
 export function RecentTransactions({
   transactions,
@@ -30,7 +28,8 @@ export function RecentTransactions({
   // useWindowDimensions() re-rend quand le réglage système change, à la
   // différence de PixelRatio.getFontScale(), lu une fois pour toutes.
   const { fontScale } = useWindowDimensions();
-  const stacked = fontScale >= STACK_AT_FONT_SCALE;
+  // Au-delà du seuil, le montant passe sous le nom plutôt que de l'écraser.
+  const stacked = fontScale >= stackAtFontScale;
 
   if (transactions.length === 0) {
     return (

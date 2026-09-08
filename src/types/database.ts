@@ -6,6 +6,10 @@
  *   npx supabase gen types typescript --linked > src/types/database.ts
  *
  * puis remettre cet en-tête et les alias d'enums en fin de fichier.
+ *
+ * Tant qu'une migration n'est pas poussée, --linked décrit la base distante et
+ * ferait disparaître ce qu'elle ne connaît pas encore : générer alors depuis la
+ * pile locale (--local), après `npx supabase db reset`.
  */
 
 export type Json =
@@ -17,11 +21,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -95,6 +94,7 @@ export type Database = {
           is_personal: boolean
           name: string
           owner_id: string
+          period_start_day: number
         }
         Insert: {
           created_at?: string
@@ -102,6 +102,7 @@ export type Database = {
           is_personal?: boolean
           name: string
           owner_id: string
+          period_start_day?: number
         }
         Update: {
           created_at?: string
@@ -109,6 +110,7 @@ export type Database = {
           is_personal?: boolean
           name?: string
           owner_id?: string
+          period_start_day?: number
         }
         Relationships: [
           {
@@ -401,6 +403,14 @@ export type Database = {
       join_group_with_code: {
         Args: { invitation_code: string }
         Returns: string
+      }
+      period_summary: {
+        Args: { p_from: string; p_group_id: string; p_to: string }
+        Returns: {
+          balance: number
+          expense: number
+          income: number
+        }[]
       }
       shares_group_with: { Args: { other_user_id: string }; Returns: boolean }
     }

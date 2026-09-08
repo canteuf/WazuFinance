@@ -11,4 +11,10 @@ export const queryKeys = {
   transactions: () => ['transactions'] as const,
   recentTransactions: (groupId: string) => ['transactions', 'recent', groupId] as const,
   transaction: (id: string) => ['transactions', 'detail', id] as const,
+  // Imbriquée sous ['transactions'] à dessein : le résumé est dérivé des
+  // transactions, et les mutations comme le Realtime invalident déjà ce
+  // préfixe. Le solde se rafraîchit donc seul, sans que use-transaction-
+  // mutations ni use-transactions-realtime aient à connaître son existence.
+  periodSummary: (groupId: string, from: string) =>
+    ['transactions', 'summary', groupId, from] as const,
 };

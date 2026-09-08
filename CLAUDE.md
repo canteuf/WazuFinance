@@ -61,11 +61,15 @@ The `handle_new_user()` trigger on `auth.users` creates profile + personal group
 
 Tables: `users`, `budget_groups`, `account_memberships`, `categories` (`group_id IS NULL` = read-only global default), `transactions`, `budgets`, `savings_goals`, `group_invitations`.
 
+**The budget period is not the calendar month.** `budget_groups.period_start_day` (1–28, `check`-constrained) sets the day a period starts, so a budget can follow the payday. It sits on the group, not the user, so both members of a shared budget see the same figures — and `budget_groups_update_owner` already restricts who can change it. The 28 cap exists because the 29th, 30th and 31st don't occur every month. Bounds are computed client-side by `periodBounds()`: the server is UTC, and `date_trunc('month', now())` reports the wrong period during the first hours of a rollover day.
+
 ## Data access layers
 
 `screens → hooks → src/data/ → supabase`, one-way dependencies. A screen never imports `supabase` directly; `src/data/` never imports React. TanStack Query holds the cache; keys all live in `src/lib/query-keys.ts`.
 
 Invalidating a key only reaches keys it's a prefix of, never the other way round. Invalidate `queryKeys.transactions()` (the root) to reach both the recent list and the detail records; invalidating a leaf like `recentTransactions(groupId)` leaves an open detail record stale. Always invalidate by the widest prefix the mutation affects.
+
+Anything *derived* from transactions nests under that same root — `periodSummary(groupId, from)` is `['transactions', 'summary', …]`. It rides the existing invalidations from the mutations and the Realtime subscription, so neither had to learn it exists. Put new derived caches under the prefix they depend on rather than adding invalidation calls.
 
 `useClearCacheOnUserChange()` clears the TanStack Query cache when the session's user changes, so a second account signed in on the same device never briefly sees the previous one's cached groups or transactions.
 
@@ -78,6 +82,10 @@ Data errors are mapped by SQLSTATE code in `src/lib/data-errors.ts` first — th
 Security lives in the database, not the client. Every policy resolves to "is the caller a member of this group?".
 
 `is_group_member()` / `is_group_owner()` / `shares_group_with()` are `SECURITY DEFINER` **on purpose**: a policy on `account_memberships` that queries `account_memberships` recurses infinitely. Keep new membership-dependent policies going through these helpers.
+
+That reason does not generalise. `period_summary()` is `SECURITY INVOKER`, because it reads `transactions` from outside any policy — no recursion, so `transactions_select_member` applies as written and there is no bypass to audit. A non-member sums zero rows and gets `0/0/0`, which is an answer, not an error. Copying `DEFINER` by imitation is the mistake to avoid.
+
+Aggregates are computed in Postgres, never in JavaScript: amounts are `numeric(12,2)`, which Postgres sums exactly, while JS addition goes through binary floats. PostgREST's own aggregate functions are not an option — enabling them requires `pgrst.db_aggregates_enabled` on the `authenticator` role, which opens `sum()` on every table for every client.
 
 Joining a group goes through the `join_group_with_code()` RPC, not a direct insert — the joining user cannot yet read the group's invitations.
 
@@ -92,6 +100,7 @@ Out, with reasons:
 
 ## UX constraints that shape the code
 
+- **Font scale is followed, not capped.** System font scaling grows text without growing its container, so containers must widen or reflow: derive sizes from `useWindowDimensions().fontScale` (it re-renders on change, unlike `PixelRatio.getFontScale()`), and stack two-column rows past `stackAtFontScale`. Only two places cap it — `AmountInput` and the dashboard balance — because their available width is the screen itself.
 - **Expense entry in ≤3 taps** from the main screen (amount, category, confirm). Retention depends on it — it drives navigation and form design. `Screen`'s optional `floatingAction` renders outside the `ScrollView`, pinned in place, so a lengthening list can't scroll it out of reach.
 - Transaction history must be paginated (`transactions_group_occurred_idx` covers the filter + sort).
 - Forms default to smart values: last-used category, today's date — both are editable, just pre-filled to save a tap.
