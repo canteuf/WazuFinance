@@ -32,6 +32,10 @@ export default function DashboardScreen() {
 
   return (
     <Screen
+      // Un tableau de bord se lit de haut en bas. Centré, il laissait
+      // plusieurs centaines de pixels de vide au-dessus du solde sur un grand
+      // écran, et repoussait l'information principale vers le milieu.
+      align="top"
       floatingAction={
         <Link href="/transaction" asChild>
           <Pressable
