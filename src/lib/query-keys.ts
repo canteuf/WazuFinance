@@ -1,3 +1,7 @@
+// Import de type seulement : aucune dépendance à l'exécution, donc le sens des
+// couches (data → lib) reste intact.
+import type { TransactionFilters } from '@/data/transactions';
+
 /**
  * Clés de cache TanStack Query, centralisées.
  *
@@ -17,4 +21,10 @@ export const queryKeys = {
   // mutations ni use-transactions-realtime aient à connaître son existence.
   periodSummary: (groupId: string, from: string) =>
     ['transactions', 'summary', groupId, from] as const,
+  // Imbriquée sous ['transactions'] comme periodSummary : elle hérite des
+  // invalidations posées par les mutations et le Realtime. Les filtres entrent
+  // dans la clé, donc changer de filtre ouvre une entrée neuve au lieu
+  // d'écraser la précédente — revenir à un filtre déjà vu est immédiat.
+  transactionHistory: (groupId: string, filters: TransactionFilters) =>
+    ['transactions', 'history', groupId, filters] as const,
 };

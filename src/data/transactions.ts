@@ -124,3 +124,77 @@ export async function remove(id: string): Promise<void> {
     throw error;
   }
 }
+
+export type TransactionFilters = {
+  /** Bornes de date, `null` des deux côtés pour « Tout ». */
+  from: string | null;
+  to: string | null;
+  categoryId: string | null;
+  type: Tables<'transactions'>['type'] | null;
+};
+
+/** Dernière ligne rendue par la page précédente. */
+export type TransactionCursor = {
+  occurredOn: string;
+  id: string;
+};
+
+/**
+ * Une page de l'historique, les plus récentes d'abord.
+ *
+ * La pagination porte sur le couple `(occurred_on, id)` et non sur un décalage.
+ * Avec `.range()`, une insertion entre deux pages décale toutes les suivantes
+ * et fait apparaître une ligne deux fois ; une suppression en saute une. Le
+ * Realtime insérant pendant le défilement, ce n'est pas une hypothèse.
+ *
+ * L'invariant est couvert par supabase/tests/transaction_paging_test.sql, dont
+ * les fixtures partagent volontairement une date : c'est le seul cas où le
+ * départage par `id` compte.
+ */
+export async function listPage(
+  groupId: string,
+  filters: TransactionFilters,
+  cursor: TransactionCursor | null,
+  limit: number
+): Promise<TransactionWithCategory[]> {
+  let query = supabase
+    .from('transactions')
+    .select(SELECT_WITH_CATEGORY)
+    .eq('group_id', groupId);
+
+  // Bornes semi-ouvertes, comme period_summary : la borne haute est exclue,
+  // ce qui supprime la classe de bugs « 30 ou 31 jours ».
+  if (filters.from !== null) {
+    query = query.gte('occurred_on', filters.from);
+  }
+  if (filters.to !== null) {
+    query = query.lt('occurred_on', filters.to);
+  }
+  if (filters.categoryId !== null) {
+    query = query.eq('category_id', filters.categoryId);
+  }
+  if (filters.type !== null) {
+    query = query.eq('type', filters.type);
+  }
+
+  if (cursor !== null) {
+    // PostgREST n'exprime pas la comparaison de couples `(a, b) < (c, d)` :
+    // ce `or` produit le même prédicat. Les deux valeurs viennent d'une ligne
+    // déjà renvoyée par le serveur, jamais d'une saisie.
+    query = query.or(
+      `occurred_on.lt.${cursor.occurredOn},` +
+        `and(occurred_on.eq.${cursor.occurredOn},id.lt.${cursor.id})`
+    );
+  }
+
+  const { data, error } = await query
+    .order('occurred_on', { ascending: false })
+    .order('id', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
