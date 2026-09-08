@@ -71,14 +71,17 @@ export function FilterBar({
   onChange: (next: HistoryFilterState) => void;
 }) {
   const colors = useColors();
-  const { categories } = useCategories(state.type);
+  const { categories, isLoading } = useCategories(state.type);
 
   // Le type restreint les catégories proposées. Si la sélection courante n'y
   // figure plus, elle tombe — dérivé au rendu plutôt que synchronisé par un
   // effet, même forme que transaction-form.tsx pour le même problème.
+  // `isLoading` (pas `categories.length > 0`) : tant que la liste n'est pas
+  // arrivée, elle est vide sans rien prouver, et un type sans aucune
+  // catégorie seedée ne ferait jamais tomber une sélection obsolète.
   const categoryId =
     state.categoryId !== null &&
-    categories.length > 0 &&
+    !isLoading &&
     !categories.some((category) => category.id === state.categoryId)
       ? null
       : state.categoryId;
@@ -102,7 +105,17 @@ export function FilterBar({
             key={choice.label}
             label={choice.label}
             selected={state.type === choice.value}
-            onPress={() => onChange({ ...state, type: choice.value, categoryId })}
+            onPress={() =>
+              onChange({
+                ...state,
+                type: choice.value,
+                // Une catégorie appartient à un seul type : passer à un type
+                // concret ne peut conserver une sélection que par coïncidence,
+                // donc on la vide. Repasser à « Tout » élargit l'offre sans
+                // rien invalider, donc la sélection courante est conservée.
+                categoryId: choice.value === null ? state.categoryId : null,
+              })
+            }
           />
         ))}
       </View>
