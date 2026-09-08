@@ -7,9 +7,9 @@
  *
  * puis remettre cet en-tête et les alias d'enums en fin de fichier.
  *
- * Tant qu'une migration n'est pas poussée, --linked décrit la base distante et
- * ferait disparaître ce qu'elle ne connaît pas encore : générer alors depuis la
- * pile locale (--local), après `npx supabase db reset`.
+ * Toujours régénérer depuis --linked, jamais depuis --local : la pile locale
+ * tourne une autre version de PostgREST et omet le bloc __InternalSupabase.
+ * Si la migration n'est pas encore poussée, la pousser d'abord.
  */
 
 export type Json =
@@ -21,6 +21,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   graphql_public: {
     Tables: {
       [_ in never]: never
