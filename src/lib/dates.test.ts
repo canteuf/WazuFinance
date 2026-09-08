@@ -4,6 +4,7 @@ import {
   formatPeriodLabel,
   isoToDate,
   periodBounds,
+  periodPresets,
   todayIso,
 } from '@/lib/dates';
 
@@ -49,7 +50,7 @@ describe('periodBounds', () => {
     expect(periodBounds('2026-09-03', 3)).toEqual({ from: '2026-09-03', to: '2026-10-03' });
   });
 
-  it('recule d’un mois la veille du démarrage', () => {
+  it('recule d\'un mois la veille du démarrage', () => {
     expect(periodBounds('2026-09-02', 3)).toEqual({ from: '2026-08-03', to: '2026-09-03' });
   });
 
@@ -57,7 +58,7 @@ describe('periodBounds', () => {
     expect(periodBounds('2026-12-20', 15)).toEqual({ from: '2026-12-15', to: '2027-01-15' });
   });
 
-  it('recule sur l’année précédente en début janvier', () => {
+  it('recule sur l\'année précédente en début janvier', () => {
     expect(periodBounds('2027-01-04', 15)).toEqual({ from: '2026-12-15', to: '2027-01-15' });
   });
 
@@ -74,7 +75,64 @@ describe('formatPeriodLabel', () => {
   });
 
   // La borne haute est exclue : la date affichée est la veille.
-  it('affiche l’intervalle quand la période chevauche deux mois', () => {
+  it('affiche l\'intervalle quand la période chevauche deux mois', () => {
     expect(formatPeriodLabel('2026-09-03', '2026-10-03')).toBe('du 3 sept. au 2 oct.');
+  });
+});
+
+describe('periodPresets', () => {
+  it('cale les quatre préréglages sur un mois calendaire', () => {
+    const presets = periodPresets('2026-09-08', 1);
+    expect(presets.map((preset) => preset.id)).toEqual([
+      'current',
+      'previous',
+      'last3',
+      'all',
+    ]);
+    expect(presets[0]).toEqual({
+      id: 'current',
+      label: 'En cours',
+      from: '2026-09-01',
+      to: '2026-10-01',
+    });
+    expect(presets[1]).toEqual({
+      id: 'previous',
+      label: 'Précédente',
+      from: '2026-08-01',
+      to: '2026-09-01',
+    });
+  });
+
+  // Trois périodes, donc deux crans en arrière depuis le début de la période
+  // en cours, et la même borne haute qu'elle.
+  it('couvre trois périodes entières sur « 3 dernières »', () => {
+    const presets = periodPresets('2026-09-08', 1);
+    expect(presets[2]).toEqual({
+      id: 'last3',
+      label: '3 dernières',
+      from: '2026-07-01',
+      to: '2026-10-01',
+    });
+  });
+
+  // « Tout » ne borne rien : c'est ce qui distingue null d'une date.
+  it('ne borne pas « Tout »', () => {
+    const presets = periodPresets('2026-09-08', 1);
+    expect(presets[3]).toEqual({ id: 'all', label: 'Tout', from: null, to: null });
+  });
+
+  it('recule d\'une année sur la période précédente en début janvier', () => {
+    const presets = periodPresets('2027-01-04', 15);
+    expect(presets[0].from).toBe('2026-12-15');
+    expect(presets[1].from).toBe('2026-11-15');
+    expect(presets[1].to).toBe('2026-12-15');
+  });
+
+  // Le plafond de 28 en base garantit que reculer de deux mois ne rencontre
+  // jamais un mois trop court : février a toujours au moins 28 jours.
+  it('tient au jour de démarrage 28 en traversant février', () => {
+    const presets = periodPresets('2026-03-01', 28);
+    expect(presets[0].from).toBe('2026-02-28');
+    expect(presets[2].from).toBe('2025-12-28');
   });
 });

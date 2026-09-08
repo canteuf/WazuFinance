@@ -97,3 +97,46 @@ export function formatPeriodLabel(from: string, to: string): string {
   last.setDate(last.getDate() - 1);
   return `du ${shortDateFormatter.format(start)} au ${shortDateFormatter.format(last)}`;
 }
+
+export type PeriodPresetId = 'current' | 'previous' | 'last3' | 'all';
+
+export type PeriodPreset = {
+  id: PeriodPresetId;
+  label: string;
+  /** null aux deux bornes = aucune limite de date. */
+  from: string | null;
+  to: string | null;
+};
+
+/**
+ * Les quatre choix du filtre de période de l'écran 3.
+ *
+ * Tous calés sur `periodBounds`, donc sur `budget_groups.period_start_day` :
+ * « En cours » recouvre exactement les lignes que le solde du tableau de bord
+ * additionne. Des préréglages calendaires afficheraient une somme différente
+ * dès que le jour de démarrage n'est pas le 1er, sans que rien n'explique
+ * l'écart.
+ */
+export function periodPresets(today: string, startDay: number): PeriodPreset[] {
+  const current = periodBounds(today, startDay);
+
+  // La veille du début de la période en cours tombe forcément dans la
+  // précédente : on relit les bornes depuis cette date plutôt que de refaire
+  // l'arithmétique des mois une seconde fois.
+  const dayBefore = isoToDate(current.from);
+  dayBefore.setDate(dayBefore.getDate() - 1);
+  const previous = periodBounds(dateToIso(dayBefore), startDay);
+
+  // Deux crans en arrière depuis le début de la période en cours en couvre
+  // trois avec elle. setMonth est sûr ici : le jour de démarrage est plafonné
+  // à 28 en base, et aucun mois n'a moins de 28 jours.
+  const thirdBack = isoToDate(current.from);
+  thirdBack.setMonth(thirdBack.getMonth() - 2);
+
+  return [
+    { id: 'current', label: 'En cours', from: current.from, to: current.to },
+    { id: 'previous', label: 'Précédente', from: previous.from, to: previous.to },
+    { id: 'last3', label: '3 dernières', from: dateToIso(thirdBack), to: current.to },
+    { id: 'all', label: 'Tout', from: null, to: null },
+  ];
+}
