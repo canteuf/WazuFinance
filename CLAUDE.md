@@ -75,6 +75,22 @@ Every read on the dashboard shares one set of bounds from `periodBounds()`: `per
 
 `category_breakdown` inner-joins `categories`, so uncategorised expenses are absent from it while still counting in `period_summary().expense`. Bar proportions are therefore computed against the sum of the slices, never against `expense` — otherwise the bars never reach 100%.
 
+Budgets read through `category_breakdown` rather than their own aggregate: the
+RPC already defines "spend for the period", and a second definition alongside
+it would be one more thing to keep in agreement. The client only matches by
+`category_id` and divides — the summation stays in Postgres. `budget-progress.ts`
+holds the thresholds and the sort order, so they are covered by Jest rather
+than buried in JSX.
+
+`queryKeys.budgets(groupId)` sits outside `['transactions']`, unlike
+`periodSummary` and `categoryBreakdown`. Those derive from transactions and must
+ride their invalidations; a ceiling does not, and nesting it would reload every
+budget on each expense entry. `queryKeys.budgetsAll()` is the `['budgets']` root
+above it, and exists only for invalidation: a mutation or a Realtime event may
+land after the active group has changed, so invalidating the per-group key would
+target the wrong group. Reads use `budgets(groupId)`; invalidation always goes
+through the root.
+
 Anything *derived* from transactions nests under that same root — `periodSummary(groupId, from)` is `['transactions', 'summary', …]`. It rides the existing invalidations from the mutations and the Realtime subscription, so neither had to learn it exists. Put new derived caches under the prefix they depend on rather than adding invalidation calls.
 
 `useClearCacheOnUserChange()` clears the TanStack Query cache when the session's user changes, so a second account signed in on the same device never briefly sees the previous one's cached groups or transactions.
