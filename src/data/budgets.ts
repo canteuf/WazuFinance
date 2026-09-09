@@ -14,16 +14,15 @@ const SELECT_WITH_CATEGORY = '*, category:categories(id, name, icon)';
  * seconde requête sur `categories` obligerait à rapprocher les deux côté
  * client alors que la base sait le faire.
  *
- * Le tri par nom de catégorie n'est pas l'ordre d'affichage final — l'écran
- * remonte les budgets en alerte — mais il rend la lecture brute stable, ce
- * qui compte quand on inspecte la réponse.
+ * L'ordre de lecture suit la date de création. L'ordre d'affichage final vient
+ * de `budgetProgress` qui remonte les budgets en alerte.
  */
 export async function listForGroup(groupId: string): Promise<BudgetWithCategory[]> {
   const { data, error } = await supabase
     .from('budgets')
     .select(SELECT_WITH_CATEGORY)
     .eq('group_id', groupId)
-    .order('name', { ascending: true, referencedTable: 'categories' });
+    .order('created_at', { ascending: true });
 
   if (error) {
     throw error;
@@ -89,7 +88,15 @@ export async function update(
 }
 
 export async function remove(id: string): Promise<void> {
-  const { error } = await supabase.from('budgets').delete().eq('id', id);
+  // .select().single() force une erreur si RLS a filtré la ligne cible (id
+  // erroné, appartenance périmée) : sans lui, zéro ligne supprimée serait
+  // encore un succès silencieux, contrairement à update().
+  const { error } = await supabase
+    .from('budgets')
+    .delete()
+    .eq('id', id)
+    .select('id')
+    .single();
 
   if (error) {
     throw error;
