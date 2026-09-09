@@ -118,7 +118,7 @@ describe('periodPresets', () => {
   // « Tout » ne borne rien : c'est ce qui distingue null d'une date.
   it('ne borne pas « Tout »', () => {
     const presets = periodPresets('2026-09-08', 1);
-    expect(presets[3]).toEqual({ id: 'all', label: 'Tout', from: null, to: null });
+    expect(presets[3]).toEqual({ id: 'all', label: 'Depuis le début', from: null, to: null });
   });
 
   it('recule d\'une année sur la période précédente en début janvier', () => {

@@ -13,8 +13,11 @@ export function RecentTransactions({
 
   if (transactions.length === 0) {
     return (
+      // « sur cette période » et non « pour l'instant » : la liste est bornée
+      // à la période affichée en tête d'écran, et un compte qui contient des
+      // opérations plus anciennes n'est pas vide.
       <Text style={[styles.empty, { color: colors.textMuted }]}>
-        Aucune opération pour l’instant. Touchez + pour en ajouter une.
+        Aucune opération sur cette période. Touchez + pour en ajouter une.
       </Text>
     );
   }

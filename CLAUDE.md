@@ -69,7 +69,9 @@ Tables: `users`, `budget_groups`, `account_memberships`, `categories` (`group_id
 
 Invalidating a key only reaches keys it's a prefix of, never the other way round. Invalidate `queryKeys.transactions()` (the root) to reach both the recent list and the detail records; invalidating a leaf like `recentTransactions(groupId)` leaves an open detail record stale. Always invalidate by the widest prefix the mutation affects.
 
-The dashboard's three derived reads all share one set of bounds from `periodBounds()`: `period_summary` for the current period, the same function again for the previous one (the comparison), and `category_breakdown` for the split. Deriving bounds separately in a component is how the headline total and the bars start describing different periods.
+Every read on the dashboard shares one set of bounds from `periodBounds()`: `period_summary` for the current period, the same function again for the previous one (the comparison), `category_breakdown` for the split, and `listRecent` for the list. Deriving bounds separately in a component is how the headline total and the bars start describing different periods.
+
+`listRecent` takes its bounds as required arguments for that reason. An unbounded recent list put last period's rent under "Solde de septembre", and the row then vanished when the user tapped "Tout voir" — the history opens on `DEFAULT_FILTERS`, whose period is the current one. Both ends now agree, so "Tout voir" only ever widens the set.
 
 `category_breakdown` inner-joins `categories`, so uncategorised expenses are absent from it while still counting in `period_summary().expense`. Bar proportions are therefore computed against the sum of the slices, never against `expense` — otherwise the bars never reach 100%.
 

@@ -137,6 +137,10 @@ export function periodPresets(today: string, startDay: number): PeriodPreset[] {
     { id: 'current', label: 'En cours', from: current.from, to: current.to },
     { id: 'previous', label: 'Précédente', from: previous.from, to: previous.to },
     { id: 'last3', label: '3 dernières', from: dateToIso(thirdBack), to: current.to },
-    { id: 'all', label: 'Tout', from: null, to: null },
+    // « Depuis le début » et non « Tout » : la barre de filtres affiche juste
+    // en dessous une pastille « Tout » qui désigne le type d'opération. Deux
+    // pastilles identiques à deux lignes d'écart, portant deux sens
+    // différents, se confondent.
+    { id: 'all', label: 'Depuis le début', from: null, to: null },
   ];
 }

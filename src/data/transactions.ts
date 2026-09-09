@@ -8,7 +8,12 @@ export type TransactionWithCategory = Tables<'transactions'> & {
 const SELECT_WITH_CATEGORY = '*, category:categories(id, name, icon)';
 
 /**
- * Dernières opérations du groupe, les plus récentes d'abord.
+ * Dernières opérations du groupe sur une période, les plus récentes d'abord.
+ *
+ * Les bornes ne sont pas optionnelles : le reste du tableau de bord (solde,
+ * entrées, sorties, répartition) décrit une période, et une liste qui
+ * remonterait au-delà placerait le loyer du mois dernier sous « Solde de
+ * septembre ». Semi-ouvertes [from, to), comme partout ailleurs.
  *
  * Le tri reprend transactions_group_occurred_idx (group_id, occurred_on desc,
  * id desc) : l'index couvre le filtre et l'ordre, et le départage par id rend
@@ -16,12 +21,16 @@ const SELECT_WITH_CATEGORY = '*, category:categories(id, name, icon)';
  */
 export async function listRecent(
   groupId: string,
-  limit: number
+  limit: number,
+  from: string,
+  to: string
 ): Promise<TransactionWithCategory[]> {
   const { data, error } = await supabase
     .from('transactions')
     .select(SELECT_WITH_CATEGORY)
     .eq('group_id', groupId)
+    .gte('occurred_on', from)
+    .lt('occurred_on', to)
     .order('occurred_on', { ascending: false })
     .order('id', { ascending: false })
     .limit(limit);

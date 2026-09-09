@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   DEFAULT_FILTERS,
   FilterBar,
+  isDefaultFilters,
   type HistoryFilterState,
 } from '@/components/history/filter-bar';
 import { TransactionRow } from '@/components/transaction/transaction-row';
@@ -83,10 +84,7 @@ export default function HistoryScreen() {
     type: filters.type,
   });
 
-  const filtersTouched =
-    filters.presetId !== DEFAULT_FILTERS.presetId ||
-    filters.type !== DEFAULT_FILTERS.type ||
-    filters.categoryId !== DEFAULT_FILTERS.categoryId;
+  const filtersTouched = !isDefaultFilters(filters);
 
   function renderEmpty() {
     // Tant que le groupe actif n'est pas résolu, la requête d'historique est

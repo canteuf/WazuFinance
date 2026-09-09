@@ -13,7 +13,11 @@ export const queryKeys = {
   memberships: () => ['memberships'] as const,
   categories: (groupId: string) => ['categories', groupId] as const,
   transactions: () => ['transactions'] as const,
-  recentTransactions: (groupId: string) => ['transactions', 'recent', groupId] as const,
+  // `from` fait partie de la clé, comme pour periodSummary : la liste du
+  // tableau de bord est bornée à la période, donc une bascule de période doit
+  // ouvrir une entrée neuve plutôt que réutiliser celle de la précédente.
+  recentTransactions: (groupId: string, from: string) =>
+    ['transactions', 'recent', groupId, from] as const,
   transaction: (id: string) => ['transactions', 'detail', id] as const,
   // Imbriquée sous ['transactions'] à dessein : le résumé est dérivé des
   // transactions, et les mutations comme le Realtime invalident déjà ce

@@ -86,8 +86,10 @@ export default function DashboardScreen() {
         >
           Dernières opérations
         </Text>
-        {/* Ouvre l'historique aux filtres par défaut, dont la période coïncide
-            avec le solde affiché juste au-dessus. */}
+        {/* Ouvre l'historique aux filtres par défaut : période en cours, tous
+            types, toutes catégories. La liste ci-dessous porte les mêmes
+            bornes, donc « Tout voir » élargit sans jamais retirer une ligne
+            déjà visible. */}
         <Link href="/history" style={[styles.sectionLink, { color: colors.primary }]}>
           Tout voir
         </Link>
