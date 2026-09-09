@@ -92,7 +92,9 @@ describe('budgetProgress', () => {
       ]
     );
 
-    expect(rows.map((row) => row.budget.category.name)).toEqual([
+    // Les fixtures de ce test construisent toujours une catégorie ; la
+    // nullabilité du type reflète RLS, pas ce scénario.
+    expect(rows.map((row) => row.budget.category?.name)).toEqual([
       'Dépassé',
       'Proche',
       'Tiède',

@@ -32,8 +32,12 @@ export default function BudgetScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { activeGroupId, isLoading: groupLoading, error: groupError } = useActiveGroup();
   const { budgets, isLoading: budgetsLoading, error: budgetsError } = useBudgets();
-  const { categories, isLoading: categoriesLoading } = useCategories('expense');
-  const { slices, isLoading: slicesLoading } = useCategoryBreakdown();
+  const {
+    categories,
+    isLoading: categoriesLoading,
+    error: categoriesError,
+  } = useCategories('expense');
+  const { slices, isLoading: slicesLoading, error: slicesError } = useCategoryBreakdown();
   const { createBudget, updateBudget, deleteBudget, isSaving, isDeleting } = useBudgetMutations();
   const [errorText, setErrorText] = useState<string>();
 
@@ -83,15 +87,17 @@ export default function BudgetScreen() {
     );
   }
 
-  // Une panne réseau ou un refus RLS sur useBudgets() laisse `budgets = []` :
-  // sans ce garde, l'édition afficherait à tort « Ce budget n'existe plus »
-  // et la création laisserait réapparaître des catégories déjà budgétées
-  // comme disponibles, qui n'échoueraient qu'au 23505 en enregistrant.
-  if (budgetsError) {
+  // Une panne réseau ou un refus RLS sur l'une de ces trois requêtes laisse sa
+  // donnée à vide ([] pour budgets/categories/slices) : sans ce garde,
+  // l'édition afficherait à tort « Ce budget n'existe plus », et la création
+  // afficherait à tort « Toutes les catégories de dépense ont déjà un
+  // budget. » — le même faux message que la correction précédente visait à
+  // supprimer côté chargement, ici atteint par la voie erreur.
+  if (budgetsError || categoriesError || slicesError) {
     return (
       <View style={styles.centered}>
         <Text style={[styles.errorTitle, { color: colors.danger }]}>
-          {dataErrorMessage(budgetsError)}
+          {dataErrorMessage(budgetsError ?? categoriesError ?? slicesError)}
         </Text>
         <Button title="Retour" variant="ghost" onPress={() => router.back()} />
       </View>
@@ -182,7 +188,13 @@ export default function BudgetScreen() {
           }
           lockedCategory={
             existing
-              ? { id: existing.category.id, name: existing.category.name }
+              ? {
+                  // `existing.category` peut être `null` : RLS masque la ligne
+                  // jointe quand le budget pointe une catégorie hors de portée
+                  // du groupe. `category_id` reste toujours connu, lui.
+                  id: existing.category?.id ?? existing.category_id,
+                  name: existing.category?.name ?? 'Catégorie inconnue',
+                }
               : undefined
           }
           submitLabel={existing ? 'Enregistrer' : 'Ajouter'}

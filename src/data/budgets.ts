@@ -2,7 +2,11 @@ import { supabase } from '@/lib/supabase';
 import type { Tables } from '@/types/database';
 
 export type BudgetWithCategory = Tables<'budgets'> & {
-  category: { id: string; name: string; icon: string };
+  // Nullable non pas à cause du schéma mais de RLS : rien n'empêche en base
+  // qu'un budget pointe une catégorie hors de portée du groupe (seul le
+  // sélecteur du formulaire le filtre côté client), et RLS masque alors la
+  // ligne jointe. Même situation que `category` dans src/data/transactions.ts.
+  category: { id: string; name: string; icon: string } | null;
 };
 
 const SELECT_WITH_CATEGORY = '*, category:categories(id, name, icon)';

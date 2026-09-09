@@ -21,7 +21,7 @@ export default function BudgetsScreen() {
   const colors = useColors();
   const elevation = useElevation();
   const router = useRouter();
-  const { isLoading: groupLoading } = useActiveGroup();
+  const { isLoading: groupLoading, error: groupError } = useActiveGroup();
   const { items, isLoading, error } = useBudgetProgress();
 
   return (
@@ -55,8 +55,14 @@ export default function BudgetsScreen() {
         <Text style={[styles.title, { color: colors.text }]}>Budgets</Text>
       </View>
 
-      {error ? (
-        <Text style={[styles.message, { color: colors.danger }]}>{dataErrorMessage(error)}</Text>
+      {groupError || error ? (
+        // Si le chargement des adhésions échoue, `activeGroupId` reste `null` :
+        // `useBudgetProgress()` reste alors désactivé (ni chargement ni
+        // erreur) et sans ce garde l'écran afficherait à tort « Aucun budget
+        // défini » au lieu du vrai message — même motif que budget.tsx.
+        <Text style={[styles.message, { color: colors.danger }]}>
+          {dataErrorMessage(groupError ?? error)}
+        </Text>
       ) : isLoading || groupLoading ? (
         // Tant que le groupe actif n'est pas résolu, `useBudgets` et
         // `useCategoryBreakdown` sont désactivées : leur `isLoading` reste à
