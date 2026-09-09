@@ -11,6 +11,9 @@ function statusText(item: BudgetProgress): string {
   if (item.status === 'over') {
     return `Dépassé de ${formatAmount(Math.abs(item.remaining))} €`;
   }
+  if (item.status === 'warning') {
+    return `Proche de la limite, il reste ${formatAmount(item.remaining)} €`;
+  }
   return `Il reste ${formatAmount(item.remaining)} €`;
 }
 

@@ -54,7 +54,12 @@ export type Colors = {
   primaryText: string;
   /** Revenus. Distinct de `primary` : une couleur sémantique, pas l'accent. */
   positive: string;
-  /** Avertissement : budget proche de son plafond. Sémantique, pas décoratif. */
+  /**
+   * Avertissement : budget proche de son plafond. Sémantique, pas décoratif.
+   * Sert aussi de couleur de texte (pas seulement de barre) : la valeur
+   * claire est choisie pour tenir le contraste AA d'un texte, pas d'un simple
+   * aplat.
+   */
   warning: string;
   danger: string;
 };
@@ -71,7 +76,7 @@ const palette: Record<'light' | 'dark', Colors> = {
     primary: '#0EA47A',
     primaryText: '#FFFFFF',
     positive: '#0B8F6A',
-    warning: '#B7791F',
+    warning: '#8C5A00',
     danger: '#C4362B',
   },
   // Nocturne
