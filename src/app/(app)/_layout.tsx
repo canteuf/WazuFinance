@@ -21,6 +21,16 @@ function AppStack() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="history" />
+      <Stack.Screen name="budgets" />
+      <Stack.Screen
+        name="budget"
+        options={{
+          presentation: 'formSheet',
+          sheetAllowedDetents: 'fitToContents',
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 24,
+        }}
+      />
       <Stack.Screen
         name="transaction"
         options={{
