@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 
 import { BudgetRow } from '@/components/budget/budget-row';
 import { Screen } from '@/components/ui/screen';
+import { useActiveGroup } from '@/hooks/use-active-group';
 import { useBudgetProgress } from '@/hooks/use-budget-progress';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
@@ -20,6 +21,7 @@ export default function BudgetsScreen() {
   const colors = useColors();
   const elevation = useElevation();
   const router = useRouter();
+  const { isLoading: groupLoading } = useActiveGroup();
   const { items, isLoading, error } = useBudgetProgress();
 
   return (
@@ -55,7 +57,11 @@ export default function BudgetsScreen() {
 
       {error ? (
         <Text style={[styles.message, { color: colors.danger }]}>{dataErrorMessage(error)}</Text>
-      ) : isLoading ? (
+      ) : isLoading || groupLoading ? (
+        // Tant que le groupe actif n'est pas résolu, `useBudgets` et
+        // `useCategoryBreakdown` sont désactivées : leur `isLoading` reste à
+        // `false` et affichait un instant « Aucun budget défini » avant le
+        // premier vrai chargement (même course que history.tsx).
         <ActivityIndicator color={colors.primary} />
       ) : items.length === 0 ? (
         <Text style={[styles.message, { color: colors.textMuted }]}>
