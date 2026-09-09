@@ -16,6 +16,11 @@ export const queryKeys = {
   // Hors de ['transactions'] à dessein, contrairement à periodSummary et
   // categoryBreakdown : un budget n'est pas dérivé des transactions. L'y
   // nicher ferait recharger les plafonds à chaque saisie de dépense.
+  budgetsAll: () => ['budgets'] as const,
+  // La racine sert aux invalidations, la clé par groupe aux lectures — invalider
+  // la racine touche tous les groupes en cache, ce qui est voulu, parce que la
+  // mutation peut avoir été déclenchée sous un autre groupe que celui actif
+  // quand la réponse arrive.
   budgets: (groupId: string) => ['budgets', groupId] as const,
   // `from` fait partie de la clé, comme pour periodSummary : la liste du
   // tableau de bord est bornée à la période, donc une bascule de période doit

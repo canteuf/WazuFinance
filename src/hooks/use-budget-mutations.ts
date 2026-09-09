@@ -7,23 +7,23 @@ import {
   type CreateBudgetInput,
   type UpdateBudgetInput,
 } from '@/data/budgets';
-import { useActiveGroup } from '@/hooks/use-active-group';
 import { queryKeys } from '@/lib/query-keys';
 
 /**
  * Création, modification et suppression d'un budget.
  *
- * L'invalidation porte sur `queryKeys.budgets(groupId)` seule : la
- * consommation vient de `category_breakdown`, que ces mutations ne changent
- * pas — un plafond déplacé ne déplace aucune dépense.
+ * L'invalidation porte sur la racine `queryKeys.budgetsAll()` : chaque mutation
+ * invalide la clé par groupe du groupe réellement muté, pas du groupe actif au
+ * moment où la réponse arrive. Un utilisateur peut basculer de groupe entre le
+ * déclenchement de la mutation et la réception de la réponse — l'invalidation
+ * doit ignorer le groupe actif courant et invalider tous les budgets en cache.
  */
 export function useBudgetMutations() {
   const queryClient = useQueryClient();
-  const { activeGroupId } = useActiveGroup();
 
   function invalidate() {
     void queryClient.invalidateQueries({
-      queryKey: queryKeys.budgets(activeGroupId ?? ''),
+      queryKey: queryKeys.budgetsAll(),
     });
   }
 
