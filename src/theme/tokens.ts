@@ -54,6 +54,8 @@ export type Colors = {
   primaryText: string;
   /** Revenus. Distinct de `primary` : une couleur sémantique, pas l'accent. */
   positive: string;
+  /** Avertissement : budget proche de son plafond. Sémantique, pas décoratif. */
+  warning: string;
   danger: string;
 };
 
@@ -69,6 +71,7 @@ const palette: Record<'light' | 'dark', Colors> = {
     primary: '#0EA47A',
     primaryText: '#FFFFFF',
     positive: '#0B8F6A',
+    warning: '#B7791F',
     danger: '#C4362B',
   },
   // Nocturne
@@ -82,6 +85,7 @@ const palette: Record<'light' | 'dark', Colors> = {
     primary: '#3DDC97',
     primaryText: '#05231B',
     positive: '#3DDC97',
+    warning: '#F2B544',
     danger: '#F97066',
   },
 };
