@@ -1,4 +1,4 @@
-import { formatAmount, formatBalance, formatSigned, parseAmount } from '@/lib/money';
+import { formatAmount, formatBalance, formatDelta, formatSigned, parseAmount } from '@/lib/money';
 
 describe('parseAmount', () => {
   it('accepte la virgule décimale française', () => {
@@ -78,5 +78,21 @@ describe('formatBalance', () => {
 
   it('ne signe pas un solde nul', () => {
     expect(formatBalance(0)).toBe('0,00');
+  });
+});
+
+describe('formatDelta', () => {
+  // La différence avec formatBalance est tout l'intérêt de cette fonction :
+  // une progression sans signe explicite ne dit pas dans quel sens elle va.
+  it('marque explicitement une progression', () => {
+    expect(formatDelta(320)).toBe('+320,00');
+  });
+
+  it('marque un recul du signe moins typographique', () => {
+    expect(formatDelta(-120)).toBe('−120,00');
+  });
+
+  it('traite un écart nul comme une progression', () => {
+    expect(formatDelta(0)).toBe('+0,00');
   });
 });

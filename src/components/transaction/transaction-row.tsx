@@ -98,8 +98,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm + 2,
-    paddingVertical: spacing.sm + 2,
-    paddingHorizontal: spacing.sm + 3,
+    paddingVertical: spacing.sm + 4,
+    paddingHorizontal: spacing.sm + 4,
     borderRadius: radius.sm + 3,
   },
   rowStacked: {

@@ -40,3 +40,46 @@ export async function getPeriodSummary(
     balance: Number(data.balance),
   };
 }
+
+export type CategorySlice = {
+  categoryId: string;
+  name: string;
+  icon: string;
+  total: number;
+};
+
+/**
+ * Répartition des dépenses par catégorie sur la période (spec 2.6).
+ *
+ * Déjà triée par total décroissant côté base : c'est l'ordre d'affichage, et
+ * le trier ici obligerait chaque écran à le refaire.
+ *
+ * Les revenus sont exclus et les transactions sans catégorie n'y figurent pas.
+ * Le total des sorties reste donc `getPeriodSummary().expense`, qui peut
+ * dépasser la somme des parts — c'est voulu, et l'affichage doit s'appuyer sur
+ * la somme des parts pour ses proportions, jamais sur `expense`.
+ */
+export async function getCategoryBreakdown(
+  groupId: string,
+  from: string,
+  to: string
+): Promise<CategorySlice[]> {
+  const { data, error } = await supabase.rpc('category_breakdown', {
+    p_group_id: groupId,
+    p_from: from,
+    p_to: to,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  // Même raison que dans getPeriodSummary : un numeric traverse PostgREST sans
+  // garantie d'arriver en nombre JSON. La somme exacte a déjà été faite en base.
+  return data.map((row) => ({
+    categoryId: row.category_id,
+    name: row.name,
+    icon: row.icon,
+    total: Number(row.total),
+  }));
+}

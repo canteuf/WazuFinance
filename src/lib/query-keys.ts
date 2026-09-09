@@ -25,6 +25,10 @@ export const queryKeys = {
   // invalidations posées par les mutations et le Realtime. Les filtres entrent
   // dans la clé, donc changer de filtre ouvre une entrée neuve au lieu
   // d'écraser la précédente — revenir à un filtre déjà vu est immédiat.
+  // Même imbrication que periodSummary, pour la même raison : dérivée des
+  // transactions, donc invalidée par le préfixe déjà en place.
+  categoryBreakdown: (groupId: string, from: string) =>
+    ['transactions', 'breakdown', groupId, from] as const,
   transactionHistory: (groupId: string, filters: TransactionFilters) =>
     ['transactions', 'history', groupId, filters] as const,
 };

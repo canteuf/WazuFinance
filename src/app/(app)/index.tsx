@@ -1,6 +1,7 @@
 import { Link } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { CategoryBreakdown } from '@/components/dashboard/category-breakdown';
 import { PeriodSummary } from '@/components/dashboard/period-summary';
 import { RecentTransactions } from '@/components/dashboard/recent-transactions';
 import { Button } from '@/components/ui/button';
@@ -12,10 +13,11 @@ import { dataErrorMessage } from '@/lib/data-errors';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 
 /**
- * Point d'entrée de la saisie, avec le solde de la période en cours.
+ * Point d'entrée de la saisie, et vue de la période en cours : solde, écart
+ * avec la période précédente, répartition des dépenses, dernières opérations.
  *
- * La répartition par catégorie et la comparaison entre périodes (spec 2.6)
- * restent à faire ; elles n'ont pas été retenues pour cette passe.
+ * Couvre la spec 2.6 hors sélecteur de période et vue multi-groupes, qui
+ * appartiennent respectivement à l'écran 3 et à l'écran 7.
  */
 export default function DashboardScreen() {
   const colors = useColors();
@@ -71,6 +73,11 @@ export default function DashboardScreen() {
       {/* La carte porte ses propres états de chargement et d'erreur : un
           résumé en échec ne doit pas emporter la liste, qui a pu aboutir. */}
       <PeriodSummary />
+
+      {/* Ne rend rien tant qu'aucune dépense n'existe sur la période : la liste
+          voisine annonce déjà l'absence d'opérations, et un second état vide ne
+          ferait que répéter la même chose. */}
+      <CategoryBreakdown />
 
       <View style={styles.sectionRow}>
         <Text

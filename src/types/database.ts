@@ -403,6 +403,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      category_breakdown: {
+        Args: { p_from: string; p_group_id: string; p_to: string }
+        Returns: {
+          category_id: string
+          icon: string
+          name: string
+          total: number
+        }[]
+      }
       is_group_member: { Args: { gid: string }; Returns: boolean }
       is_group_owner: { Args: { gid: string }; Returns: boolean }
       join_group_with_code: {

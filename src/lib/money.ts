@@ -60,3 +60,15 @@ export function formatSignedBare(value: number, type: TransactionType): string {
 export function formatBalance(value: number): string {
   return value < 0 ? `${MINUS}${formatAmount(Math.abs(value))}` : formatAmount(value);
 }
+
+/**
+ * Écart entre deux montants, signe toujours visible : « +320,00 », « −120,00 ».
+ *
+ * Distinct de formatBalance, qui n'affiche le signe que s'il est négatif : un
+ * solde de 320 se lit « 320,00 », mais une progression de 320 doit se lire
+ * « +320,00 », sans quoi rien ne dit dans quel sens elle va.
+ */
+export function formatDelta(value: number): string {
+  const sign = value < 0 ? MINUS : '+';
+  return `${sign}${formatAmount(Math.abs(value))}`;
+}

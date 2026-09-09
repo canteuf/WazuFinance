@@ -30,7 +30,7 @@ export function RecentTransactions({
 
 const styles = StyleSheet.create({
   list: {
-    gap: spacing.sm - 1,
+    gap: spacing.sm + 2,
   },
   empty: {
     fontFamily: font.regular,

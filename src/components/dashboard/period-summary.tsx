@@ -2,7 +2,7 @@ import { ActivityIndicator, StyleSheet, Text, useWindowDimensions, View } from '
 
 import { usePeriodSummary } from '@/hooks/use-period-summary';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { formatBalance, formatSignedBare } from '@/lib/money';
+import { formatBalance, formatDelta, formatSignedBare } from '@/lib/money';
 import {
   font,
   radius,
@@ -34,7 +34,7 @@ export function PeriodSummary() {
   const colors = useColors();
   const elevation = useElevation();
   const { fontScale } = useWindowDimensions();
-  const { summary, label, isLoading, error } = usePeriodSummary();
+  const { summary, previous, label, isLoading, error } = usePeriodSummary();
 
   const stacked = fontScale >= stackAtFontScale;
 
@@ -78,6 +78,27 @@ export function PeriodSummary() {
             €
           </Text>
         </View>
+
+        {/* Comparaison de la spec 2.6. Absente tant que la période précédente
+            charge, et surtout tant qu'elle n'a rien contenu : comparer à une
+            période sans aucune opération produirait un écart égal au solde
+            courant, qui se lirait comme une progression alors qu'il n'y a
+            simplement rien eu avant. */}
+        {previous && (previous.income !== 0 || previous.expense !== 0) ? (
+          <Text style={[styles.delta, { color: colors.textMuted }]}>
+            <Text
+              style={{
+                // Un recul reste en couleur de texte, pas en danger : dépenser
+                // plus qu'à la période précédente est ordinaire, pas une alerte.
+                color:
+                  summary.balance - previous.balance >= 0 ? colors.positive : colors.text,
+              }}
+            >
+              {formatDelta(summary.balance - previous.balance)} €
+            </Text>
+            {' par rapport à la précédente'}
+          </Text>
+        ) : null}
       </View>
 
       <View style={[styles.split, stacked && styles.splitStacked]}>
@@ -117,10 +138,12 @@ export function PeriodSummary() {
 
 const styles = StyleSheet.create({
   container: {
-    gap: spacing.md - 3,
+    gap: spacing.md + 2,
   },
   balanceBlock: {
-    gap: spacing.xs + 2,
+    // Entre le libellé de période et le montant : l'écart précédent collait
+    // les deux, alors que le libellé doit se lire comme un intertitre.
+    gap: spacing.sm + 2,
   },
   label: {
     fontFamily: font.semibold,
@@ -144,6 +167,10 @@ const styles = StyleSheet.create({
     fontFamily: font.medium,
     fontSize: 22,
   },
+  delta: {
+    fontFamily: font.medium,
+    fontSize: 13,
+  },
   split: {
     flexDirection: 'row',
     gap: spacing.sm,
@@ -155,9 +182,9 @@ const styles = StyleSheet.create({
   stat: {
     flex: 1,
     borderRadius: radius.sm + 3,
-    paddingVertical: spacing.sm + 1,
-    paddingHorizontal: spacing.sm + 3,
-    gap: 2,
+    paddingVertical: spacing.sm + 4,
+    paddingHorizontal: spacing.sm + 4,
+    gap: spacing.xs,
   },
   statStacked: {
     // En colonne, flex: 1 ferait partager aux deux blocs une hauteur que rien

@@ -79,7 +79,10 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 420,
     alignSelf: 'center',
-    gap: spacing.md,
+    // Rythme entre les blocs d'un écran. spacing.md serrait les blocs les uns
+    // contre les autres une fois l'écran aligné en haut : la hiérarchie ne se
+    // lisait plus, tout se touchait.
+    gap: spacing.lg,
   },
   floating: {
     position: 'absolute',

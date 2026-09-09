@@ -69,6 +69,10 @@ Tables: `users`, `budget_groups`, `account_memberships`, `categories` (`group_id
 
 Invalidating a key only reaches keys it's a prefix of, never the other way round. Invalidate `queryKeys.transactions()` (the root) to reach both the recent list and the detail records; invalidating a leaf like `recentTransactions(groupId)` leaves an open detail record stale. Always invalidate by the widest prefix the mutation affects.
 
+The dashboard's three derived reads all share one set of bounds from `periodBounds()`: `period_summary` for the current period, the same function again for the previous one (the comparison), and `category_breakdown` for the split. Deriving bounds separately in a component is how the headline total and the bars start describing different periods.
+
+`category_breakdown` inner-joins `categories`, so uncategorised expenses are absent from it while still counting in `period_summary().expense`. Bar proportions are therefore computed against the sum of the slices, never against `expense` — otherwise the bars never reach 100%.
+
 Anything *derived* from transactions nests under that same root — `periodSummary(groupId, from)` is `['transactions', 'summary', …]`. It rides the existing invalidations from the mutations and the Realtime subscription, so neither had to learn it exists. Put new derived caches under the prefix they depend on rather than adding invalidation calls.
 
 `useClearCacheOnUserChange()` clears the TanStack Query cache when the session's user changes, so a second account signed in on the same device never briefly sees the previous one's cached groups or transactions.
