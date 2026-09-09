@@ -1,6 +1,7 @@
 import { Link } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { BudgetsEntry } from '@/components/dashboard/budgets-entry';
 import { CategoryBreakdown } from '@/components/dashboard/category-breakdown';
 import { PeriodSummary } from '@/components/dashboard/period-summary';
 import { RecentTransactions } from '@/components/dashboard/recent-transactions';
@@ -78,6 +79,8 @@ export default function DashboardScreen() {
           voisine annonce déjà l'absence d'opérations, et un second état vide ne
           ferait que répéter la même chose. */}
       <CategoryBreakdown />
+
+      <BudgetsEntry />
 
       <View style={styles.sectionRow}>
         <Text
