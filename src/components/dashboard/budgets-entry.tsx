@@ -1,8 +1,8 @@
 import { Link } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { useBudgetProgress } from '@/hooks/use-budget-progress';
-import { font, radius, spacing, useColors } from '@/theme/tokens';
+import { font, radius, spacing, stackAtFontScale, useColors } from '@/theme/tokens';
 
 /**
  * Résume l'état des budgets en une phrase.
@@ -30,6 +30,7 @@ function summarise(over: number, warning: number, total: number): string {
 
 export function BudgetsEntry() {
   const colors = useColors();
+  const { fontScale } = useWindowDimensions();
   const { items, isLoading, error } = useBudgetProgress();
 
   // Ni squelette ni message d'erreur : cette ligne est d'abord un point
@@ -39,25 +40,36 @@ export function BudgetsEntry() {
   const over = items.filter((item) => item.status === 'over').length;
   const warning = items.filter((item) => item.status === 'warning').length;
 
+  // Au-delà du seuil, le libellé et le détail s'empilent plutôt que de se
+  // disputer la largeur — comme les autres rangées à deux colonnes du projet.
+  const stacked = fontScale >= stackAtFontScale;
+
   const accent = over > 0 ? colors.danger : warning > 0 ? colors.warning : colors.textMuted;
+  // TanStack Query garde les dernières données valides quand un refetch en
+  // arrière-plan échoue : tant que `items` contient quelque chose, on montre
+  // l'état du dernier succès plutôt qu'un « Voir » neutre qui contredirait la
+  // pastille de couleur calculée sur ces mêmes données. « Voir » ne revient
+  // que lorsqu'il n'y a réellement rien à résumer.
   const detail =
-    isLoading || error ? 'Voir' : summarise(over, warning, items.length);
+    (isLoading || error) && items.length === 0 ? 'Voir' : summarise(over, warning, items.length);
 
   return (
     <Link href="/budgets" asChild>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Budgets. ${detail}`}
-        style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        style={[
+          styles.row,
+          stacked && styles.rowStacked,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
       >
         <View style={styles.left}>
           <View style={[styles.dot, { backgroundColor: accent }]} />
           <Text style={[styles.label, { color: colors.text }]}>Budgets</Text>
         </View>
         <View style={styles.right}>
-          <Text numberOfLines={1} style={[styles.detail, { color: accent }]}>
-            {detail}
-          </Text>
+          <Text style={[styles.detail, { color: accent }]}>{detail}</Text>
           <Text style={[styles.chevron, { color: colors.textMuted }]}>›</Text>
         </View>
       </Pressable>
@@ -75,6 +87,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth * 2,
+  },
+  rowStacked: {
+    // Le libellé et le détail cèdent chacun leur propre ligne au lieu de se
+    // rétrécir l'un l'autre.
+    flexDirection: 'column',
+    alignItems: 'flex-start',
   },
   left: {
     flexDirection: 'row',
