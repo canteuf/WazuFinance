@@ -140,9 +140,22 @@ de catégorie, `AmountInput` réutilisé tel quel, Enregistrer / Supprimer.
 budget. Ça écarte du même coup la violation d'unicité dans le cas normal ; elle
 ne reste possible que si deux membres créent le même budget au même moment.
 
-`src/components/dashboard/budget-alerts.tsx` ne rend rien tant qu'aucun budget
-n'est en alerte. Sinon une ligne compacte et touchable menant à `/budgets` :
-« 2 budgets dépassés · 1 proche de la limite ».
+`src/components/dashboard/budgets-entry.tsx` — une ligne touchable menant à
+`/budgets`, **toujours affichée**, dont l'apparence monte d'un cran en cas
+d'alerte.
+
+Amendement à la décision initiale (« rien tant qu'aucune alerte ») : l'app n'a
+ni barre d'onglets ni écran de paramètres, donc un bandeau qui disparaît laisse
+l'écran 5 sans aucun point d'entrée. Plutôt que d'empiler un lien permanent et
+un bandeau conditionnel, la même ligne porte les deux rôles :
+
+- aucun budget défini : « Budgets · à définir »
+- tout va bien : « Budgets · 3 suivis »
+- alerte : « Budgets · 2 dépassés, 1 proche de la limite », en `warning` ou
+  `danger` selon le pire statut
+
+L'escalade se lit donc sur une ligne dont la place ne bouge pas — c'est ce qui
+permet de remarquer le changement.
 
 ### Thème
 
