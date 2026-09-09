@@ -13,6 +13,10 @@ export const queryKeys = {
   memberships: () => ['memberships'] as const,
   categories: (groupId: string) => ['categories', groupId] as const,
   transactions: () => ['transactions'] as const,
+  // Hors de ['transactions'] à dessein, contrairement à periodSummary et
+  // categoryBreakdown : un budget n'est pas dérivé des transactions. L'y
+  // nicher ferait recharger les plafonds à chaque saisie de dépense.
+  budgets: (groupId: string) => ['budgets', groupId] as const,
   // `from` fait partie de la clé, comme pour periodSummary : la liste du
   // tableau de bord est bornée à la période, donc une bascule de période doit
   // ouvrir une entrée neuve plutôt que réutiliser celle de la précédente.
