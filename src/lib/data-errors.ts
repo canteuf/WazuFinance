@@ -15,7 +15,10 @@ const MESSAGES: Record<string, string> = {
   '42501': "Vous n'avez pas accès à ce budget.",
   '23503': "Cette catégorie n'existe plus.",
   '23514': 'Montant invalide.',
-  '23505': 'Cette opération existe déjà.',
+  // Formulation neutre : ce code sert désormais aux budgets, dont le triplet
+  // (group_id, category_id, period) est unique. Les transactions, elles,
+  // n'ont aucune contrainte d'unicité — ce message n'a jamais pu s'y afficher.
+  '23505': 'Un enregistrement identique existe déjà.',
   PGRST116: 'Cette opération est introuvable.',
 };
 

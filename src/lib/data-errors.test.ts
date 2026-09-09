@@ -21,7 +21,7 @@ describe('dataErrorMessage', () => {
 
   it("traduit un doublon", () => {
     expect(dataErrorMessage({ code: '23505', message: 'duplicate key' })).toBe(
-      "Cette opération existe déjà."
+      'Un enregistrement identique existe déjà.'
     );
   });
 
