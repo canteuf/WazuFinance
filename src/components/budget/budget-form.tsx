@@ -47,6 +47,9 @@ export function BudgetForm({
     initialValues ? initialValues.amount.toFixed(2).replace('.', ',') : ''
   );
   const [touched, setTouched] = useState(false);
+  // Deuxième étape de confirmation avant suppression, voir le bloc de rendu
+  // plus bas pour la justification de ce choix.
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const amount = parseAmount(amountText);
   // `amount > 0` est une contrainte de la base : la refuser ici évite un
@@ -101,10 +104,44 @@ export function BudgetForm({
 
       {errorText ? <Text style={[styles.error, { color: colors.danger }]}>{errorText}</Text> : null}
 
-      <Button title={submitLabel} onPress={handleSubmit} loading={submitting} />
+      <Button
+        title={submitLabel}
+        loading={submitting}
+        disabled={deleting}
+        onPress={handleSubmit}
+      />
 
       {onDelete ? (
-        <Button title="Supprimer" variant="ghost" onPress={onDelete} loading={deleting} />
+        confirmingDelete ? (
+          // Confirmation portée par l'état du composant, pas par Alert.alert :
+          // cette app est aussi testée dans un navigateur, où Alert.alert ne
+          // fait rien — une confirmation qui en dépendrait rendrait la
+          // suppression silencieusement impossible sur le web.
+          <View style={styles.deleteRow}>
+            <Button
+              title="Confirmer la suppression"
+              variant="danger"
+              loading={deleting}
+              disabled={submitting || deleting}
+              accessibilityLabel="Confirmer la suppression définitive de ce budget"
+              onPress={onDelete}
+            />
+            <Button
+              title="Annuler"
+              variant="ghost"
+              disabled={submitting || deleting}
+              onPress={() => setConfirmingDelete(false)}
+            />
+          </View>
+        ) : (
+          <Button
+            title="Supprimer"
+            variant="ghost"
+            loading={deleting}
+            disabled={submitting || deleting}
+            onPress={() => setConfirmingDelete(true)}
+          />
+        )
       ) : null}
     </View>
   );
@@ -116,6 +153,10 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   block: {
+    gap: spacing.sm,
+  },
+  deleteRow: {
+    flexDirection: 'row',
     gap: spacing.sm,
   },
   label: {

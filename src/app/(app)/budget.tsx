@@ -31,9 +31,9 @@ export default function BudgetScreen() {
   const { height: windowHeight } = useWindowDimensions();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { activeGroupId, isLoading: groupLoading, error: groupError } = useActiveGroup();
-  const { budgets, isLoading: budgetsLoading } = useBudgets();
-  const { categories } = useCategories('expense');
-  const { slices } = useCategoryBreakdown();
+  const { budgets, isLoading: budgetsLoading, error: budgetsError } = useBudgets();
+  const { categories, isLoading: categoriesLoading } = useCategories('expense');
+  const { slices, isLoading: slicesLoading } = useCategoryBreakdown();
   const { createBudget, updateBudget, deleteBudget, isSaving, isDeleting } = useBudgetMutations();
   const [errorText, setErrorText] = useState<string>();
 
@@ -60,7 +60,11 @@ export default function BudgetScreen() {
       });
   }, [budgets, categories, slices]);
 
-  if (groupLoading || budgetsLoading) {
+  // Les quatre requêtes se chargent en parallèle ; tant qu'une seule d'entre
+  // elles n'est pas arrivée, `categories`/`slices` valent [] par défaut de
+  // leur hook, ce qui rendrait à tort « Toutes les catégories de dépense ont
+  // déjà un budget. » si on ne couvrait pas aussi ces deux chargements.
+  if (groupLoading || budgetsLoading || categoriesLoading || slicesLoading) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator color={colors.primary} />
@@ -73,6 +77,21 @@ export default function BudgetScreen() {
       <View style={styles.centered}>
         <Text style={[styles.errorTitle, { color: colors.danger }]}>
           {groupError ? dataErrorMessage(groupError) : 'Aucun groupe actif.'}
+        </Text>
+        <Button title="Retour" variant="ghost" onPress={() => router.back()} />
+      </View>
+    );
+  }
+
+  // Une panne réseau ou un refus RLS sur useBudgets() laisse `budgets = []` :
+  // sans ce garde, l'édition afficherait à tort « Ce budget n'existe plus »
+  // et la création laisserait réapparaître des catégories déjà budgétées
+  // comme disponibles, qui n'échoueraient qu'au 23505 en enregistrant.
+  if (budgetsError) {
+    return (
+      <View style={styles.centered}>
+        <Text style={[styles.errorTitle, { color: colors.danger }]}>
+          {dataErrorMessage(budgetsError)}
         </Text>
         <Button title="Retour" variant="ghost" onPress={() => router.back()} />
       </View>
