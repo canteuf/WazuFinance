@@ -9,6 +9,12 @@ import { font, radius, spacing, stackAtFontScale, useColors, useIsDark } from '@
 /** Le texte dit ce que la couleur dit : un daltonien lit la même information. */
 function statusText(item: BudgetProgress): string {
   if (item.status === 'over') {
+    // À exactement 100 %, rien n'est dépassé : « Dépassé de 0,00 € » disait
+    // faux. Le statut reste `over` — le budget est épuisé, la prochaine
+    // dépense le dépassera —, seul le texte change.
+    if (item.remaining === 0) {
+      return 'Plafond atteint';
+    }
     return `Dépassé de ${formatAmount(Math.abs(item.remaining))} €`;
   }
   if (item.status === 'warning') {
@@ -91,8 +97,11 @@ export function BudgetRow({
             // reste vrai — une barre qui déborderait de son conteneur ne se
             // lirait plus, et une part infime resterait un trait invisible
             // qu'on prend pour un bug (même motif que category-breakdown.tsx).
+            // Le plancher ne vaut que si quelque chose a été dépensé : une
+            // part de la répartition est toujours positive, un budget peut
+            // être à zéro, et un filet de barre y ferait croire à une dépense.
             {
-              width: `${Math.min(Math.max(item.ratio * 100, 2), 100)}%`,
+              width: `${item.spent === 0 ? 0 : Math.min(Math.max(item.ratio * 100, 2), 100)}%`,
               backgroundColor: barColor,
             },
           ]}

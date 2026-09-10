@@ -20,7 +20,10 @@ function summarise(over: number, warning: number, total: number): string {
 
   const parts: string[] = [];
   if (over > 0) {
-    parts.push(over === 1 ? '1 dépassé' : `${over} dépassés`);
+    // « plafond atteint » et non « dépassé » : le statut `over` commence à
+    // exactement 100 %, où rien n'est encore dépassé. Un budget dépassé a
+    // forcément atteint son plafond, donc la formule est juste dans les deux cas.
+    parts.push(over === 1 ? '1 plafond atteint' : `${over} plafonds atteints`);
   }
   if (warning > 0) {
     parts.push(warning === 1 ? '1 proche de la limite' : `${warning} proches de la limite`);
