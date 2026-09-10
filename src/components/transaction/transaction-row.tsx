@@ -34,6 +34,8 @@ export function TransactionRow({ transaction }: { transaction: TransactionWithCa
   const icon = transaction.category?.icon ?? 'tag';
   const tone = categoryTone({ id: transaction.category_id ?? transaction.id, icon }, isDark);
 
+  const edited = wasEdited(transaction);
+
   // « Carrefour · aujourd'hui », ou la seule date quand il n'y a pas de note.
   // Sans la date, deux lignes de la même catégorie sont indiscernables.
   // « modifié » en fin de ligne : un mot, jamais une icône seule. Le détail
@@ -41,7 +43,7 @@ export function TransactionRow({ transaction }: { transaction: TransactionWithCa
   const meta = [
     transaction.note,
     formatOccurredOn(transaction.occurred_on),
-    wasEdited(transaction) ? 'modifié' : null,
+    edited ? 'modifié' : null,
   ]
     .filter((part): part is string => Boolean(part))
     .join(' · ');
@@ -64,7 +66,9 @@ export function TransactionRow({ transaction }: { transaction: TransactionWithCa
     <Link href={`/transaction?id=${transaction.id}`} asChild>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Modifier ${transaction.category?.name ?? 'opération'}`}
+        // Le lecteur d'écran lit cette étiquette à la place des textes de la
+        // ligne : sans ce suffixe, « modifié » n'existe que pour qui voit.
+        accessibilityLabel={`Modifier ${transaction.category?.name ?? 'opération'}${edited ? '. Opération modifiée' : ''}`}
         // Aplati : <Link asChild> transmet le style à son enfant et avertit
         // s'il reçoit un tableau.
         style={StyleSheet.flatten([
