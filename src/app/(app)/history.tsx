@@ -228,6 +228,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    // À grande taille de police, le lien « Activité » passe à la ligne au lieu de sortir de l'écran.
+    flexWrap: 'wrap',
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
@@ -242,6 +244,7 @@ const styles = StyleSheet.create({
     fontFamily: font.bold,
     fontSize: 18,
     letterSpacing: -0.2,
+    flexShrink: 1,
   },
   headerLink: {
     // Pousse le lien au bord droit de l'en-tête.
