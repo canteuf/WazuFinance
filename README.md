@@ -83,8 +83,6 @@ Prérequis :
 | `npx supabase gen types typescript --linked > src/types/database.ts` | Régénère les types après une migration |
 | `npx expo export --platform android --output-dir <dossier>` | Vérifie que le bundle se construit, sans appareil |
 
-N'utilisez pas `npm run reset-project` : ce script vient du modèle Expo d'origine et est fait pour vider un projet neuf.
-
 ## Architecture
 
 ```
@@ -120,3 +118,7 @@ npx expo install --fix
 ```
 
 **Ne jamais lancer `npm audit fix --force`.** npm choisit la première version hors de la plage vulnérable sans tenir compte du SDK : il a déjà rétrogradé `expo` en version 46, et l'application ne démarrait plus. Les alertes modérées restantes viennent de paquets que le SDK apporte lui-même. Elles disparaissent avec les correctifs d'Expo, que `npx expo install --fix` récupère.
+
+## Licence
+
+MIT — voir [LICENSE](LICENSE).
