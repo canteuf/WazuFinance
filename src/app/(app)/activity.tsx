@@ -28,7 +28,7 @@ export default function ActivityScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { session } = useAuth();
-  const { isLoading: groupLoading, error: groupError } = useActiveGroup();
+  const { isLoading: groupLoading, error: groupError, activeGroupId } = useActiveGroup();
 
   // Toutes les catégories, dépense et revenu : une entrée peut viser l'une ou
   // l'autre. Tant qu'elles chargent, aucune phrase n'est rendue — sans elles,
@@ -47,9 +47,17 @@ export default function ActivityScreen() {
 
   const currentUserId = session?.user.id ?? null;
 
-  // Seul l'échec du premier chargement vide l'écran ; celui d'une page
-  // suivante va en pied de liste.
-  const blockingError: unknown = groupError || categoriesError || (isEmptyError ? error : null);
+  // TanStack garde `data` et ne remplit `error` qu'après l'échec d'un
+  // rafraîchissement en arrière-plan : revenir hors ligne au premier plan
+  // après plus de 30 s ne doit donc pas remplacer un journal déjà chargé par
+  // la vue d'erreur plein écran. Une erreur ne bloque l'écran que si elle
+  // laisse l'utilisateur sans rien d'utile à voir : le groupe en erreur sans
+  // aucun groupe actif, ou les catégories en erreur sans aucune catégorie
+  // déjà chargée. Le journal lui-même garde son propre traitement plus bas
+  // (isEmptyError) : seul l'échec du tout premier chargement vide l'écran,
+  // celui d'une page suivante va en pied de liste.
+  const groupBlockingError = groupError !== null && activeGroupId === null;
+  const categoriesBlockingError = categoriesError !== null && categories.length === 0;
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -92,12 +100,34 @@ export default function ActivityScreen() {
   }
 
   function renderBody() {
-    if (blockingError) {
+    if (groupBlockingError) {
+      // Même motif que budgets.tsx : sans groupe actif, il n'y a rien à
+      // réessayer que la résolution des adhésions elle-même, que ce bouton ne
+      // relance pas — les deux requêtes qu'il relancerait restent désactivées.
       return (
         <View style={styles.centered}>
           <Text style={[styles.error, { color: colors.danger }]}>
-            {dataErrorMessage(blockingError)}
+            {dataErrorMessage(groupError)}
           </Text>
+        </View>
+      );
+    }
+
+    if (categoriesBlockingError) {
+      return (
+        <View style={styles.centered}>
+          <Text style={[styles.error, { color: colors.danger }]}>
+            {dataErrorMessage(categoriesError)}
+          </Text>
+          <Button title="Réessayer" variant="ghost" onPress={retryCategories} />
+        </View>
+      );
+    }
+
+    if (isEmptyError) {
+      return (
+        <View style={styles.centered}>
+          <Text style={[styles.error, { color: colors.danger }]}>{dataErrorMessage(error)}</Text>
           <Button
             title="Réessayer"
             variant="ghost"
