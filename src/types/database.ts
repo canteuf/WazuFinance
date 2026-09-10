@@ -92,6 +92,63 @@ export type Database = {
           },
         ]
       }
+      activity_log: {
+        Row: {
+          action: Database["public"]["Enums"]["activity_action"]
+          actor_id: string | null
+          actor_name: string | null
+          changed_fields: string[]
+          group_id: string
+          id: string
+          new_values: Json | null
+          occurred_at: string
+          old_values: Json
+          subject: Database["public"]["Enums"]["activity_subject"]
+          subject_id: string
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["activity_action"]
+          actor_id?: string | null
+          actor_name?: string | null
+          changed_fields: string[]
+          group_id: string
+          id?: string
+          new_values?: Json | null
+          occurred_at?: string
+          old_values: Json
+          subject: Database["public"]["Enums"]["activity_subject"]
+          subject_id: string
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["activity_action"]
+          actor_id?: string | null
+          actor_name?: string | null
+          changed_fields?: string[]
+          group_id?: string
+          id?: string
+          new_values?: Json | null
+          occurred_at?: string
+          old_values?: Json
+          subject?: Database["public"]["Enums"]["activity_subject"]
+          subject_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_log_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "budget_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       budget_groups: {
         Row: {
           created_at: string
@@ -429,6 +486,8 @@ export type Database = {
       shares_group_with: { Args: { other_user_id: string }; Returns: boolean }
     }
     Enums: {
+      activity_action: "update" | "delete"
+      activity_subject: "transaction" | "budget"
       budget_period: "weekly" | "monthly"
       membership_role: "owner" | "member"
       transaction_type: "expense" | "income"
@@ -562,6 +621,8 @@ export const Constants = {
   },
   public: {
     Enums: {
+      activity_action: ["update", "delete"],
+      activity_subject: ["transaction", "budget"],
       budget_period: ["weekly", "monthly"],
       membership_role: ["owner", "member"],
       transaction_type: ["expense", "income"],
@@ -573,3 +634,5 @@ export const Constants = {
 export type MembershipRole = Enums<'membership_role'>;
 export type TransactionType = Enums<'transaction_type'>;
 export type BudgetPeriod = Enums<'budget_period'>;
+export type ActivitySubject = Enums<'activity_subject'>;
+export type ActivityAction = Enums<'activity_action'>;
