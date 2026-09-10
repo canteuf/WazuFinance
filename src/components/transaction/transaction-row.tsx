@@ -3,6 +3,7 @@ import { Link } from 'expo-router';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import type { TransactionWithCategory } from '@/data/transactions';
+import { wasEdited } from '@/lib/activity-format';
 import { formatOccurredOn } from '@/lib/dates';
 import { formatSigned } from '@/lib/money';
 import { categoryTone } from '@/theme/category-colors';
@@ -35,7 +36,13 @@ export function TransactionRow({ transaction }: { transaction: TransactionWithCa
 
   // « Carrefour · aujourd'hui », ou la seule date quand il n'y a pas de note.
   // Sans la date, deux lignes de la même catégorie sont indiscernables.
-  const meta = [transaction.note, formatOccurredOn(transaction.occurred_on)]
+  // « modifié » en fin de ligne : un mot, jamais une icône seule. Le détail
+  // — qui, quoi, avant, après — est dans l'écran Activité.
+  const meta = [
+    transaction.note,
+    formatOccurredOn(transaction.occurred_on),
+    wasEdited(transaction) ? 'modifié' : null,
+  ]
     .filter((part): part is string => Boolean(part))
     .join(' · ');
 

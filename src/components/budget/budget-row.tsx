@@ -1,8 +1,9 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
-import { formatAmount } from '@/lib/money';
+import { wasEdited } from '@/lib/activity-format';
 import type { BudgetProgress, BudgetStatus } from '@/lib/budget-progress';
+import { formatAmount } from '@/lib/money';
 import { categoryTone } from '@/theme/category-colors';
 import { font, radius, spacing, stackAtFontScale, useColors, useIsDark } from '@/theme/tokens';
 
@@ -60,11 +61,12 @@ export function BudgetRow({
   // Au-delà du seuil, le nom et les montants s'empilent plutôt que de se
   // disputer la largeur — même motif que budgets-entry.tsx.
   const stacked = fontScale >= stackAtFontScale;
+  const edited = wasEdited(item.budget);
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${categoryName}, ${formatAmount(item.spent)} euros sur ${formatAmount(item.budget.amount)} euros, ${percent} %. ${statusText(item)}`}
+      accessibilityLabel={`${categoryName}, ${formatAmount(item.spent)} euros sur ${formatAmount(item.budget.amount)} euros, ${percent} %. ${statusText(item)}${edited ? '. Plafond modifié' : ''}`}
       onPress={onPress}
       style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.border }]}
     >
@@ -110,6 +112,9 @@ export function BudgetRow({
 
       <Text style={[styles.status, { color: statusColor[item.status] }]}>
         {statusText(item)} · {percent} %
+        {/* En gris, pas dans la couleur du statut : c'est une information,
+            pas une alerte. */}
+        {edited ? <Text style={{ color: colors.textMuted }}> · modifié</Text> : null}
       </Text>
     </Pressable>
   );
