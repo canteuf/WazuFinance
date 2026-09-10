@@ -36,6 +36,10 @@ Requires `.env` (copy from `.env.example`) with `EXPO_PUBLIC_SUPABASE_URL` and `
 
 Per [AGENTS.md](AGENTS.md): read https://docs.expo.dev/versions/v57.0.0/ before writing Expo code. SDK 57 / expo-router v6 / React 19.2 APIs differ from older tutorials — notably `Stack.Protected guard={…}` for route guarding.
 
+**Never run `npm audit fix --force`.** npm resolves an advisory by picking whatever version falls outside the vulnerable range, regardless of the SDK: on 2026-09-10 it downgraded `expo` to 46 and `expo-router` to 5 — eleven majors back — and the app could no longer start. Align versions with `npx expo install --fix` only. The moderate advisories `npm audit` reports come from two packages pulled in by the SDK itself (`decode-uri-component` through react-navigation, `uuid` through Expo's tooling); they have no npm-side fix that keeps SDK 57, and they go away when Expo ships patch releases, which `npx expo install --fix` picks up.
+
+Windows: if `npm ci` or `npm install` fails with `EPERM` on `@unrs/resolver-binding-win32-x64-msvc/*.node`, VS Code's ESLint server has that native module loaded. Run "ESLint: Restart ESLint Server" or move the folder out of `node_modules` — never kill the VS Code extension host, which Claude Code runs inside.
+
 ## Architecture
 
 Routes live under `src/app/` (expo-router, `src/` root configured via `tsconfig` path alias `@/*`).
