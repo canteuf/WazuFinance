@@ -16,6 +16,7 @@ Vérifié dans le schéma avant conception :
 - `touch_updated_at()` écrit `now()` à chaque `UPDATE`, sans comparer l'avant et l'après : un enregistrement sans changement marque la ligne comme modifiée.
 - La policy de modification ne fige ni `user_id` ni `group_id` : un appel direct à l'API peut réattribuer une dépense ou la déplacer de groupe.
 - Une suppression efface la ligne sans laisser de trace.
+- `transactions.user_id` et `budget_groups.owner_id` sont en `on delete cascade` vers `users` : supprimer le compte d'un membre efface **toutes les opérations qu'il a saisies**, y compris dans un budget partagé, et **tout groupe partagé dont il est propriétaire**. L'app n'offre pas la suppression de compte aujourd'hui (seul le dashboard Supabase le permet), et ce chantier ne change pas ces cascades — voir « Hors périmètre ».
 
 ## Décisions cadrées
 
@@ -61,7 +62,7 @@ create index activity_log_group_occurred_idx
 ```
 
 - `subject_id` n'a **pas de clé étrangère** : la ligne visée peut avoir été supprimée, et c'est précisément le cas qu'on veut garder.
-- `actor_id` passe à `null` si l'auteur supprime son compte ; `actor_name` garde son nom **tel qu'il était au moment de l'action**. Un membre qui part n'efface pas ses traces.
+- `actor_id` passe à `null` si l'auteur supprime son compte ; `actor_name` garde son nom **tel qu'il était au moment de l'action**. Les entrées du journal survivent donc à leur auteur. Ses opérations, elles, partent avec son compte (voir « Constat de départ ») : dans un groupe qui existe encore, ces suppressions en cascade sont journalisées comme les autres, avec leur ancienne valeur.
 - `actor_id` et `actor_name` sont tous deux `null` pour une action faite hors session (console SQL, clé de service) : le journal ne prétend pas connaître un auteur qu'il n'a pas.
 - `new_values` est `null` pour une suppression ; `changed_fields` y est vide.
 - `on delete cascade` sur `group_id` : un groupe supprimé emporte son journal avec toutes ses autres données.
@@ -91,7 +92,7 @@ Comportement, dans l'ordre :
 
 1. **Si le groupe n'existe plus, ne rien écrire.** Supprimer un groupe supprime ses opérations et ses budgets en cascade ; le trigger voudrait alors insérer une entrée pointant vers un groupe déjà effacé, la clé étrangère lèverait une erreur, et **toute la suppression du groupe serait annulée**. Même chose quand un utilisateur supprime son compte, donc son groupe personnel. Pendant une telle cascade, la ligne parente n'est plus visible : un `not exists` sur `budget_groups` suffit à la détecter. Un journal n'a de sens que pour un groupe qui existe encore.
 2. **Pour une modification, comparer l'avant et l'après en ignorant `updated_at`** (`to_jsonb(row) - 'updated_at'`). Identiques : ne rien écrire. Sinon, `changed_fields` reçoit les clés dont la valeur diffère.
-3. **Relever l'auteur** : `auth.uid()`, et son `display_name` lu dans `users` au même instant.
+3. **Relever l'auteur** : `actor_id` et `actor_name` viennent **tous deux** de la ligne `users` dont l'`id` vaut `auth.uid()`, et non de `auth.uid()` directement. Si cette ligne n'existe pas, les deux restent `null`. Sans cette précaution, une cascade déclenchée par la suppression du compte de l'auteur lui-même insérerait un `actor_id` qui pointe vers une ligne `users` déjà effacée : la clé étrangère lèverait une erreur et annulerait la suppression du compte — le même piège qu'au point 1.
 4. Insérer l'entrée et retourner `null`.
 
 Effet en cascade à connaître : supprimer une catégorie personnalisée vide la catégorie de ses opérations (`on delete set null`) et supprime ses budgets (`on delete cascade`). Le groupe existant toujours, chacun de ces changements est journalisé, au nom de la personne qui a supprimé la catégorie. C'est exact, et c'est voulu : ces lignes ont bien changé. L'interface ne permet pas encore de supprimer une catégorie, donc rien ne se déclenche aujourd'hui.
@@ -120,6 +121,8 @@ L'app ne modifie jamais ces champs ; la base l'autorisait. Les figer garantit qu
 
 La migration exécute `update … set updated_at = created_at` sur `transactions` et `budgets`, triggers `updated_at` désactivés le temps de l'opération, et **avant** la création des triggers de journal.
 
+Désactiver les triggers n'est pas une précaution de confort : l'ancien `touch_updated_at` réécrirait `now()` sur chaque ligne, et le nouveau, qui ignore la valeur envoyée, rétablirait `old.updated_at`. Dans les deux cas la remise à zéro n'aurait aucun effet.
+
 Raison : les dates de modification actuelles ne valent rien, puisqu'un enregistrement sans changement les faisait bouger. Sans remise à zéro, des lignes jamais réellement modifiées afficheraient « modifié » à vie.
 
 Conséquence assumée : **le journal comme la mention commencent au jour de la migration.** Cette écriture porte sur les données réelles du projet lié et n'est pas réversible.
@@ -132,20 +135,23 @@ Conséquence assumée : **le journal comme la mention commencent au jour de la m
 
 ### Formatage — `src/lib/activity-format.ts`
 
-Module pur, sans dépendance au framework, couvert par Jest. Il reçoit une entrée, l'identifiant de l'utilisateur courant et la liste des catégories du groupe, et rend une phrase :
+Module pur, sans dépendance au framework, couvert par Jest. Il reçoit une entrée, l'identifiant de l'utilisateur courant et la liste des catégories du groupe, et rend une phrase.
+
+**Nom d'une opération** : le même que dans la liste, c'est-à-dire sa catégorie — **celle d'avant le changement**, puisque c'est sous ce nom que les membres la connaissaient —, ou « Sans catégorie ». Quand elle en a une, la note suit après un point médian, comme sur la ligne d'information de `TransactionRow`. Quand la catégorie elle-même change, le détail n'en donne que la nouvelle valeur : l'ancienne est déjà dans le nom.
 
 | Cas | Phrase |
 |---|---|
 | montant d'une opération | « Marie a modifié Restaurant : 15,00 € → 150,00 € » |
-| plusieurs champs | « Marie a modifié Courses : catégorie Restaurant → Alimentation, date 8 sept. → 9 sept. » |
-| suppression d'une opération | « Marie a supprimé Courses · 54,00 € du 8 sept. » |
-| plafond d'un budget | « Marie a modifié le plafond Restaurants : 200,00 € → 300,00 € » |
-| suppression d'un budget | « Marie a supprimé le budget Restaurants (200,00 €) » |
+| plusieurs champs | « Marie a modifié Restaurant · Pizzeria : catégorie → Alimentation, date 8 sept. → 9 sept. » |
+| suppression d'une opération | « Marie a supprimé Alimentation · Carrefour, 54,00 € du 8 sept. » |
+| plafond d'un budget | « Marie a modifié le plafond Restaurant : 200,00 € → 300,00 € » |
+| suppression d'un budget | « Marie a supprimé le budget Restaurant (200,00 €) » |
 | auteur = utilisateur courant | « Vous avez modifié… » |
 | catégorie supprimée depuis | « catégorie supprimée » à la place du nom |
 | auteur inconnu (hors session) | « Hors de l'app » à la place du nom |
+| aucun champ affichable modifié | « Marie a modifié Restaurant », sans détail |
 
-Les champs pris en compte pour une opération : `amount`, `category_id`, `occurred_on`, `type`, `note`. Pour un budget : `amount`. Tout autre champ présent dans `changed_fields` est ignoré à l'affichage.
+Les champs pris en compte pour une opération : `amount`, `category_id`, `occurred_on`, `type`, `note`. Pour un budget : `amount`. Tout autre champ présent dans `changed_fields` est ignoré à l'affichage. Une entrée dont aucun champ n'est affichable reste dans le fil avec la phrase sans détail : un journal de confiance ne cache pas d'entrée.
 
 `old_values` et `new_values` arrivent typés `Json` par les types générés : le module les restreint par des gardes de type, sans `any`.
 
@@ -191,13 +197,14 @@ Fixtures : deux membres d'un groupe partagé (Alice, Bob) et un étranger (Carol
 11. Changer le `group_id` d'une opération lève `42501`.
 12. Changer la `category_id` d'un budget lève `42501`.
 13. **Supprimer un groupe qui contient des opérations et des budgets réussit.**
-14. Après suppression du compte de Bob, ses entrées subsistent avec `actor_id` à `null` et `actor_name` intact.
+14. Après suppression du compte de Bob, ses entrées subsistent avec `actor_id` à `null` et `actor_name` intact. Alice est propriétaire du groupe partagé dans les fixtures : si c'était Bob, la cascade sur `owner_id` supprimerait le groupe entier et le test ne prouverait rien.
+15. La même suppression journalise, en entrées `delete`, les opérations que Bob avait saisies dans le groupe partagé.
 
 Toute modification de `users`, `budget_groups` ou `account_memberships` passant par ces cascades, la suite complète `npm run test:db` doit rester au vert, `handle_new_user_test.sql` compris.
 
 ### Jest — `src/lib/activity-format.test.ts`
 
-Chaque ligne du tableau de formatage ci-dessus, plus : une entrée dont `changed_fields` ne contient que des champs non affichés, et des `old_values` malformées qui ne doivent pas faire planter le module.
+Chaque ligne du tableau de formatage ci-dessus, plus des `old_values` malformées qui ne doivent pas faire planter le module.
 
 ### Non couvert automatiquement
 
@@ -209,9 +216,11 @@ La migration doit être poussée sur le projet lié **avant** de régénérer le
 
 ## Préalable
 
-Ce chantier modifie `BudgetRow`, qui n'existe que sur la branche `ecran-5-budgets`. Celle-ci doit être fusionnée dans `main` avant le démarrage.
+Ce chantier modifie `BudgetRow`, livré par l'écran 5. Satisfait : la branche `ecran-5-budgets` est fusionnée dans `main`.
 
 ## Hors périmètre
+
+- **Cascades à la suppression d'un compte** (`transactions.user_id`, `budget_groups.owner_id`). Qu'un membre qui part emporte ses dépenses du budget commun, ou le groupe entier s'il en est propriétaire, est une question de modèle qui relève de l'écran 7 (partage), avec la transmission de la propriété. Le journal en garde déjà la trace entre-temps.
 
 - Journalisation des créations — décidé.
 - Objectifs d'épargne — l'écran 6 n'existe pas.
