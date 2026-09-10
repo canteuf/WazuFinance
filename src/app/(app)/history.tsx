@@ -151,6 +151,20 @@ export default function HistoryScreen() {
           <Text style={[styles.back, { color: colors.textMuted }]}>‹</Text>
         </Pressable>
         <Text style={[styles.title, { color: colors.text }]}>Opérations</Text>
+        {/* C'est ici qu'on vient vérifier ses opérations ; le tableau de bord
+            porte déjà assez d'éléments. */}
+        <Link href="/activity" asChild>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Activité du groupe"
+            hitSlop={spacing.sm}
+            // Aplati : <Link asChild> transmet le style par un Slot, qui lève
+            // une erreur de rendu en développement s'il reçoit un tableau.
+            style={StyleSheet.flatten(styles.headerLink)}
+          >
+            <Text style={[styles.headerLinkLabel, { color: colors.primary }]}>Activité</Text>
+          </Pressable>
+        </Link>
       </View>
 
       {/* `isEmptyError` ne vaut vrai que pour l'échec du premier chargement
@@ -228,6 +242,14 @@ const styles = StyleSheet.create({
     fontFamily: font.bold,
     fontSize: 18,
     letterSpacing: -0.2,
+  },
+  headerLink: {
+    // Pousse le lien au bord droit de l'en-tête.
+    marginLeft: 'auto',
+  },
+  headerLinkLabel: {
+    fontFamily: font.semibold,
+    fontSize: 14,
   },
   content: {
     paddingHorizontal: spacing.lg,
