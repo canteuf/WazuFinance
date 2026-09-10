@@ -1,18 +1,18 @@
 import { dateToIso, isoToDate } from '@/lib/dates';
 import { formatAmount } from '@/lib/money';
-import type { Json } from '@/types/database';
+import type { ActivityAction, ActivitySubject, Json } from '@/types/database';
 
 /**
  * Phrases du journal d'activité.
  *
  * Module pur, sans dépendance au framework, couvert par Jest comme `money` et
- * `dates`. `ActivityLogRow` est structurel plutôt qu'importé des types
- * générés : `Tables<'activity_log'>` lui est assignable, et le module ne
- * dépend pas de leur régénération.
+ * `dates`. `ActivityLogRow` reprend les alias `ActivitySubject` et
+ * `ActivityAction` des types générés plutôt que de recopier les mêmes unions :
+ * `Tables<'activity_log'>` lui reste assignable.
  */
 export type ActivityLogRow = {
-  subject: 'transaction' | 'budget';
-  action: 'update' | 'delete';
+  subject: ActivitySubject;
+  action: ActivityAction;
   actor_id: string | null;
   actor_name: string | null;
   old_values: Json;
