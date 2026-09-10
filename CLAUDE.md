@@ -130,7 +130,7 @@ To journal another table: one `create trigger … execute function public.log_ac
 
 `updated_at` moves only on a real change: `touch_updated_at()` compares the row with and without `updated_at`, and ignores any value the client sends. That is what makes « modifié » (`updated_at > created_at`) trustworthy. `log_activity()` uses the same comparison, so the mention and the log always agree.
 
-`transactions.user_id`, `transactions.group_id`, `budgets.group_id` and `budgets.category_id` are frozen: `guard_immutable_columns()` raises `42501` on any change. The app never edits them; the update policies alone did not prevent it.
+`transactions.id`, `transactions.user_id`, `transactions.group_id`, `transactions.created_at`, `budgets.id`, `budgets.group_id`, `budgets.category_id` and `budgets.created_at` are frozen: `guard_immutable_columns()` raises `42501` on any change. The app never edits them; the update policies alone did not prevent it. Without this guard, a member could advance `created_at` past `updated_at` through a direct API call and erase the « modifié » mention.
 
 On the app side, `queryKeys.activity(groupId)` sits outside `['transactions']` and has no Realtime subscription on purpose. The feed is read deliberately: it refetches on every open (`refetchOnMount: 'always'`) and on pull-to-refresh, because a list that shifts under the finger while being read is worse. Pages are cursor-paginated on `(occurred_at, id)` like the history. The cursor keeps the timestamp string exactly as PostgREST returned it: a round trip through `Date` drops the microseconds, and the next page would repeat or skip an entry.
 

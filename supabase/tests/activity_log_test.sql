@@ -17,7 +17,7 @@
 create extension if not exists pgtap with schema extensions;
 
 BEGIN;
-SELECT plan(28);
+SELECT plan(32);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures, créées en tant que postgres (RLS contournée)
@@ -155,6 +155,56 @@ SELECT throws_ok(
   'Colonne category_id non modifiable',
   'Changer la categorie d''un budget est refuse'
 );
+
+-- Correctif final : created_at et id figes aussi, sur les deux tables. Sans
+-- cela, un appel API direct peut avancer created_at au-dela de updated_at et
+-- effacer la mention « modifie », ou reecrire id et rendre orphelin un
+-- activity_log.subject_id existant.
+--
+-- Chaque tentative est encadree d'un SAVEPOINT : avant le correctif, la
+-- mise a jour reussit reellement (elle journalise, elle deplace l'id) et
+-- fausserait les decomptes plus bas si on la laissait en place. Apres le
+-- correctif, throws_ok absorbe deja l'exception ; le ROLLBACK TO SAVEPOINT
+-- ne fait alors rien, il n'y a rien a defaire.
+SAVEPOINT freeze_created_at_transactions;
+SELECT throws_ok(
+  $$update public.transactions set created_at = '2999-01-01'
+     where id = '00000000-0000-0000-0000-0000000000fb'$$,
+  '42501',
+  'Colonne created_at non modifiable',
+  'Avancer created_at au-dela de updated_at est refuse'
+);
+ROLLBACK TO SAVEPOINT freeze_created_at_transactions;
+
+SAVEPOINT freeze_id_transactions;
+SELECT throws_ok(
+  $$update public.transactions set id = '00000000-0000-0000-0000-0000000000f9'
+     where id = '00000000-0000-0000-0000-0000000000fb'$$,
+  '42501',
+  'Colonne id non modifiable',
+  'Reecrire l''identifiant d''une operation est refuse'
+);
+ROLLBACK TO SAVEPOINT freeze_id_transactions;
+
+SAVEPOINT freeze_created_at_budgets;
+SELECT throws_ok(
+  $$update public.budgets set created_at = '2999-01-01'
+     where id = '00000000-0000-0000-0000-0000000000fd'$$,
+  '42501',
+  'Colonne created_at non modifiable',
+  'Avancer created_at d''un plafond est refuse'
+);
+ROLLBACK TO SAVEPOINT freeze_created_at_budgets;
+
+SAVEPOINT freeze_id_budgets;
+SELECT throws_ok(
+  $$update public.budgets set id = '00000000-0000-0000-0000-0000000000f9'
+     where id = '00000000-0000-0000-0000-0000000000fd'$$,
+  '42501',
+  'Colonne id non modifiable',
+  'Reecrire l''identifiant d''un plafond est refuse'
+);
+ROLLBACK TO SAVEPOINT freeze_id_budgets;
 
 -- spec 1 : Bob modifie une opération saisie par Alice.
 update public.transactions set amount = 150.00
