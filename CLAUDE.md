@@ -132,6 +132,8 @@ To journal another table: one `create trigger … execute function public.log_ac
 
 `transactions.user_id`, `transactions.group_id`, `budgets.group_id` and `budgets.category_id` are frozen: `guard_immutable_columns()` raises `42501` on any change. The app never edits them; the update policies alone did not prevent it.
 
+On the app side, `queryKeys.activity(groupId)` sits outside `['transactions']` and has no Realtime subscription on purpose. The feed is read deliberately: it refetches on every open (`refetchOnMount: 'always'`) and on pull-to-refresh, because a list that shifts under the finger while being read is worse. Pages are cursor-paginated on `(occurred_at, id)` like the history. The cursor keeps the timestamp string exactly as PostgREST returned it: a round trip through `Date` drops the microseconds, and the next page would repeat or skip an entry.
+
 ## V1 scope (decided — do not re-litigate)
 
 In: manual transaction entry, per-category budgets with in-app visual alerts, savings goals, CSV/PDF export (after the main screens, before notifications).

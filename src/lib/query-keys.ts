@@ -44,4 +44,9 @@ export const queryKeys = {
     ['transactions', 'breakdown', groupId, from] as const,
   transactionHistory: (groupId: string, filters: TransactionFilters) =>
     ['transactions', 'history', groupId, filters] as const,
+  // Hors de ['transactions'] à dessein : le fil se consulte délibérément, se
+  // recharge à chaque ouverture et au geste « tirer pour rafraîchir ». Aucune
+  // invalidation n'a besoin de l'atteindre, et le nicher le ferait recharger
+  // à chaque saisie pour rien.
+  activity: (groupId: string) => ['activity', groupId] as const,
 };

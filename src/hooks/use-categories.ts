@@ -15,10 +15,11 @@ export function useCategories(type: TransactionType | null): {
   categories: Category[];
   isLoading: boolean;
   error: unknown;
+  retry: () => void;
 } {
   const { activeGroupId } = useActiveGroup();
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: queryKeys.categories(activeGroupId ?? ''),
     queryFn: () => listForGroup(activeGroupId as string),
     enabled: activeGroupId !== null,
@@ -29,5 +30,12 @@ export function useCategories(type: TransactionType | null): {
     [data, type]
   );
 
-  return { categories, isLoading, error };
+  return {
+    categories,
+    isLoading,
+    error,
+    retry: () => {
+      void refetch();
+    },
+  };
 }
