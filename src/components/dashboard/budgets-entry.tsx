@@ -58,11 +58,16 @@ export function BudgetsEntry() {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Budgets. ${detail}`}
-        style={[
+        // Aplati : <Link asChild> transmet le style à son enfant via un Slot,
+        // qui lève une erreur de rendu en développement s'il reçoit un tableau.
+        // L'erreur ne se voit qu'à l'exécution en mode développement — un
+        // export de bundle, lui, est construit en production et passe sans
+        // rien signaler.
+        style={StyleSheet.flatten([
           styles.row,
           stacked && styles.rowStacked,
           { backgroundColor: colors.surface, borderColor: colors.border },
-        ]}
+        ])}
       >
         <View style={styles.left}>
           <View style={[styles.dot, { backgroundColor: accent }]} />

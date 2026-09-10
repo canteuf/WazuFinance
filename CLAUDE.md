@@ -125,6 +125,7 @@ Out, with reasons:
 ## UX constraints that shape the code
 
 - **Font scale is followed, not capped.** System font scaling grows text without growing its container, so containers must widen or reflow: derive sizes from `useWindowDimensions().fontScale` (it re-renders on change, unlike `PixelRatio.getFontScale()`), and stack two-column rows past `stackAtFontScale`. Only two places cap it — `AmountInput` and the dashboard balance — because their available width is the screen itself.
+- **A `<Link asChild>` child's `style` must be `StyleSheet.flatten(...)`, never an array.** `asChild` renders through a `Slot`, which throws a render error on an array style — and only in development, so `npx expo export` (a production build) passes without a word, as do tsc, lint and Jest. The failure surfaces on a device running the dev bundle, which is the last place the project checks. Every `asChild` site flattens; keep it that way.
 - **Expense entry in ≤3 taps** from the main screen (amount, category, confirm). Retention depends on it — it drives navigation and form design. `Screen`'s optional `floatingAction` renders outside the `ScrollView`, pinned in place, so a lengthening list can't scroll it out of reach.
 - Transaction history must be paginated (`transactions_group_occurred_idx` covers the filter + sort).
 - Forms default to smart values: last-used category, today's date — both are editable, just pre-filled to save a tap.
