@@ -17,7 +17,7 @@
 create extension if not exists pgtap with schema extensions;
 
 BEGIN;
-SELECT plan(6);
+SELECT plan(28);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures, créées en tant que postgres (RLS contournée)
@@ -104,6 +104,15 @@ SELECT is(
   'Une valeur de updated_at envoyee par le client est ignoree'
 );
 
+-- spec 2 : les deux mises à jour ci-dessus ne changent rien d'autre que
+-- updated_at, et n'écrivent donc rien.
+SELECT is(
+  (select count(*)::int from public.activity_log
+    where subject_id = '00000000-0000-0000-0000-0000000000fa'),
+  0,
+  'Une mise a jour sans changement reel n''ecrit aucune entree'
+);
+
 -- Le pendant : un vrai changement date updated_at de l'instant, même si le
 -- client envoie une autre valeur dans la même requête.
 update public.transactions set note = 'Train', updated_at = '2000-01-01 00:00+00'
@@ -145,6 +154,208 @@ SELECT throws_ok(
   '42501',
   'Colonne category_id non modifiable',
   'Changer la categorie d''un budget est refuse'
+);
+
+-- spec 1 : Bob modifie une opération saisie par Alice.
+update public.transactions set amount = 150.00
+ where id = '00000000-0000-0000-0000-0000000000fa';
+
+SELECT is(
+  (select actor_id from public.activity_log
+    where subject_id = '00000000-0000-0000-0000-0000000000fa'),
+  '00000000-0000-0000-0000-0000000000f2'::uuid,
+  'L''entree designe Bob, auteur de la modification, pas Alice, auteur de la saisie'
+);
+
+SELECT is(
+  (select actor_name from public.activity_log
+    where subject_id = '00000000-0000-0000-0000-0000000000fa'),
+  'Bob',
+  'L''entree garde le nom de l''auteur au moment de l''action'
+);
+
+SELECT is(
+  (select changed_fields from public.activity_log
+    where subject_id = '00000000-0000-0000-0000-0000000000fa'),
+  array['amount']::text[],
+  'changed_fields ne liste que la colonne modifiee, sans updated_at'
+);
+
+SELECT is(
+  (select (old_values ->> 'amount')::numeric from public.activity_log
+    where subject_id = '00000000-0000-0000-0000-0000000000fa'),
+  15.00::numeric,
+  'old_values porte le montant d''avant'
+);
+
+SELECT is(
+  (select (new_values ->> 'amount')::numeric from public.activity_log
+    where subject_id = '00000000-0000-0000-0000-0000000000fa'),
+  150.00::numeric,
+  'new_values porte le montant d''apres'
+);
+
+-- spec 5 : Bob supprime une opération saisie par Alice.
+delete from public.transactions where id = '00000000-0000-0000-0000-0000000000fc';
+
+SELECT is(
+  (select count(*)::int from public.activity_log
+    where subject_id = '00000000-0000-0000-0000-0000000000fc' and action = 'delete'),
+  1,
+  'Une suppression ecrit une entree delete'
+);
+
+SELECT is(
+  (select (old_values ->> 'amount')::numeric from public.activity_log
+    where subject_id = '00000000-0000-0000-0000-0000000000fc' and action = 'delete'),
+  20.00::numeric,
+  'L''entree de suppression garde la ligne disparue'
+);
+
+SELECT ok(
+  (select new_values is null and changed_fields = '{}'::text[] from public.activity_log
+    where subject_id = '00000000-0000-0000-0000-0000000000fc' and action = 'delete'),
+  'Une suppression n''a ni new_values ni changed_fields'
+);
+
+-- spec 6
+update public.budgets set amount = 350.00
+ where id = '00000000-0000-0000-0000-0000000000fd';
+
+SELECT is(
+  (select count(*)::int from public.activity_log
+    where subject = 'budget'
+      and subject_id = '00000000-0000-0000-0000-0000000000fd'
+      and action = 'update'
+      and changed_fields = array['amount']::text[]),
+  1,
+  'La modification d''un plafond est journalisee'
+);
+
+-- ---------------------------------------------------------------------------
+-- Alice, membre : lit le journal, ne peut pas y écrire (spec 8, 9)
+-- ---------------------------------------------------------------------------
+
+select set_config('request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-0000000000f1","role":"authenticated"}', true);
+
+SELECT throws_ok(
+  $$insert into public.activity_log (group_id, subject, subject_id, action, old_values, changed_fields)
+    values ('00000000-0000-0000-0000-0000000000f4', 'transaction',
+            '00000000-0000-0000-0000-0000000000fa', 'delete', '{}'::jsonb, '{}')$$,
+  '42501',
+  NULL,
+  'Un membre ne peut pas ecrire dans le journal'
+);
+
+-- Les droits sont retirés en plus de l'absence de policy : ces deux requêtes
+-- lèvent une erreur au lieu de ne toucher aucune ligne. La relecture en
+-- postgres plus bas prouve, elle, que rien n'a changé.
+SELECT throws_ok(
+  $$update public.activity_log set actor_name = 'Alice'$$,
+  '42501',
+  NULL,
+  'Un membre ne peut pas reecrire une entree'
+);
+
+SELECT throws_ok(
+  $$delete from public.activity_log$$,
+  '42501',
+  NULL,
+  'Un membre ne peut pas effacer une entree'
+);
+
+-- ---------------------------------------------------------------------------
+-- Carole, étrangère au groupe (spec 7)
+-- ---------------------------------------------------------------------------
+
+select set_config('request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-0000000000f3","role":"authenticated"}', true);
+
+SELECT is(
+  (select count(*)::int from public.activity_log
+    where group_id = '00000000-0000-0000-0000-0000000000f4'),
+  0,
+  'Un non-membre ne lit aucune entree du groupe'
+);
+
+-- ---------------------------------------------------------------------------
+-- Retour en postgres pour constater l'état réel, hors RLS
+-- ---------------------------------------------------------------------------
+
+set local role postgres;
+
+-- Quatre entrées : la note de …fc, le montant de …fa, la suppression de …fc,
+-- le plafond de …fd.
+SELECT is(
+  (select count(*)::int from public.activity_log
+    where group_id = '00000000-0000-0000-0000-0000000000f4'),
+  4,
+  'Les quatre entrees du groupe sont intactes'
+);
+
+SELECT is(
+  (select actor_name from public.activity_log
+    where subject_id = '00000000-0000-0000-0000-0000000000fa'),
+  'Bob',
+  'Aucune entree n''a ete reecrite par Alice'
+);
+
+-- spec 13 : supprimer un groupe supprime ses opérations et ses budgets en
+-- cascade. Sans le garde de log_activity(), le trigger voudrait journaliser
+-- ces suppressions dans un groupe déjà effacé, la clé étrangère lèverait une
+-- erreur, et toute la suppression du groupe serait annulée.
+SELECT lives_ok(
+  $$delete from public.budget_groups where id = '00000000-0000-0000-0000-0000000000f5'$$,
+  'Supprimer un groupe qui contient des operations et des budgets reussit'
+);
+
+SELECT is(
+  (select count(*)::int from public.activity_log
+    where group_id = '00000000-0000-0000-0000-0000000000f5'),
+  0,
+  'Un groupe supprime ne laisse aucune entree'
+);
+
+-- spec 14, 15 : Bob supprime son propre compte — la session est la sienne.
+-- Ses opérations dans le groupe partagé partent en cascade et sont
+-- journalisées ; son profil users est déjà effacé à ce moment-là. Si
+-- log_activity() prenait auth.uid() tel quel, il insérerait un actor_id qui
+-- ne pointe plus vers rien, la clé étrangère lèverait une erreur et la
+-- suppression du compte serait annulée.
+select set_config('request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-0000000000f2","role":"authenticated"}', true);
+
+SELECT lives_ok(
+  $$delete from auth.users where id = '00000000-0000-0000-0000-0000000000f2'$$,
+  'Bob peut supprimer son compte : l''auteur est lu dans users, pas pris a auth.uid()'
+);
+
+SELECT is(
+  (select count(*)::int from public.activity_log
+    where group_id = '00000000-0000-0000-0000-0000000000f4'
+      and actor_name = 'Bob'
+      and actor_id is null),
+  4,
+  'Les entrees de Bob survivent a son compte, a son nom, sans actor_id'
+);
+
+SELECT is(
+  (select count(*)::int from public.activity_log
+    where group_id = '00000000-0000-0000-0000-0000000000f4'
+      and actor_id is not null),
+  0,
+  'Aucune entree ne pointe plus vers le compte supprime'
+);
+
+SELECT is(
+  (select count(*)::int from public.activity_log
+    where subject_id = '00000000-0000-0000-0000-0000000000fb'
+      and action = 'delete'
+      and actor_id is null
+      and actor_name is null),
+  1,
+  'La suppression en cascade de l''operation de Bob est journalisee, sans auteur'
 );
 
 SELECT * FROM finish();

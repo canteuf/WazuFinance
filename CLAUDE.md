@@ -63,7 +63,7 @@ Neither auth route is named `index`, so `(app)/index.tsx` owns `/` without a rou
 
 The `handle_new_user()` trigger on `auth.users` creates profile + personal group + `owner` membership in the signup transaction, so the app never sees a user without a group. `account_memberships_guard_personal` enforces the one-member invariant.
 
-Tables: `users`, `budget_groups`, `account_memberships`, `categories` (`group_id IS NULL` = read-only global default), `transactions`, `budgets`, `savings_goals`, `group_invitations`.
+Tables: `users`, `budget_groups`, `account_memberships`, `categories` (`group_id IS NULL` = read-only global default), `transactions`, `budgets`, `savings_goals`, `group_invitations`, `activity_log` (written by triggers only — see below).
 
 **The budget period is not the calendar month.** `budget_groups.period_start_day` (1–28, `check`-constrained) sets the day a period starts, so a budget can follow the payday. It sits on the group, not the user, so both members of a shared budget see the same figures — and `budget_groups_update_owner` already restricts who can change it. The 28 cap exists because the 29th, 30th and 31st don't occur every month. Bounds are computed client-side by `periodBounds()`: the server is UTC, and `date_trunc('month', now())` reports the wrong period during the first hours of a rollover day.
 
@@ -116,6 +116,21 @@ That reason does not generalise. `period_summary()` is `SECURITY INVOKER`, becau
 Aggregates are computed in Postgres, never in JavaScript: amounts are `numeric(12,2)`, which Postgres sums exactly, while JS addition goes through binary floats. PostgREST's own aggregate functions are not an option — enabling them requires `pgrst.db_aggregates_enabled` on the `authenticator` role, which opens `sum()` on every table for every client.
 
 Joining a group goes through the `join_group_with_code()` RPC, not a direct insert — the joining user cannot yet read the group's invitations.
+
+## Activity log
+
+`activity_log` records every update and delete on `transactions` and `budgets`: who, when, the row before and after. It is written only by the `log_activity()` trigger. Clients hold `select` and nothing else — no policy and no privilege for insert, update or delete — so no client can add, rewrite or erase an entry, including through a direct API call.
+
+`log_activity()` is `SECURITY DEFINER` for its own reason, not by imitation of the membership helpers: it inserts into a table where clients deliberately have no write right. Two guards keep it from breaking cascades, and both are covered by `activity_log_test.sql`:
+
+- it writes nothing when the row's group no longer exists — deleting a group or an account cascades into transactions and budgets, and an entry pointing at a deleted group would fail its foreign key and roll the whole deletion back;
+- it reads the author from `users` rather than taking `auth.uid()` as is — when users delete their own account, their `users` row is already gone during the cascade.
+
+To journal another table: one `create trigger … execute function public.log_activity('<subject>')` and one more value in the `activity_subject` enum.
+
+`updated_at` moves only on a real change: `touch_updated_at()` compares the row with and without `updated_at`, and ignores any value the client sends. That is what makes « modifié » (`updated_at > created_at`) trustworthy. `log_activity()` uses the same comparison, so the mention and the log always agree.
+
+`transactions.user_id`, `transactions.group_id`, `budgets.group_id` and `budgets.category_id` are frozen: `guard_immutable_columns()` raises `42501` on any change. The app never edits them; the update policies alone did not prevent it.
 
 ## V1 scope (decided — do not re-litigate)
 
