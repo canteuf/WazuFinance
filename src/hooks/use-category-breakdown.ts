@@ -20,6 +20,8 @@ export function useCategoryBreakdown(): {
   slices: CategorySlice[];
   isLoading: boolean;
   error: unknown;
+  /** Vrai seulement si aucune lecture n'a jamais abouti (voir `isLoadingError` de TanStack). */
+  isLoadingError: boolean;
 } {
   const { activeGroupId, activeGroup } = useActiveGroup();
   const { from, to } = periodBounds(
@@ -27,11 +29,11 @@ export function useCategoryBreakdown(): {
     activeGroup?.periodStartDay ?? DEFAULT_START_DAY
   );
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, isLoadingError } = useQuery({
     queryKey: queryKeys.categoryBreakdown(activeGroupId ?? '', from),
     queryFn: () => getCategoryBreakdown(activeGroupId as string, from, to),
     enabled: activeGroupId !== null,
   });
 
-  return { slices: data ?? [], isLoading, error };
+  return { slices: data ?? [], isLoading, error, isLoadingError };
 }

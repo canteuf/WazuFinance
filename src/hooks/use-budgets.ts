@@ -9,14 +9,16 @@ export function useBudgets(): {
   budgets: BudgetWithCategory[];
   isLoading: boolean;
   error: unknown;
+  /** Vrai seulement si aucune lecture n'a jamais abouti (voir `isLoadingError` de TanStack). */
+  isLoadingError: boolean;
 } {
   const { activeGroupId } = useActiveGroup();
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, isLoadingError } = useQuery({
     queryKey: queryKeys.budgets(activeGroupId ?? ''),
     queryFn: () => listForGroup(activeGroupId as string),
     enabled: activeGroupId !== null,
   });
 
-  return { budgets: data ?? [], isLoading, error };
+  return { budgets: data ?? [], isLoading, error, isLoadingError };
 }

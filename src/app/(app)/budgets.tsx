@@ -21,8 +21,16 @@ export default function BudgetsScreen() {
   const colors = useColors();
   const elevation = useElevation();
   const router = useRouter();
-  const { isLoading: groupLoading, error: groupError } = useActiveGroup();
-  const { items, isLoading, error } = useBudgetProgress();
+  const { isLoading: groupLoading, error: groupError, activeGroupId } = useActiveGroup();
+  const { items, isLoading, error, isEmptyError } = useBudgetProgress();
+
+  // Seules bloquent les erreurs qui ne laissent rien de juste à montrer.
+  // TanStack garde les dernières données valides et ne remplit `error`
+  // qu'après l'échec d'un rafraîchissement en arrière-plan : revenir hors ligne
+  // au premier plan après plus de 30 s ne doit pas remplacer des budgets déjà
+  // affichés par un message d'erreur — même règle que activity.tsx.
+  const blockingError: unknown =
+    groupError !== null && activeGroupId === null ? groupError : isEmptyError ? error : null;
 
   return (
     <Screen
@@ -55,13 +63,13 @@ export default function BudgetsScreen() {
         <Text style={[styles.title, { color: colors.text }]}>Budgets</Text>
       </View>
 
-      {groupError || error ? (
+      {blockingError ? (
         // Si le chargement des adhésions échoue, `activeGroupId` reste `null` :
         // `useBudgetProgress()` reste alors désactivé (ni chargement ni
         // erreur) et sans ce garde l'écran afficherait à tort « Aucun budget
         // défini » au lieu du vrai message — même motif que budget.tsx.
         <Text style={[styles.message, { color: colors.danger }]}>
-          {dataErrorMessage(groupError ?? error)}
+          {dataErrorMessage(blockingError)}
         </Text>
       ) : isLoading || groupLoading ? (
         // Tant que le groupe actif n'est pas résolu, `useBudgets` et
