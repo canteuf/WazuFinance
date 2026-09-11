@@ -157,20 +157,22 @@ export default function GroupScreen() {
                     {copied ? 'Copié !' : 'Copier'}
                   </Text>
                 </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isGenerating}
-                  onPress={() => {
-                    setActionError(undefined);
-                    regenerate.mutate(invitation.id, {
-                      onError: (error) => setActionError(dataErrorMessage(error)),
-                    });
-                  }}
-                >
-                  <Text style={[styles.link, { color: colors.primary }]}>Régénérer</Text>
-                </Pressable>
+                {isOwner ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={isGenerating}
+                    onPress={() => {
+                      setActionError(undefined);
+                      regenerate.mutate(invitation.id, {
+                        onError: (error) => setActionError(dataErrorMessage(error)),
+                      });
+                    }}
+                  >
+                    <Text style={[styles.link, { color: colors.primary }]}>Régénérer</Text>
+                  </Pressable>
+                ) : null}
               </View>
-            ) : (
+            ) : isOwner ? (
               <Button
                 title="Générer un code"
                 loading={isGenerating}
@@ -181,6 +183,10 @@ export default function GroupScreen() {
                   });
                 }}
               />
+            ) : (
+              <Text style={[styles.message, { color: colors.textMuted }]}>
+                Aucune invitation active.
+              </Text>
             )}
           </View>
 

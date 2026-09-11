@@ -9,6 +9,9 @@ export function useGroupMembers(groupId: string) {
     queryKey: queryKeys.groupMembers(groupId),
     queryFn: () => listGroupMembers(groupId),
     enabled: groupId !== '',
+    // Pas de temps réel sur account_memberships (voir CLAUDE.md) : sans ça,
+    // un ajout/exclusion fait ailleurs ne se voit qu'après le staleTime.
+    refetchOnMount: 'always',
   });
 
   return { members: data ?? [], isLoading, error, isLoadingError };
