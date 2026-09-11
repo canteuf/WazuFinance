@@ -1,7 +1,8 @@
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
-import type { SavingsProgress } from '@/lib/savings-progress';
+import { formatOccurredOn } from '@/lib/dates';
 import { formatAmount } from '@/lib/money';
+import type { SavingsProgress } from '@/lib/savings-progress';
 import { font, radius, spacing, stackAtFontScale, useColors } from '@/theme/tokens';
 
 /** Le texte dit ce que la couleur dit : un daltonien lit la même information. */
@@ -33,7 +34,7 @@ export function SavingsGoalRow({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${item.goal.name}, ${formatAmount(item.goal.current_amount)} euros sur ${formatAmount(item.goal.target_amount)} euros, ${percent} %. ${statusText(item)}`}
+      accessibilityLabel={`${item.goal.name}, ${formatAmount(item.goal.current_amount)} euros sur ${formatAmount(item.goal.target_amount)} euros, ${percent} %. ${statusText(item)}${item.goal.target_date ? `. Échéance : ${formatOccurredOn(item.goal.target_date)}` : ''}`}
       onPress={onPress}
       style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.border }]}
     >
@@ -65,6 +66,7 @@ export function SavingsGoalRow({
         ]}
       >
         {statusText(item)} · {percent} %
+        {item.goal.target_date ? ` · ${formatOccurredOn(item.goal.target_date)}` : ''}
       </Text>
     </Pressable>
   );
