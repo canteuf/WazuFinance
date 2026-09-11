@@ -12,5 +12,7 @@ export type DateFieldProps = {
   label: string;
   onChange: (iso: string) => void;
   /** Borne haute du sélecteur : pas d'opération future dans un suivi de dépenses. */
-  maximumDate: Date;
+  maximumDate?: Date;
+  /** Borne basse : une échéance d'objectif d'épargne va dans l'autre sens. */
+  minimumDate?: Date;
 };

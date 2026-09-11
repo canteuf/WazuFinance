@@ -13,7 +13,7 @@ export type { DateFieldProps };
  * dans une modale gérée par `@react-native-community/datetimepicker`, qui
  * n'a pas d'équivalent web — voir date-field.web.tsx pour ce cas.
  */
-export function DateField({ value, label, onChange, maximumDate }: DateFieldProps) {
+export function DateField({ value, label, onChange, maximumDate, minimumDate }: DateFieldProps) {
   const colors = useColors();
   const [open, setOpen] = useState(false);
 
@@ -34,6 +34,7 @@ export function DateField({ value, label, onChange, maximumDate }: DateFieldProp
           value={isoToDate(value)}
           mode="date"
           maximumDate={maximumDate}
+          minimumDate={minimumDate}
           onChange={(_event, date) => {
             setOpen(false);
             if (date) {

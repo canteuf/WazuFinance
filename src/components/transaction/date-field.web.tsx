@@ -14,7 +14,7 @@ export type { DateFieldProps };
  * superposé à la ligne affichée — cliquer n'importe où dessus ouvre le
  * calendrier natif du navigateur, sans dépendre d'un état « ouvert ».
  */
-export function DateField({ value, label, onChange, maximumDate }: DateFieldProps) {
+export function DateField({ value, label, onChange, maximumDate, minimumDate }: DateFieldProps) {
   const colors = useColors();
   // L'input superposé est en opacity 0 : sans cet état, un utilisateur
   // clavier voyant n'a aucun repère de focus sur la rangée visible.
@@ -33,7 +33,8 @@ export function DateField({ value, label, onChange, maximumDate }: DateFieldProp
         type="date"
         aria-label={`Date : ${label}`}
         value={value}
-        max={dateToIso(maximumDate)}
+        max={maximumDate ? dateToIso(maximumDate) : undefined}
+        min={minimumDate ? dateToIso(minimumDate) : undefined}
         onChange={(event) => {
           // input[type=date] rend déjà du YYYY-MM-DD : pas besoin de repasser
           // par new Date(...), le piège de fuseau que isoToDate évite ailleurs.
