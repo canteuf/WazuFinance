@@ -319,7 +319,7 @@ alter table public.group_invitations
 -- guard_owner_orphan : bloque le départ ou la rétrogradation volontaire d'un
 -- propriétaire tant que le groupe compte d'autres membres.
 --
--- pg_trigger_depth() = 0 restreint la garde à l'action directe : toute
+-- pg_trigger_depth() = 1 restreint la garde à l'action directe : toute
 -- cascade (suppression du groupe par son propriétaire, ou suppression de
 -- compte) s'exécute imbriquée dans le trigger système de la contrainte, donc
 -- à une profondeur supérieure à zéro, et n'est pas concernée. Fermer cette
@@ -338,7 +338,7 @@ declare
 begin
   becomes_non_owner := (tg_op = 'DELETE') or (new.role <> 'owner');
 
-  if pg_trigger_depth() = 0 and old.role = 'owner' and becomes_non_owner then
+  if pg_trigger_depth() = 1 and old.role = 'owner' and becomes_non_owner then
     if exists (
       select 1 from public.account_memberships
        where group_id = old.group_id and user_id <> old.user_id

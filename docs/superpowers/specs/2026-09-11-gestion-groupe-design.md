@@ -68,7 +68,7 @@ alter table public.group_invitations
 
 `budget_groups.owner_id` référence `users (id) on delete cascade` : supprimer le compte d'un propriétaire supprime son groupe, donc cascade jusqu'à `account_memberships` — un groupe partagé disparaît bien avec son propriétaire aujourd'hui, il n'y a pas d'exception pour les groupes à plusieurs membres. C'est précisément ce que la garde doit empêcher, mais une suppression de compte est une opération en cascade sur potentiellement plusieurs lignes `account_memberships` à la fois (celle du propriétaire et celles des co-membres), dans un ordre que Postgres ne garantit pas à l'intérieur d'une même instruction — un `exists(...)` ré-interrogeant les lignes sœurs à l'intérieur de ce même lot serait donc non déterministe.
 
-La garde se limite donc à ce qu'elle peut trancher de façon fiable : **l'action volontaire, à une seule ligne, que cet écran expose** — un propriétaire qui se retire ou est rétrogradé alors que le groupe et d'autres membres existent encore. `pg_trigger_depth() = 0` distingue cette action directe d'une cascade (FK `on delete cascade`, quelle que soit son origine) : une cascade s'exécute toujours imbriquée dans le trigger système de la contrainte, donc à une profondeur supérieure à zéro.
+La garde se limite donc à ce qu'elle peut trancher de façon fiable : **l'action volontaire, à une seule ligne, que cet écran expose** — un propriétaire qui se retire ou est rétrogradé alors que le groupe et d'autres membres existent encore. `pg_trigger_depth() = 1` distingue cette action directe d'une cascade : ce trigger s'exécute déjà à la profondeur 1 pour un appel direct (la profondeur ne redescend jamais à 0 pendant l'exécution du trigger lui-même) ; une cascade (FK `on delete cascade`, quelle que soit son origine) s'exécute imbriquée dans le trigger système de la contrainte, donc à une profondeur supérieure à 1.
 
 ```sql
 create function public.guard_owner_orphan()
@@ -82,7 +82,7 @@ declare
 begin
   becomes_non_owner := (tg_op = 'DELETE') or (new.role <> 'owner');
 
-  if pg_trigger_depth() = 0 and old.role = 'owner' and becomes_non_owner then
+  if pg_trigger_depth() = 1 and old.role = 'owner' and becomes_non_owner then
     if exists (
       select 1 from public.account_memberships
        where group_id = old.group_id and user_id <> old.user_id
@@ -106,8 +106,8 @@ create trigger account_memberships_guard_owner_orphan
   for each row execute function public.guard_owner_orphan();
 ```
 
-- Retrait/rétrogradation volontaire du propriétaire (action de cet écran, toujours une seule ligne, `pg_trigger_depth() = 0`) avec d'autres membres encore présents → bloqué.
-- Toute cascade (suppression du groupe par son propriétaire, ou suppression de compte) → `pg_trigger_depth() > 0` → la garde ne s'applique pas, la cascade va jusqu'au bout. **Conséquence acceptée pour ce lot de travail** : un propriétaire peut aujourd'hui contourner le blocage en supprimant son compte plutôt qu'en essayant de quitter le groupe. Fermer cette échappatoire demande une vérification faite *avant* de lancer la suppression de compte (dans le futur écran 8, quand cette fonctionnalité sera conçue), pas un trigger bas niveau qui course l'ordre d'un lot en cascade — hors périmètre ici (l'écran 8 n'existe pas encore).
+- Retrait/rétrogradation volontaire du propriétaire (action de cet écran, toujours une seule ligne, `pg_trigger_depth() = 1`) avec d'autres membres encore présents → bloqué.
+- Toute cascade (suppression du groupe par son propriétaire, ou suppression de compte) → `pg_trigger_depth() > 1` → la garde ne s'applique pas, la cascade va jusqu'au bout. **Conséquence acceptée pour ce lot de travail** : un propriétaire peut aujourd'hui contourner le blocage en supprimant son compte plutôt qu'en essayant de quitter le groupe. Fermer cette échappatoire demande une vérification faite *avant* de lancer la suppression de compte (dans le futur écran 8, quand cette fonctionnalité sera conçue), pas un trigger bas niveau qui course l'ordre d'un lot en cascade — hors périmètre ici (l'écran 8 n'existe pas encore).
 - Bare `raise exception`, pas de code d'erreur explicite : suit le précédent de `guard_personal_group_membership()`. Tombe sur le message générique de `data-errors.ts`. L'UX réelle vient du bouton « Quitter » désactivé côté client (section 5), l'erreur base est un filet de sécurité.
 
 ## 3. Couche données — `src/data/groups.ts`
@@ -185,8 +185,8 @@ Clés indépendantes de `['transactions']`/`['budgets']` : rien de ce qui les in
 Nouveau fichier `supabase/tests/group_management_rls_test.sql` (aucun test n'existe aujourd'hui pour ces trois tables) :
 
 - `create_shared_group()` crée le groupe et la ligne `owner` de façon atomique ; échoue sans session.
-- La garde bloque un `delete`/`update` **direct** (`pg_trigger_depth() = 0`) sur la ligne `owner` quand le groupe a d'autres membres, et l'autorise quand il en est l'unique membre.
-- La garde n'empêche pas la suppression complète du groupe (`delete from budget_groups`) même avec plusieurs membres — la cascade (`pg_trigger_depth() > 0`) doit passer jusqu'au bout, co-membres compris.
+- La garde bloque un `delete`/`update` **direct** (`pg_trigger_depth() = 1`) sur la ligne `owner` quand le groupe a d'autres membres, et l'autorise quand il en est l'unique membre.
+- La garde n'empêche pas la suppression complète du groupe (`delete from budget_groups`) même avec plusieurs membres — la cascade (`pg_trigger_depth() > 1`) doit passer jusqu'au bout, co-membres compris.
 - Le défaut de `group_invitations.code` génère bien une valeur (non nulle, 8 caractères hex) sans que l'appelant la fournisse.
 - `account_memberships_delete_owner_or_self` : un membre peut se retirer lui-même, ne peut pas retirer un autre membre ; un owner peut retirer un membre, ne peut pas être retiré par quelqu'un d'autre.
 - `group_invitations_insert_owner` refuse un non-owner, refuse une `expires_at` dans le passé.
