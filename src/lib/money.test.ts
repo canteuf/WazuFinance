@@ -105,23 +105,23 @@ describe('formatDelta', () => {
 });
 
 describe('parseNonNegativeAmount', () => {
-  it('accepte zero', () => {
+  it('accepte zéro', () => {
     expect(parseNonNegativeAmount('0')).toBe(0);
   });
 
-  it('accepte une decimale avec virgule', () => {
+  it('accepte une décimale avec virgule', () => {
     expect(parseNonNegativeAmount('24,90')).toBe(24.9);
   });
 
-  it('refuse un montant negatif', () => {
+  it('refuse un montant négatif', () => {
     expect(parseNonNegativeAmount('-10')).toBeNull();
   });
 
-  it('refuse plus de deux decimales', () => {
+  it('refuse plus de deux décimales', () => {
     expect(parseNonNegativeAmount('10,999')).toBeNull();
   });
 
-  it('refuse une saisie non numerique', () => {
+  it('refuse une saisie non numérique', () => {
     expect(parseNonNegativeAmount('douze')).toBeNull();
   });
 

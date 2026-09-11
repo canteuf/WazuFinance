@@ -22,19 +22,19 @@ describe('savingsProgress', () => {
     expect(result.status).toBe('in_progress');
   });
 
-  it('passe en atteint pile a 100 %', () => {
+  it('passe en atteint pile à 100 %', () => {
     const result = savingsProgress(goal({ target_amount: 500, current_amount: 500 }));
     expect(result.percent).toBe(100);
     expect(result.status).toBe('reached');
   });
 
-  it('depasse 100 % dans le texte, sans etre plafonne par le calcul', () => {
+  it('dépasse 100 % dans le texte, sans être plafonné par le calcul', () => {
     const result = savingsProgress(goal({ target_amount: 200, current_amount: 290 }));
     expect(result.percent).toBe(145);
     expect(result.status).toBe('reached');
   });
 
-  it(`rend 0 % quand rien n'est encore epargne`, () => {
+  it(`rend 0 % quand rien n'est encore épargné`, () => {
     const result = savingsProgress(goal({ target_amount: 300, current_amount: 0 }));
     expect(result.percent).toBe(0);
     expect(result.status).toBe('in_progress');
