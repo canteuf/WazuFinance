@@ -113,6 +113,8 @@ Security lives in the database, not the client. Every policy resolves to "is the
 
 That reason does not generalise. `period_summary()` is `SECURITY INVOKER`, because it reads `transactions` from outside any policy — no recursion, so `transactions_select_member` applies as written and there is no bypass to audit. A non-member sums zero rows and gets `0/0/0`, which is an answer, not an error. Copying `DEFINER` by imitation is the mistake to avoid.
 
+`savings_goals_all_own` is the one policy in the project that resolves on `user_id = auth.uid()` instead of group membership, and that is deliberate, not an oversight: a savings goal stays personal even inside a shared budget — two members of the same group never see each other's goals, which `supabase/tests/savings_goals_rls_test.sql` proves. Do not "fix" this policy to route through `is_group_member()`; doing so would silently share a shared budget's savings goals across its members. For the same reason `queryKeys.savingsGoals()` is a single flat key, deliberately not split per group — `useClearCacheOnUserChange()` is already the only boundary that matters here, unlike `budgets`, which has an active group to track.
+
 Aggregates are computed in Postgres, never in JavaScript: amounts are `numeric(12,2)`, which Postgres sums exactly, while JS addition goes through binary floats. PostgREST's own aggregate functions are not an option — enabling them requires `pgrst.db_aggregates_enabled` on the `authenticator` role, which opens `sum()` on every table for every client.
 
 Joining a group goes through the `join_group_with_code()` RPC, not a direct insert — the joining user cannot yet read the group's invitations.
@@ -150,7 +152,7 @@ Out, with reasons:
 - **Expense entry in ≤3 taps** from the main screen (amount, category, confirm). Retention depends on it — it drives navigation and form design. `Screen`'s optional `floatingAction` renders outside the `ScrollView`, pinned in place, so a lengthening list can't scroll it out of reach.
 - Transaction history must be paginated (`transactions_group_occurred_idx` covers the filter + sort).
 - Forms default to smart values: last-used category, today's date — both are editable, just pre-filled to save a tap.
-- Shared budgets sync live via Supabase Realtime (`transactions`, `budgets`, `savings_goals`, `account_memberships` are in the publication).
+- Shared budgets sync live via Supabase Realtime (`transactions`, `budgets`, `account_memberships` are in the publication). `savings_goals` is in the same publication for a different reason — it keeps one user's own devices in sync, never fellow group members, since goals are personal (see RLS above).
 
 ## Conventions
 
