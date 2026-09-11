@@ -277,7 +277,7 @@ export type Database = {
           used_by: string | null
         }
         Insert: {
-          code: string
+          code?: string
           created_at?: string
           created_by: string
           expires_at: string
@@ -469,6 +469,7 @@ export type Database = {
           total: number
         }[]
       }
+      create_shared_group: { Args: { name: string }; Returns: string }
       is_group_member: { Args: { gid: string }; Returns: boolean }
       is_group_owner: { Args: { gid: string }; Returns: boolean }
       join_group_with_code: {

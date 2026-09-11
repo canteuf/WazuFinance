@@ -44,8 +44,14 @@ grant execute on function public.create_shared_group(text) to authenticated;
 -- Code d'invitation généré en base : le client ne doit jamais en inventer un.
 -- ---------------------------------------------------------------------------
 
+-- gen_random_bytes vit dans le schéma extensions sur Supabase hébergé (pas
+-- public) : pgcrypto y est déjà provisionné par la plateforme, et le rôle qui
+-- applique les migrations n'a pas ce schéma dans son search_path — d'où la
+-- qualification explicite, contrairement à gen_random_uuid() plus haut, qui
+-- est une fonction native de Postgres depuis la version 13, indépendante de
+-- pgcrypto et donc toujours résolue sans qualification.
 alter table public.group_invitations
-  alter column code set default encode(gen_random_bytes(4), 'hex');
+  alter column code set default encode(extensions.gen_random_bytes(4), 'hex');
 
 -- ---------------------------------------------------------------------------
 -- guard_owner_orphan : bloque le départ ou la rétrogradation volontaire d'un
