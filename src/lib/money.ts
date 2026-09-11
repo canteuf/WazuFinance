@@ -25,6 +25,24 @@ export function parseAmount(input: string): number | null {
   return value;
 }
 
+/**
+ * Comme parseAmount, mais accepte zero — un objectif d'epargne commence
+ * parfois a 0 €, contrairement a une transaction ou un plafond de budget.
+ */
+export function parseNonNegativeAmount(input: string): number | null {
+  const normalised = input.trim().replace(',', '.');
+  if (!/^\d+(\.\d{1,2})?$/.test(normalised)) {
+    return null;
+  }
+
+  const value = Number(normalised);
+  if (value < 0 || value > MAX_AMOUNT) {
+    return null;
+  }
+
+  return value;
+}
+
 const formatter = new Intl.NumberFormat('fr-FR', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,

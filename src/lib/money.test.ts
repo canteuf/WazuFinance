@@ -1,4 +1,11 @@
-import { formatAmount, formatBalance, formatDelta, formatSigned, parseAmount } from '@/lib/money';
+import {
+  formatAmount,
+  formatBalance,
+  formatDelta,
+  formatSigned,
+  parseAmount,
+  parseNonNegativeAmount,
+} from '@/lib/money';
 
 describe('parseAmount', () => {
   it('accepte la virgule décimale française', () => {
@@ -94,5 +101,31 @@ describe('formatDelta', () => {
 
   it('traite un écart nul comme une progression', () => {
     expect(formatDelta(0)).toBe('+0,00');
+  });
+});
+
+describe('parseNonNegativeAmount', () => {
+  it('accepte zero', () => {
+    expect(parseNonNegativeAmount('0')).toBe(0);
+  });
+
+  it('accepte une decimale avec virgule', () => {
+    expect(parseNonNegativeAmount('24,90')).toBe(24.9);
+  });
+
+  it('refuse un montant negatif', () => {
+    expect(parseNonNegativeAmount('-10')).toBeNull();
+  });
+
+  it('refuse plus de deux decimales', () => {
+    expect(parseNonNegativeAmount('10,999')).toBeNull();
+  });
+
+  it('refuse une saisie non numerique', () => {
+    expect(parseNonNegativeAmount('douze')).toBeNull();
+  });
+
+  it('refuse un montant hors bornes', () => {
+    expect(parseNonNegativeAmount('12345678901')).toBeNull();
   });
 });
