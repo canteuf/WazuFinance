@@ -68,6 +68,7 @@ function AppStack() {
           sheetCornerRadius: 24,
         }}
       />
+      <Stack.Screen name="group" />
       <Stack.Screen
         name="transaction"
         options={{
