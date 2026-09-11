@@ -128,7 +128,7 @@ export function SavingsGoalForm({
 
       {touched && !valid ? (
         <Text style={[styles.error, { color: colors.danger }]}>
-          Donnez un nom et un montant cible supérieur à zéro.
+          Donnez un nom, un montant cible supérieur à zéro et un montant actuel positif ou nul.
         </Text>
       ) : null}
 
