@@ -1,0 +1,45 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+import {
+  createSavingsGoal,
+  deleteSavingsGoal,
+  updateSavingsGoal,
+  type CreateSavingsGoalInput,
+  type UpdateSavingsGoalInput,
+} from '@/data/savings-goals';
+import { queryKeys } from '@/lib/query-keys';
+
+/** Création, modification et suppression d'un objectif d'épargne. */
+export function useSavingsGoalMutations() {
+  const queryClient = useQueryClient();
+
+  function invalidate() {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.savingsGoals() });
+  }
+
+  const createGoal = useMutation({
+    mutationFn: (input: CreateSavingsGoalInput) => createSavingsGoal(input),
+    onSuccess: invalidate,
+  });
+
+  const updateGoal = useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: UpdateSavingsGoalInput }) =>
+      updateSavingsGoal(id, patch),
+    onSuccess: invalidate,
+  });
+
+  const deleteGoal = useMutation({
+    mutationFn: (id: string) => deleteSavingsGoal(id),
+    onSuccess: invalidate,
+  });
+
+  return {
+    createGoal,
+    updateGoal,
+    deleteGoal,
+    // Deux indicateurs distincts, comme pour les transactions et les budgets :
+    // un seul agrégé faisait tourner le bouton Supprimer pendant l'enregistrement.
+    isSaving: createGoal.isPending || updateGoal.isPending,
+    isDeleting: deleteGoal.isPending,
+  };
+}

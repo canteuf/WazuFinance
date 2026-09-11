@@ -49,4 +49,10 @@ export const queryKeys = {
   // invalidation n'a besoin de l'atteindre, et le nicher le ferait recharger
   // à chaque saisie pour rien.
   activity: (groupId: string) => ['activity', groupId] as const,
+  // Portée personnelle, pas de groupe : une seule clé, sans le couple
+  // racine/groupe des budgets. La policy ne renvoie déjà que les objectifs de
+  // l'appelant, et useClearCacheOnUserChange() vide tout le cache au
+  // changement de compte — il n'existe pas d'équivalent « objectif actif »
+  // dont une invalidation devrait se méfier.
+  savingsGoals: () => ['savingsGoals'] as const,
 };
