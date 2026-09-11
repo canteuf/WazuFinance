@@ -101,7 +101,7 @@ Anything *derived* from transactions nests under that same root — `periodSumma
 
 `ActiveGroupProvider` holds the active group for the whole app, initialised on the personal account (first in the membership list). Screens write into that group; they never pick a `group_id` themselves.
 
-Data errors are mapped by SQLSTATE code in `src/lib/data-errors.ts` first — that rule doesn't change — with a message-based fallback for transport failures only, which reach the client as an object with `code: ""` and no SQLSTATE to key off. Same priority order as `auth-errors.ts`.
+Data errors are mapped by SQLSTATE code in `src/lib/data-errors.ts` first — that rule doesn't change — with two message-based exceptions. One is a fallback for transport failures only, which reach the client as an object with `code: ""` and no SQLSTATE to key off. The other is deliberate: `error.code === 'P0001'`, the generic code every bare `raise exception` shares (`join_group_with_code()` and the guard triggers all raise through it), returns `error.message` verbatim rather than going through `MESSAGES`, because a single table entry keyed on `P0001` can't represent several unrelated messages that all happen to share that code. Same priority order as `auth-errors.ts`.
 
 History pages are **cursor-paginated on `(occurred_on, id)`**, never `OFFSET` / `.range()`. Realtime inserts rows while the user scrolls, so an offset shifts every later page: a row appears twice, or is skipped. `transactions_group_occurred_idx` and the `id` tiebreak exist for exactly this. PostgREST cannot express row-value comparison, so `listPage()` builds the equivalent predicate with `.or()`; the cursor values always come from a row the server already returned.
 
@@ -117,7 +117,9 @@ That reason does not generalise. `period_summary()` is `SECURITY INVOKER`, becau
 
 Aggregates are computed in Postgres, never in JavaScript: amounts are `numeric(12,2)`, which Postgres sums exactly, while JS addition goes through binary floats. PostgREST's own aggregate functions are not an option — enabling them requires `pgrst.db_aggregates_enabled` on the `authenticator` role, which opens `sum()` on every table for every client.
 
-Joining a group goes through the `join_group_with_code()` RPC, not a direct insert — the joining user cannot yet read the group's invitations.
+Joining a group goes through the `join_group_with_code()` RPC, not a direct insert — the joining user cannot yet read the group's invitations. Creating a shared group goes through `create_shared_group()` for the same reason, from the other end: `account_memberships_insert_owner` requires `is_group_owner(group_id)`, which can never be true for a group's very first membership row, so a `SECURITY DEFINER` RPC inserts the group and its owner-membership row atomically.
+
+`guard_owner_orphan()` (the trigger on `account_memberships` added by migration `20260911000100_group_management.sql`) blocks an owner from leaving or being demoted while the group has other members, using `pg_trigger_depth() = 1` so only a direct client action is blocked — every cascade (group deletion, account deletion) runs nested at a greater depth and passes through unblocked. That means an owner can currently escape the block by deleting their account instead of leaving the group; this is a known, accepted V1 limitation, not an oversight, deferred to the not-yet-built "écran 8" (account settings).
 
 ## Activity log
 

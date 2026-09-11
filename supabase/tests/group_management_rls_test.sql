@@ -58,7 +58,7 @@ SELECT throws_ok(
   $$select public.create_shared_group('Sans session')$$,
   '42501',
   NULL,
-  'anon ne peut pas executer create_shared_group'
+  'anon ne peut pas exécuter create_shared_group'
 );
 
 set local role authenticated;

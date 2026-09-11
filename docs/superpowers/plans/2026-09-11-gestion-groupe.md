@@ -322,7 +322,7 @@ alter table public.group_invitations
 -- pg_trigger_depth() = 1 restreint la garde à l'action directe : toute
 -- cascade (suppression du groupe par son propriétaire, ou suppression de
 -- compte) s'exécute imbriquée dans le trigger système de la contrainte, donc
--- à une profondeur supérieure à zéro, et n'est pas concernée. Fermer cette
+-- à une profondeur supérieure à 1, et n'est pas concernée. Fermer cette
 -- échappatoire côté suppression de compte est hors périmètre ici (écran 8,
 -- pas encore conçu) : voir la spec.
 -- ---------------------------------------------------------------------------
