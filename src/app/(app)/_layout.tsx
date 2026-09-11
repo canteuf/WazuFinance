@@ -49,6 +49,25 @@ function AppStack() {
           sheetCornerRadius: 24,
         }}
       />
+      <Stack.Screen name="groups" />
+      <Stack.Screen
+        name="group-create"
+        options={{
+          presentation: 'formSheet',
+          sheetAllowedDetents: 'fitToContents',
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 24,
+        }}
+      />
+      <Stack.Screen
+        name="group-join"
+        options={{
+          presentation: 'formSheet',
+          sheetAllowedDetents: 'fitToContents',
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 24,
+        }}
+      />
       <Stack.Screen
         name="transaction"
         options={{

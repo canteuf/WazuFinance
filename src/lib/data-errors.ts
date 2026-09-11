@@ -47,6 +47,14 @@ function hasMessage(error: unknown): error is { message: string } {
 
 export function dataErrorMessage(error: unknown): string {
   if (hasCode(error)) {
+    // P0001 est le code générique de tout `raise exception` sans code
+    // explicite : plusieurs messages distincts le partagent (les gardes,
+    // join_group_with_code()), donc pas de table de correspondance possible
+    // ici — le message porté par l'exception est déjà le texte français à
+    // afficher tel quel.
+    if (error.code === 'P0001' && hasMessage(error)) {
+      return error.message;
+    }
     return MESSAGES[error.code] ?? GENERIC;
   }
 
