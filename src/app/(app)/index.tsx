@@ -62,15 +62,21 @@ export default function DashboardScreen() {
           qui domine l'écran. Le mettre en grand inversait la hiérarchie et
           faisait passer l'information principale au second plan.
 
-          Le changement de groupe arrive à l'écran 7. Tant que ce contrôle
-          n'existe pas, on n'affiche aucun repère visuel (ex. un chevron) qui
-          laisserait croire à un bouton alors qu'il n'y a rien à toucher. */}
-      <View style={styles.header}>
-        <View style={[styles.groupDot, { backgroundColor: colors.primary }]} />
-        <Text style={[styles.groupName, { color: colors.textMuted }]}>
-          {activeGroup?.name ?? '…'}
-        </Text>
-      </View>
+          Ouvre /groups (écran 7) : bascule de groupe actif, création,
+          adhésion, gestion des membres. */}
+      <Link href="/groups" asChild>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Groupe actif : ${activeGroup?.name ?? '…'}. Gérer les groupes`}
+          style={StyleSheet.flatten([styles.header])}
+        >
+          <View style={[styles.groupDot, { backgroundColor: colors.primary }]} />
+          <Text style={[styles.groupName, { color: colors.textMuted }]}>
+            {activeGroup?.name ?? '…'}
+          </Text>
+          <Text style={[styles.groupChevron, { color: colors.textMuted }]}>›</Text>
+        </Pressable>
+      </Link>
 
       {/* La carte porte ses propres états de chargement et d'erreur : un
           résumé en échec ne doit pas emporter la liste, qui a pu aboutir. */}
@@ -133,6 +139,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.66,
     textTransform: 'uppercase',
+  },
+  groupChevron: {
+    fontFamily: font.semibold,
+    fontSize: 13,
   },
   section: {
     fontFamily: font.semibold,
