@@ -55,4 +55,9 @@ export const queryKeys = {
   // changement de compte — il n'existe pas d'équivalent « objectif actif »
   // dont une invalidation devrait se méfier.
   savingsGoals: () => ['savingsGoals'] as const,
+  // Un groupe à la fois, comme `activity` : rien de ce qui invalide
+  // `['transactions']`/`['budgets']` ne concerne les membres ou les
+  // invitations, pas de nichage sous ces préfixes.
+  groupMembers: (groupId: string) => ['groupMembers', groupId] as const,
+  groupInvitation: (groupId: string) => ['groupInvitation', groupId] as const,
 };
