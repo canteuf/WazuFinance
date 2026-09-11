@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { createContext, useMemo, useState, type ReactNode } from 'react';
 
 import { listMemberships, type MembershipSummary } from '@/data/groups';
+import { useAuth } from '@/hooks/use-auth';
 import { queryKeys } from '@/lib/query-keys';
 
 export type ActiveGroupState = {
@@ -22,9 +23,13 @@ export const ActiveGroupContext = createContext<ActiveGroupState | null>(null);
  * de la liste et sert de valeur initiale, sans chemin de code distinct.
  */
 export function ActiveGroupProvider({ children }: { children: ReactNode }) {
+  const { session } = useAuth();
+  const userId = session?.user.id;
+
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.memberships(),
-    queryFn: listMemberships,
+    queryFn: () => listMemberships(userId as string),
+    enabled: userId !== undefined,
   });
 
   const groups = useMemo(() => data ?? [], [data]);

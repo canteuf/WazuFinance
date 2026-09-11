@@ -13,14 +13,17 @@ export type MembershipSummary = {
 /**
  * Groupes dont l'utilisateur courant est membre, le compte personnel en tête.
  *
- * Les policies RLS filtrent déjà sur l'appelant : aucun filtre côté client
- * n'est nécessaire, et en ajouter un donnerait la fausse impression que la
- * sécurité vit ici.
+ * Filtré par `user_id` : `account_memberships_select_member` autorise à voir
+ * toutes les lignes des groupes dont l'appelant est membre, pas seulement la
+ * sienne (nécessaire à `listGroupMembers`) — sans ce filtre, un groupe
+ * partagé à plusieurs membres renvoie une ligne par membre au lieu d'une par
+ * groupe. Resté invisible tant qu'aucun groupe partagé réel n'existait.
  */
-export async function listMemberships(): Promise<MembershipSummary[]> {
+export async function listMemberships(userId: string): Promise<MembershipSummary[]> {
   const { data, error } = await supabase
     .from('account_memberships')
     .select('role, budget_groups(id, name, is_personal, period_start_day)')
+    .eq('user_id', userId)
     .order('created_at', { ascending: true });
 
   if (error) {
