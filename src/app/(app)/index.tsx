@@ -5,6 +5,7 @@ import { BudgetsEntry } from '@/components/dashboard/budgets-entry';
 import { CategoryBreakdown } from '@/components/dashboard/category-breakdown';
 import { PeriodSummary } from '@/components/dashboard/period-summary';
 import { RecentTransactions } from '@/components/dashboard/recent-transactions';
+import { SavingsEntry } from '@/components/dashboard/savings-entry';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { useActiveGroup } from '@/hooks/use-active-group';
@@ -81,6 +82,8 @@ export default function DashboardScreen() {
       <CategoryBreakdown />
 
       <BudgetsEntry />
+
+      <SavingsEntry />
 
       <View style={styles.sectionRow}>
         <Text
