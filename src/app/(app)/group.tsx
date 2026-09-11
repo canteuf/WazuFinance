@@ -11,7 +11,7 @@ import { useGroupInvitation } from '@/hooks/use-group-invitation';
 import { useGroupMembers } from '@/hooks/use-group-members';
 import { useGroupMutations } from '@/hooks/use-group-mutations';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { font, radius, spacing, useColors } from '@/theme/tokens';
+import { font, spacing, useColors } from '@/theme/tokens';
 
 /**
  * Membres, invitation, exclusion et départ d'un groupe partagé (spec
@@ -53,7 +53,7 @@ export default function GroupScreen() {
   const isOwner = me?.role === 'owner';
   const hasOtherMembers = members.length > 1;
 
-  const blockingError: unknown = id === '' ? null : isLoadingError ? membersError : null;
+  const blockingError: unknown = isLoadingError ? membersError : null;
 
   function handleExclude(targetUserId: string) {
     setActionError(undefined);
@@ -160,7 +160,12 @@ export default function GroupScreen() {
                 <Pressable
                   accessibilityRole="button"
                   disabled={isGenerating}
-                  onPress={() => regenerate.mutate(invitation.id)}
+                  onPress={() => {
+                    setActionError(undefined);
+                    regenerate.mutate(invitation.id, {
+                      onError: (error) => setActionError(dataErrorMessage(error)),
+                    });
+                  }}
                 >
                   <Text style={[styles.link, { color: colors.primary }]}>Régénérer</Text>
                 </Pressable>
@@ -169,7 +174,12 @@ export default function GroupScreen() {
               <Button
                 title="Générer un code"
                 loading={isGenerating}
-                onPress={() => generate.mutate()}
+                onPress={() => {
+                  setActionError(undefined);
+                  generate.mutate(undefined, {
+                    onError: (error) => setActionError(dataErrorMessage(error)),
+                  });
+                }}
               />
             )}
           </View>
