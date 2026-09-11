@@ -47,8 +47,9 @@ grant execute on function public.create_shared_group(text) to authenticated;
 -- gen_random_bytes vit dans le schéma extensions sur Supabase hébergé (pas
 -- public) : pgcrypto y est déjà provisionné par la plateforme, et le rôle qui
 -- applique les migrations n'a pas ce schéma dans son search_path — d'où la
--- qualification explicite, contrairement à gen_random_uuid() plus haut, qui
--- est une fonction native de Postgres depuis la version 13, indépendante de
+-- qualification explicite. gen_random_uuid(), utilisé ailleurs dans le schéma
+-- (20260904000100_schema.sql) sans qualification, n'a pas ce problème : c'est
+-- une fonction native de Postgres depuis la version 13, indépendante de
 -- pgcrypto et donc toujours résolue sans qualification.
 alter table public.group_invitations
   alter column code set default encode(extensions.gen_random_bytes(4), 'hex');
