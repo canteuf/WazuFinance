@@ -26,8 +26,8 @@ export function parseAmount(input: string): number | null {
 }
 
 /**
- * Comme parseAmount, mais accepte zero — un objectif d'epargne commence
- * parfois a 0 €, contrairement a une transaction ou un plafond de budget.
+ * Comme parseAmount, mais accepte zéro — un objectif d'épargne commence
+ * parfois à 0 €, contrairement à une transaction ou un plafond de budget.
  */
 export function parseNonNegativeAmount(input: string): number | null {
   const normalised = input.trim().replace(',', '.');
