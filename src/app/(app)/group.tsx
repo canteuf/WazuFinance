@@ -71,7 +71,9 @@ export default function GroupScreen() {
     removeGroupMember.mutate(
       { groupId: id, userId },
       {
-        onSuccess: () => router.back(),
+        // Pas router.back() : sur le web, après un rechargement sur /group, la
+        // pile ne contient que cet écran et GO_BACK n'est traité par personne.
+        onSuccess: () => router.dismissTo('/groups'),
         onError: (error) => setActionError(dataErrorMessage(error)),
       }
     );
