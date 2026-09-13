@@ -15,6 +15,7 @@ Décisions :
 - **Email en lecture seule.** Le changer passe par un email de confirmation de Supabase Auth dont le lien doit rouvrir l'app : aucune infrastructure de deep link n'existe (même constat qu'à l'écran 7 pour les invitations). Hors périmètre.
 - **Pas de « mot de passe oublié ».** Même raison : le lien de réinitialisation doit rouvrir l'app. Hors périmètre, à traiter avec l'infrastructure de deep link le jour où elle existera.
 - **« Se déconnecter » quitte le tableau de bord pour cet écran.** Le bas du tableau de bord accueille à la place l'entrée « Paramètres ».
+- **Un groupe sans propriétaire ne peut plus être rejoint.** Correction d'un défaut de l'écran 7 (section 2.4), incluse dans ce lot parce que la règle qui bloque la suppression de compte suppose qu'un groupe partagé a toujours un propriétaire membre.
 
 Hors périmètre, en plus des deux points ci-dessus : export CSV/PDF (chantier dédié, spec V1 section 6), catégories personnalisées, transfert de propriété, suppression d'un groupe partagé, thème, notifications.
 
@@ -70,7 +71,7 @@ grant execute on function public.owned_groups_with_other_members() to authentica
 
 `SECURITY INVOKER` : la fonction lit `account_memberships` hors de toute policy, donc sans récursion — même raisonnement que `period_summary()` dans CLAUDE.md. RLS s'applique telle quelle et suffit : `account_memberships_select_member` laisse l'appelant voir toutes les adhésions des groupes dont il est membre, ce qui est exactement ce que `exists` interroge.
 
-Le propriétaire est repéré par son adhésion `role = 'owner'`, comme dans `guard_owner_orphan()`, et non par `budget_groups.owner_id`. Les deux coïncident dans tous les cas que l'app produit. Ils ne divergent que dans un cas marginal, noté en section 7.
+Le propriétaire est repéré par son adhésion `role = 'owner'`, comme dans `guard_owner_orphan()`, et non par `budget_groups.owner_id`. Les deux coïncident dans tous les états que l'app peut produire, une fois la correction de la section 2.4 en place. Sans elle, un groupe vidé de son propriétaire pouvait être rejoint : `owner_id` y désignait alors quelqu'un qui n'en était plus membre, et repérer le propriétaire par `owner_id` aurait bloqué la suppression du compte à cause d'un groupe que l'utilisateur ne voit même plus, sans aucun moyen de débloquer.
 
 ### 2.3 `delete_own_account()`
 
@@ -125,9 +126,86 @@ Ce que la suppression emporte, par les cascades existantes et sans rien de nouve
 
 Concurrence : si un invité rejoint un groupe entre la vérification et la suppression, dans la même fraction de seconde, la cascade l'en retire avec le groupe. Fenêtre négligeable pour un budget de foyer ; pas de verrou.
 
-**Point à vérifier en implémentation.** En local, `postgres` est superutilisateur : un test pgTAP qui passe ne prouve pas qu'une fonction appartenant à `postgres` peut supprimer une ligne de `auth.users` sur le projet hébergé. Le plan inclut une vérification sur le projet lié, avec un compte jetable, avant de considérer la fonctionnalité terminée. Si le droit manque, repli : une Edge Function `delete-account` qui fait la même vérification puis appelle `auth.admin.deleteUser()` avec la clé de service — plus lourd (première Edge Function du projet, secret à gérer), donc seulement si nécessaire.
+**Droit vérifié sur le projet hébergé** (2026-09-13, `npx supabase db query --linked`, lecture seule) : `postgres` n'y est pas superutilisateur, mais `has_table_privilege('postgres', 'auth.users', 'DELETE')` vaut `true`, et les fonctions créées par les migrations lui appartiennent (`join_group_with_code`, `create_shared_group` : propriétaire `postgres`). `auth.users` appartient à `supabase_auth_admin` ; les cascades vers les tables internes d'Auth (sessions, identités) s'exécutent avec les droits de ce propriétaire. Aucune Edge Function n'est donc nécessaire.
 
-### 2.4 Rien d'autre
+### 2.4 `join_group_with_code()` : un groupe sans propriétaire ne peut plus être rejoint
+
+Correction d'un défaut de l'écran 7, découvert en préparant celui-ci. Quand le propriétaire quitte un groupe dont il est le seul membre (cas autorisé), une invitation encore valide reste utilisable : l'invité rejoint alors un groupe sans propriétaire, que personne ne peut plus gérer (ni inviter, ni exclure), et dont `owner_id` désigne quelqu'un qui n'en est plus membre. La suppression du compte de cet ancien propriétaire emporterait ensuite le groupe par la cascade sur `owner_id`, invité compris.
+
+La RPC refuse désormais de faire entrer quiconque dans un groupe qui n'a plus d'adhésion `owner`. Le contrôle vit dans la RPC, seul chemin d'entrée dans un groupe, plutôt que dans une révocation des invitations au départ du dernier membre : il couvre aussi un propriétaire qui se serait rétrogradé seul par un appel direct à l'API, et il ne dépend d'aucun état d'invitation.
+
+Le verrou `for share` sur l'adhésion du propriétaire ferme la course entre un départ et une arrivée simultanés : le `delete` du propriétaire qui part attend la fin de la transaction d'adhésion, puis `guard_owner_orphan()` — dont la requête prend un nouvel instantané — voit le nouveau membre et bloque le départ. Si le départ passe en premier, `perform` ne trouve plus d'adhésion `owner` et l'adhésion est refusée.
+
+```sql
+create or replace function public.join_group_with_code(invitation_code text)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  invitation public.group_invitations;
+  personal   boolean;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentification requise';
+  end if;
+
+  select * into invitation
+    from public.group_invitations
+   where code = invitation_code
+     for update;
+
+  if not found then
+    raise exception 'Invitation introuvable';
+  end if;
+  if invitation.revoked_at is not null then
+    raise exception 'Invitation révoquée';
+  end if;
+  if invitation.used_at is not null then
+    raise exception 'Invitation déjà utilisée';
+  end if;
+  if invitation.expires_at <= now() then
+    raise exception 'Invitation expirée';
+  end if;
+
+  select is_personal into personal
+    from public.budget_groups
+   where id = invitation.group_id;
+
+  if personal then
+    raise exception 'Un compte personnel ne peut pas être rejoint';
+  end if;
+
+  -- Verrou partagé : un départ simultané du propriétaire attend la fin de
+  -- cette transaction, et guard_owner_orphan() voit alors le nouveau membre.
+  perform 1
+     from public.account_memberships
+    where group_id = invitation.group_id
+      and role = 'owner'
+      for share;
+
+  if not found then
+    raise exception 'Ce groupe n''a plus de propriétaire : il ne peut plus être rejoint';
+  end if;
+
+  insert into public.account_memberships (group_id, user_id, role)
+  values (invitation.group_id, auth.uid(), 'member')
+  on conflict (group_id, user_id) do nothing;
+
+  update public.group_invitations
+     set used_at = now(),
+         used_by = auth.uid()
+   where id = invitation.id;
+
+  return invitation.group_id;
+end;
+$$;
+```
+
+Corps identique à celui de `20260904000200_policies.sql`, plus le bloc `perform`. `create or replace` conserve les privilèges déjà posés (`revoke` pour `public` et `anon`, `grant` à `authenticated`) : pas besoin de les répéter. Le message remonte en `P0001` et `group-join.tsx` l'affiche tel quel, comme les autres refus de la RPC.
+
+### 2.5 Rien d'autre
 
 `period_start_day` a déjà sa contrainte `check (between 1 and 28)` et sa policy de mise à jour. `users_update_self` existe déjà. La mise à jour du mot de passe passe par Supabase Auth, pas par une table.
 
@@ -258,11 +336,11 @@ Le bouton « Se déconnecter » en bas de `index.tsx` est remplacé par une entr
 - Mot de passe : `CurrentPasswordError` sous le champ « Mot de passe actuel » ; le reste (`weak_password`, `same_password`, réseau) par `authErrorMessage`.
 - Suppression : `CurrentPasswordError` sous le champ ; le refus de `delete_own_account()` (groupes bloquants, cas où la liste affichée était périmée) remonte en `P0001` et s'affiche tel quel via `dataErrorMessage`, puis `listDeletionBlockers` est invalidée pour que la section passe à l'état bloqué.
 - Suppression réussie côté base mais déconnexion locale en échec : impossible en pratique, `signOut({ scope: 'local' })` n'appelle pas le réseau.
+- Rejoindre un groupe sans propriétaire : le message de `join_group_with_code()` s'affiche tel quel dans `group-join.tsx`, qui passe déjà par `dataErrorMessage`. Aucun changement côté client.
 
 ## 7. Limites assumées
 
 - **Suppression faite hors de l'app.** Un administrateur qui supprime un utilisateur depuis le dashboard Supabase ne passe pas par `delete_own_account()` : la vérification ne s'applique pas. L'échappatoire fermée est celle des clients, la seule que l'app expose.
-- **Groupe à zéro membre ranimé par une invitation encore active.** Cas découvert en préparant cet écran, antérieur à lui : quand le dernier propriétaire quitte un groupe (autorisé s'il est seul, écran 7), une invitation encore valide reste utilisable, et l'invité rejoint un groupe dont `owner_id` désigne quelqu'un qui n'en est plus membre. `owned_groups_with_other_members()` ne compte pas ce groupe comme bloquant (l'ancien propriétaire n'y a plus d'adhésion `owner`), donc la suppression du compte de l'ancien propriétaire est permise et la cascade par `owner_id` emporte le groupe et l'adhésion de l'invité. Repérer le propriétaire par `owner_id` bloquerait au contraire la suppression à cause d'un groupe que l'utilisateur ne voit même plus, sans aucun moyen de débloquer — pire. La vraie correction est de révoquer les invitations actives quand le dernier membre quitte un groupe ; elle relève de l'écran 7 et ne fait pas partie de ce lot.
 - **Vérification du mot de passe côté client** : voir section 1.
 
 ## 8. Tests
@@ -273,11 +351,12 @@ Nouveau fichier `supabase/tests/account_settings_test.sql` :
 - `owned_groups_with_other_members()` : renvoie un groupe partagé possédé qui a un autre membre ; ignore le compte personnel, un groupe possédé où l'appelant est seul, un groupe où l'appelant n'est que membre.
 - `delete_own_account()` : refusée à `anon` (`42501`) ; refusée (`P0001`, message listant le groupe) pour un propriétaire dont le groupe a d'autres membres, sans rien supprimer ; permise une fois ces membres exclus — `auth.users`, `users`, compte personnel et groupe partagé possédé disparaissent.
 - Suppression par un simple membre : ses opérations dans le groupe partagé disparaissent, celles des autres membres restent, le groupe survit, et les entrées de journal de ces suppressions portent `actor_name` = son nom (l'attribution de la section 2.3). Le test existant d'`activity_log_test.sql` (suppression directe dans `auth.users`, entrées sans auteur) reste valide : il décrit la suppression hors de l'app.
+- `join_group_with_code()` : refusée (`P0001`, « Ce groupe n'a plus de propriétaire : il ne peut plus être rejoint ») pour un groupe dont le propriétaire, seul membre, est parti alors qu'une invitation restait valide ; l'invitation n'est pas consommée (`used_at` reste `null`). Les refus existants (introuvable, révoquée, utilisée, expirée, compte personnel) sont inchangés — ils ont été vérifiés un par un le 2026-09-12 contre la base locale, mais aucun test pgTAP ne les couvre encore : ce fichier les ajoute.
 
 Jest : `periodStartDayLabel` dans `dates.test.ts` (« le 1er », « le 2 », « le 28 »).
 
-Vérification manuelle sur appareil, dans le plan : chaque section, dont la suppression d'un compte jetable sur le projet hébergé (voir le point à vérifier en section 2.3).
+Vérification manuelle sur appareil, dans le plan : chaque section, dont la suppression d'un compte jetable sur le projet hébergé.
 
 ## 9. Documentation
 
-CLAUDE.md : remplacer le paragraphe qui décrit la suppression de compte comme échappatoire acceptée à `guard_owner_orphan()` par la description de `delete_own_account()` (vérification préalable, attribution des suppressions dans le journal, droit sur `auth.users` qui justifie `SECURITY DEFINER`), et mentionner les privilèges par colonne sur `users` et `budget_groups` dans la section RLS.
+CLAUDE.md : remplacer le paragraphe qui décrit la suppression de compte comme échappatoire acceptée à `guard_owner_orphan()` par la description de `delete_own_account()` (vérification préalable, attribution des suppressions dans le journal, droit sur `auth.users` qui justifie `SECURITY DEFINER`), mentionner les privilèges par colonne sur `users` et `budget_groups` dans la section RLS, et compléter la ligne sur `join_group_with_code()` : elle refuse désormais un groupe qui n'a plus d'adhésion `owner`.
