@@ -45,3 +45,6 @@ example
 # Variables d'environnement locales
 .env
 .env.local
+
+# Export Google Stitch : maquettes HTML et captures ayant servi de source au design. Hors du depot parce que ce sont des artefacts d'outil, regenerables depuis Stitch, et que les PNG pesent 2,4 Mo pour une reference consultee une fois. La source de verite du design vit dans src/theme/tokens.ts et dans CLAUDE.md.
+stitch_wazu_finance_mobile_app/
