@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Link, useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -35,6 +36,7 @@ export default function BudgetsScreen() {
   return (
     <Screen
       align="top"
+      inTabs
       floatingAction={
         <Link href="/budget" asChild>
           <Pressable
@@ -46,21 +48,22 @@ export default function BudgetsScreen() {
               { backgroundColor: colors.primary },
             ])}
           >
-            <Text style={[styles.fabLabel, { color: colors.primaryText }]}>+</Text>
+            <MaterialCommunityIcons name="plus" size={28} color={colors.primaryText} />
           </Pressable>
         </Link>
       }
     >
+      {/* Pas de bouton retour : l'écran est une destination d'onglet, pas une
+          page empilée. Le sous-titre annonce l'ordre de la liste, qui n'est ni
+          alphabétique ni chronologique et mérite d'être dit. */}
       <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Retour"
-          hitSlop={spacing.sm}
-          onPress={() => router.back()}
-        >
-          <Text style={[styles.back, { color: colors.textMuted }]}>‹</Text>
-        </Pressable>
-        <Text style={[styles.title, { color: colors.text }]}>Budgets</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Enveloppes</Text>
+        {items.length > 0 ? (
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+            {items.length === 1 ? '1 budget suivi' : `${items.length} budgets suivis`} · les
+            plus urgents d’abord
+          </Text>
+        ) : null}
       </View>
 
       {blockingError ? (
@@ -98,19 +101,16 @@ export default function BudgetsScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  back: {
-    fontFamily: font.semibold,
-    fontSize: 30,
-    lineHeight: 34,
+    gap: 3,
   },
   title: {
     fontFamily: font.bold,
-    fontSize: 18,
-    letterSpacing: -0.2,
+    fontSize: 24,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontFamily: font.regular,
+    fontSize: 12.5,
   },
   list: {
     gap: spacing.sm + 2,
@@ -123,13 +123,8 @@ const styles = StyleSheet.create({
   fab: {
     width: 56,
     height: 56,
-    borderRadius: radius.lg + 8,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  fabLabel: {
-    fontFamily: font.medium,
-    fontSize: 30,
-    lineHeight: 34,
   },
 });

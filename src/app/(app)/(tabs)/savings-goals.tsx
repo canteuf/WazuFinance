@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Link, useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -22,6 +23,7 @@ export default function SavingsGoalsScreen() {
   const { goals, isLoading, error, isLoadingError } = useSavingsGoals();
 
   const items = useMemo(() => goals.map(savingsProgress), [goals]);
+  const reached = items.filter((item) => item.status === 'reached').length;
 
   // Seul l'échec du tout premier chargement bloque l'écran : TanStack garde
   // les dernières données valides après un rafraîchissement raté en
@@ -31,6 +33,7 @@ export default function SavingsGoalsScreen() {
   return (
     <Screen
       align="top"
+      inTabs
       floatingAction={
         <Link href="/savings-goal" asChild>
           <Pressable
@@ -45,21 +48,26 @@ export default function SavingsGoalsScreen() {
               { backgroundColor: colors.primary },
             ])}
           >
-            <Text style={[styles.fabLabel, { color: colors.primaryText }]}>+</Text>
+            <MaterialCommunityIcons name="plus" size={28} color={colors.primaryText} />
           </Pressable>
         </Link>
       }
     >
+      {/* Pas de bouton retour : destination d'onglet, pas page empilée.
+          Le sous-titre compte les objectifs plutôt que d'afficher un total
+          provisionné : sommer des montants ici passerait par des flottants
+          binaires, et la règle du projet veut que les agrégats de montants
+          soient calculés par Postgres. Aucun RPC ne le fait pour les
+          objectifs, et en écrire un pour une ligne d'en-tête serait
+          disproportionné. */}
       <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Retour"
-          hitSlop={spacing.sm}
-          onPress={() => router.back()}
-        >
-          <Text style={[styles.back, { color: colors.textMuted }]}>‹</Text>
-        </Pressable>
-        <Text style={[styles.title, { color: colors.text }]}>Objectifs d’épargne</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Objectifs</Text>
+        {items.length > 0 ? (
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+            {items.length === 1 ? '1 objectif' : `${items.length} objectifs`}
+            {reached > 0 ? ` · ${reached === 1 ? '1 atteint' : `${reached} atteints`}` : ''}
+          </Text>
+        ) : null}
       </View>
 
       {blockingError ? (
@@ -89,19 +97,16 @@ export default function SavingsGoalsScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  back: {
-    fontFamily: font.semibold,
-    fontSize: 30,
-    lineHeight: 34,
+    gap: 3,
   },
   title: {
     fontFamily: font.bold,
-    fontSize: 18,
-    letterSpacing: -0.2,
+    fontSize: 24,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontFamily: font.regular,
+    fontSize: 12.5,
   },
   list: {
     gap: spacing.sm + 2,
@@ -114,13 +119,8 @@ const styles = StyleSheet.create({
   fab: {
     width: 56,
     height: 56,
-    borderRadius: radius.lg + 8,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  fabLabel: {
-    fontFamily: font.medium,
-    fontSize: 30,
-    lineHeight: 34,
   },
 });

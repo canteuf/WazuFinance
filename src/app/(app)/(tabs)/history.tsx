@@ -24,6 +24,7 @@ import { useTransactionHistory } from '@/hooks/use-transaction-history';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { periodPresets, todayIso } from '@/lib/dates';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
+import { goBackOr } from '@/lib/navigation';
 
 // Référence stable : une fonction inline recréée à chaque rendu ferait de
 // chaque séparateur un composant neuf, monté puis démonté à chaque frappe.
@@ -146,7 +147,7 @@ export default function HistoryScreen() {
           accessibilityRole="button"
           accessibilityLabel="Retour"
           hitSlop={spacing.sm}
-          onPress={() => router.back()}
+          onPress={() => goBackOr(router, '/')}
         >
           <Text style={[styles.back, { color: colors.textMuted }]}>‹</Text>
         </Pressable>

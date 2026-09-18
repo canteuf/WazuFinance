@@ -63,15 +63,21 @@ function Chip({
       accessibilityLabel={`${group} : ${label}`}
       accessibilityState={{ selected }}
       onPress={onPress}
+      // Sélectionnée, la pastille prend la couleur du texte, pas l'accent :
+      // l'accent désigne ce sur quoi on agit (le bouton d'ajout, un lien), et
+      // trois rangées de pastilles vertes le banaliseraient. Le contraste
+      // fond/texte suffit à montrer laquelle est active.
       style={[
         styles.chip,
         {
-          backgroundColor: selected ? colors.primary : colors.surfaceMuted,
-          borderColor: selected ? colors.primary : colors.border,
+          backgroundColor: selected ? colors.text : colors.surface,
+          borderColor: selected ? colors.text : colors.border,
         },
       ]}
     >
-      <Text style={[styles.chipLabel, { color: selected ? colors.primaryText : colors.text }]}>
+      <Text
+        style={[styles.chipLabel, { color: selected ? colors.background : colors.textMuted }]}
+      >
         {label}
       </Text>
     </Pressable>

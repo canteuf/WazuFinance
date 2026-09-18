@@ -1,8 +1,15 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Link } from 'expo-router';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
+import { Card } from '@/components/ui/card';
+import { ProgressBar } from '@/components/ui/progress-bar';
 import { useBudgetProgress } from '@/hooks/use-budget-progress';
-import { font, radius, spacing, stackAtFontScale, useColors } from '@/theme/tokens';
+import { formatAmount } from '@/lib/money';
+import { font, spacing, stackAtFontScale, useColors } from '@/theme/tokens';
+
+/** Enveloppes détaillées sur le tableau de bord avant de renvoyer à l'onglet. */
+const PREVIEW_COUNT = 3;
 
 /**
  * Résume l'état des budgets en une phrase.
@@ -56,82 +63,130 @@ export function BudgetsEntry() {
   const detail =
     (isLoading || error) && items.length === 0 ? 'Voir' : summarise(over, warning, items.length);
 
+  // Les plus urgents d'abord : `budgetProgress()` a déjà trié par statut puis
+  // par ratio, il n'y a qu'à prendre la tête de liste.
+  const preview = items.slice(0, PREVIEW_COUNT);
+
   return (
-    <Link href="/budgets" asChild>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Budgets. ${detail}`}
-        // Aplati : <Link asChild> transmet le style à son enfant via un Slot,
-        // qui lève une erreur de rendu en développement s'il reçoit un tableau.
-        // L'erreur ne se voit qu'à l'exécution en mode développement — un
-        // export de bundle, lui, est construit en production et passe sans
-        // rien signaler.
-        style={StyleSheet.flatten([
-          styles.row,
-          stacked && styles.rowStacked,
-          { backgroundColor: colors.surface, borderColor: colors.border },
-        ])}
-      >
-        <View style={styles.left}>
-          <View style={[styles.dot, { backgroundColor: accent }]} />
-          <Text style={[styles.label, { color: colors.text }]}>Budgets</Text>
+    <Card>
+      <View style={styles.cardHead}>
+        <View style={styles.cardTitle}>
+          <MaterialCommunityIcons name="wallet-outline" size={18} color={colors.primary} />
+          <Text style={[styles.heading, { color: colors.text }]}>Enveloppes</Text>
         </View>
-        <View style={styles.right}>
-          <Text style={[styles.detail, { color: accent }]}>{detail}</Text>
-          <Text style={[styles.chevron, { color: colors.textMuted }]}>›</Text>
+        <Link href="/budgets" asChild>
+          <Pressable accessibilityRole="button" accessibilityLabel={`Budgets. ${detail}`}>
+            <Text style={[styles.link, { color: colors.primary }]}>Tout voir</Text>
+          </Pressable>
+        </Link>
+      </View>
+
+      {preview.length === 0 ? (
+        <Text style={[styles.detail, { color: accent }]}>{detail}</Text>
+      ) : (
+        <View style={styles.rows}>
+          {preview.map((item) => {
+            const name = item.budget.category?.name ?? 'Catégorie inconnue';
+            const percent = Math.round(item.ratio * 100);
+
+            return (
+              <View key={item.budget.id} style={styles.row}>
+                <View style={[styles.rowHead, stacked && styles.rowHeadStacked]}>
+                  <Text numberOfLines={1} style={[styles.name, { color: colors.text }]}>
+                    {name}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.amounts,
+                      {
+                        color:
+                          item.status === 'over'
+                            ? colors.danger
+                            : item.status === 'warning'
+                              ? colors.warning
+                              : colors.textMuted,
+                      },
+                    ]}
+                  >
+                    {formatAmount(item.spent)} / {formatAmount(item.budget.amount)} €
+                  </Text>
+                </View>
+                <ProgressBar
+                  ratio={item.spent === 0 ? 0 : item.ratio}
+                  tone={item.status}
+                />
+                <Text style={[styles.percent, { color: colors.textMuted }]}>{percent} %</Text>
+              </View>
+            );
+          })}
         </View>
-      </Pressable>
-    </Link>
+      )}
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
+  cardHead: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
-    paddingVertical: spacing.sm + 4,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth * 2,
+    marginBottom: spacing.md,
   },
-  rowStacked: {
-    // Le libellé et le détail cèdent chacun leur propre ligne au lieu de se
+  cardTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flexShrink: 1,
+  },
+  heading: {
+    fontFamily: font.semibold,
+    fontSize: 17,
+    letterSpacing: -0.2,
+    flexShrink: 1,
+  },
+  link: {
+    fontFamily: font.semibold,
+    fontSize: 13,
+    flexShrink: 0,
+  },
+  rows: {
+    gap: spacing.md,
+  },
+  row: {
+    gap: spacing.xs + 2,
+  },
+  rowHead: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  rowHeadStacked: {
+    // Le nom et les montants cèdent chacun leur propre ligne au lieu de se
     // rétrécir l'un l'autre.
     flexDirection: 'column',
     alignItems: 'flex-start',
   },
-  left: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    flexShrink: 0,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: radius.pill,
-  },
-  label: {
+  name: {
     fontFamily: font.semibold,
     fontSize: 14,
-  },
-  right: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    // Cède avant le libellé quand la police grossit.
     flexShrink: 1,
+  },
+  amounts: {
+    fontFamily: font.semibold,
+    fontSize: 13,
+    fontVariant: ['tabular-nums'],
+    flexShrink: 0,
+  },
+  percent: {
+    fontFamily: font.medium,
+    fontSize: 11.5,
+    fontVariant: ['tabular-nums'],
   },
   detail: {
     fontFamily: font.medium,
     fontSize: 13,
     flexShrink: 1,
-  },
-  chevron: {
-    fontFamily: font.semibold,
-    fontSize: 18,
-    flexShrink: 0,
   },
 });

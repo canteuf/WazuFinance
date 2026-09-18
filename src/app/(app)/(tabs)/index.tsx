@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Link } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -40,6 +41,7 @@ export default function DashboardScreen() {
       // plusieurs centaines de pixels de vide au-dessus du solde sur un grand
       // écran, et repoussait l'information principale vers le milieu.
       align="top"
+      inTabs
       floatingAction={
         <Link href="/transaction" asChild>
           <Pressable
@@ -53,7 +55,7 @@ export default function DashboardScreen() {
               { backgroundColor: colors.primary },
             ])}
           >
-            <Text style={[styles.fabLabel, { color: colors.primaryText }]}>+</Text>
+            <MaterialCommunityIcons name="plus" size={28} color={colors.primaryText} />
           </Pressable>
         </Link>
       }
@@ -71,10 +73,10 @@ export default function DashboardScreen() {
           style={StyleSheet.flatten([styles.header])}
         >
           <View style={[styles.groupDot, { backgroundColor: colors.primary }]} />
-          <Text style={[styles.groupName, { color: colors.textMuted }]}>
+          <Text style={[styles.groupName, { color: colors.textMuted }]} numberOfLines={1}>
             {activeGroup?.name ?? '…'}
           </Text>
-          <Text style={[styles.groupChevron, { color: colors.textMuted }]}>›</Text>
+          <MaterialCommunityIcons name="chevron-down" size={18} color={colors.textMuted} />
         </Pressable>
       </Link>
 
@@ -92,10 +94,7 @@ export default function DashboardScreen() {
       <SavingsEntry />
 
       <View style={styles.sectionRow}>
-        <Text
-          style={[styles.section, { color: colors.textMuted }]}
-          numberOfLines={1}
-        >
+        <Text style={[styles.section, { color: colors.text }]} numberOfLines={1}>
           Dernières opérations
         </Text>
         {/* Ouvre l'historique aux filtres par défaut : période en cours, tous
@@ -118,6 +117,10 @@ export default function DashboardScreen() {
         <RecentTransactions transactions={transactions} />
       )}
 
+      {/* Sa place est dans les paramètres du compte (écran 8), pas au bas du
+          tableau de bord — mais cet écran n'existe pas encore, et retirer la
+          déconnexion enfermerait l'utilisateur dans sa session. Il reste ici,
+          discret, jusqu'à ce que l'écran 8 le recueille. */}
       <Button title="Se déconnecter" variant="ghost" onPress={() => void signOut()} />
     </Screen>
   );
@@ -130,25 +133,19 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   groupDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 8,
+    height: 8,
+    borderRadius: radius.pill,
   },
   groupName: {
-    fontFamily: font.semibold,
-    fontSize: 11,
-    letterSpacing: 0.66,
-    textTransform: 'uppercase',
-  },
-  groupChevron: {
-    fontFamily: font.semibold,
-    fontSize: 13,
+    fontFamily: font.medium,
+    fontSize: 13.5,
+    flexShrink: 1,
   },
   section: {
     fontFamily: font.semibold,
-    fontSize: 10.5,
-    letterSpacing: 0.95,
-    textTransform: 'uppercase',
+    fontSize: 17,
+    letterSpacing: -0.2,
     // Peut rétrécir jusqu'à tronquer plutôt que pousser « Tout voir » hors de
     // l'écran à fort grossissement de police (RN met flexShrink à 0 par défaut).
     flexShrink: 1,
@@ -173,13 +170,8 @@ const styles = StyleSheet.create({
   fab: {
     width: 56,
     height: 56,
-    borderRadius: radius.lg + 8,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  fabLabel: {
-    fontFamily: font.medium,
-    fontSize: 30,
-    lineHeight: 34,
   },
 });

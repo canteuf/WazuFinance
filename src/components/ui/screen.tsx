@@ -24,15 +24,26 @@ export function Screen({
   children,
   floatingAction,
   align = 'center',
+  inTabs = false,
 }: {
   children: ReactNode;
   floatingAction?: ReactNode;
   align?: 'center' | 'top';
+  /**
+   * Vrai pour les quatre écrans d'onglet. La barre d'onglets occupe déjà le
+   * bas de l'écran et gère sa propre zone sûre : lui ajouter celle du Screen
+   * creuserait une bande vide au-dessus d'elle, et un bouton flottant calé
+   * sur le bas passerait derrière.
+   */
+  inTabs?: boolean;
 }) {
   const colors = useColors();
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: colors.background }]}
+      edges={inTabs ? ['top'] : ['top', 'bottom']}
+    >
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -48,7 +59,11 @@ export function Screen({
         >
           <View style={styles.inner}>{children}</View>
         </ScrollView>
-        {floatingAction ? <View style={styles.floating}>{floatingAction}</View> : null}
+        {floatingAction ? (
+          <View style={[styles.floating, inTabs ? styles.floatingInTabs : null]}>
+            {floatingAction}
+          </View>
+        ) : null}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -88,5 +103,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: spacing.lg,
     bottom: spacing.lg,
+  },
+  floatingInTabs: {
+    // Dégage la barre d'onglets, qui couvre le bas de l'écran.
+    bottom: spacing.md,
   },
 });

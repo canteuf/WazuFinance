@@ -1,5 +1,6 @@
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
+import { Card } from '@/components/ui/card';
 import type { CategorySlice } from '@/data/summary';
 import { useCategoryBreakdown } from '@/hooks/use-category-breakdown';
 import { dataErrorMessage } from '@/lib/data-errors';
@@ -98,8 +99,33 @@ export function CategoryBreakdown() {
   const total = rows.reduce((sum, row) => sum + row.total, 0);
 
   return (
-    <View style={styles.block}>
-      <Text style={[styles.heading, { color: colors.textMuted }]}>Répartition</Text>
+    <Card>
+      <View style={styles.cardHead}>
+        <Text style={[styles.heading, { color: colors.text }]}>Répartition</Text>
+        <Text style={[styles.total, { color: colors.textMuted }]}>
+          {formatAmount(total)} €
+        </Text>
+      </View>
+
+      {/* Ruban des proportions : les mêmes parts que les barres ci-dessous,
+          mises bout à bout. Il donne la composition de la période d'un seul
+          regard, là où les barres servent à comparer poste par poste. */}
+      <View style={styles.ribbon}>
+        {rows.map((row) => {
+          const tone = categoryTone({ id: row.key, icon: row.icon }, isDark);
+          const share = total === 0 ? 0 : row.total / total;
+
+          return (
+            <View
+              key={row.key}
+              style={[
+                styles.ribbonSlice,
+                { flexGrow: Math.max(share, 0.02), backgroundColor: tone.tint },
+              ]}
+            />
+          );
+        })}
+      </View>
 
       <View style={styles.rows}>
         {rows.map((row) => {
@@ -114,10 +140,15 @@ export function CategoryBreakdown() {
               style={styles.row}
             >
               <View style={styles.rowHead}>
-                <Text numberOfLines={1} style={[styles.name, { color: colors.text }]}>
-                  {row.name}
-                </Text>
-                <Text style={[styles.amount, { color: colors.textMuted }]}>
+                <View style={styles.legend}>
+                  {/* La pastille rattache la ligne à sa tranche du ruban :
+                      sans elle, les deux lectures ne se raccordent pas. */}
+                  <View style={[styles.legendDot, { backgroundColor: tone.tint }]} />
+                  <Text numberOfLines={1} style={[styles.name, { color: colors.text }]}>
+                    {row.name}
+                  </Text>
+                </View>
+                <Text style={[styles.amount, { color: colors.text }]}>
                   {formatAmount(row.total)} €
                 </Text>
               </View>
@@ -139,7 +170,7 @@ export function CategoryBreakdown() {
           );
         })}
       </View>
-    </View>
+    </Card>
   );
 }
 
@@ -147,11 +178,37 @@ const styles = StyleSheet.create({
   block: {
     gap: spacing.sm + 4,
   },
+  cardHead: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
   heading: {
     fontFamily: font.semibold,
-    fontSize: 10.5,
-    letterSpacing: 0.95,
-    textTransform: 'uppercase',
+    fontSize: 17,
+    letterSpacing: -0.2,
+    flexShrink: 1,
+  },
+  total: {
+    fontFamily: font.medium,
+    fontSize: 12,
+    fontVariant: ['tabular-nums'],
+    flexShrink: 0,
+  },
+  ribbon: {
+    flexDirection: 'row',
+    gap: 2,
+    height: 8,
+    marginBottom: spacing.md + 2,
+  },
+  ribbonSlice: {
+    height: '100%',
+    borderRadius: radius.pill,
+    // Sans base nulle, flexGrow partage la place restante au lieu de la
+    // totalité : les tranches ne seraient plus proportionnelles.
+    flexBasis: 0,
   },
   rows: {
     gap: spacing.sm + 4,
@@ -165,9 +222,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
+  legend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flexShrink: 1,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: radius.pill,
+    flexShrink: 0,
+  },
   name: {
-    fontFamily: font.semibold,
-    fontSize: 13,
+    fontFamily: font.regular,
+    fontSize: 14,
     letterSpacing: -0.07,
     // Cède au montant plutôt que de le pousser hors de l'écran à fort
     // grossissement de police.

@@ -1,9 +1,16 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Link } from 'expo-router';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
+import { Card } from '@/components/ui/card';
+import { ProgressBar } from '@/components/ui/progress-bar';
 import { useSavingsGoals } from '@/hooks/use-savings-goals';
+import { formatAmount } from '@/lib/money';
 import { savingsProgress } from '@/lib/savings-progress';
-import { font, radius, spacing, stackAtFontScale, useColors } from '@/theme/tokens';
+import { font, spacing, stackAtFontScale, useColors } from '@/theme/tokens';
+
+/** Objectifs détaillés sur le tableau de bord avant de renvoyer à l'onglet. */
+const PREVIEW_COUNT = 2;
 
 /**
  * Résume les objectifs d'épargne en une phrase.
@@ -43,76 +50,131 @@ export function SavingsEntry() {
   const detail =
     (isLoading || error) && goals.length === 0 ? 'Voir' : summarise(items.length, reached);
 
+  // Les plus avancés d'abord : c'est l'ordre que `savings-goals.tsx` applique
+  // déjà, et celui qui rend l'aperçu encourageant plutôt que décourageant.
+  const preview = items.slice(0, PREVIEW_COUNT);
+
   return (
-    <Link href="/savings-goals" asChild>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Objectifs d’épargne. ${detail}`}
-        // Aplati : <Link asChild> transmet le style à son enfant via un Slot,
-        // qui lève une erreur de rendu en développement s'il reçoit un tableau.
-        style={StyleSheet.flatten([
-          styles.row,
-          stacked && styles.rowStacked,
-          { backgroundColor: colors.surface, borderColor: colors.border },
-        ])}
-      >
-        <View style={styles.left}>
-          <View style={[styles.dot, { backgroundColor: accent }]} />
-          <Text style={[styles.label, { color: colors.text }]}>Objectifs d’épargne</Text>
+    <Card>
+      <View style={styles.cardHead}>
+        <View style={styles.cardTitle}>
+          <MaterialCommunityIcons name="piggy-bank-outline" size={18} color={colors.primary} />
+          <Text style={[styles.heading, { color: colors.text }]}>Épargne</Text>
         </View>
-        <View style={styles.right}>
-          <Text style={[styles.detail, { color: accent }]}>{detail}</Text>
-          <Text style={[styles.chevron, { color: colors.textMuted }]}>›</Text>
+        <Link href="/savings-goals" asChild>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Objectifs d’épargne. ${detail}`}
+          >
+            <Text style={[styles.link, { color: colors.primary }]}>Tout voir</Text>
+          </Pressable>
+        </Link>
+      </View>
+
+      {preview.length === 0 ? (
+        <Text style={[styles.detail, { color: accent }]}>{detail}</Text>
+      ) : (
+        <View style={styles.rows}>
+          {preview.map((item) => {
+            const remaining = item.goal.target_amount - item.goal.current_amount;
+
+            return (
+              <View key={item.goal.id} style={styles.row}>
+                <View style={[styles.rowHead, stacked && styles.rowHeadStacked]}>
+                  <Text numberOfLines={1} style={[styles.name, { color: colors.text }]}>
+                    {item.goal.name}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.amounts,
+                      {
+                        color:
+                          item.status === 'reached' ? colors.positive : colors.textMuted,
+                      },
+                    ]}
+                  >
+                    {formatAmount(item.goal.current_amount)} /{' '}
+                    {formatAmount(item.goal.target_amount)} €
+                  </Text>
+                </View>
+                <ProgressBar
+                  ratio={item.goal.current_amount === 0 ? 0 : item.percent / 100}
+                  tone={item.status === 'reached' ? 'positive' : 'accent'}
+                />
+                <Text style={[styles.meta, { color: colors.textMuted }]}>
+                  {item.status === 'reached'
+                    ? 'Atteint'
+                    : `Reste ${formatAmount(remaining)} € · ${item.percent} %`}
+                </Text>
+              </View>
+            );
+          })}
         </View>
-      </Pressable>
-    </Link>
+      )}
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
+  cardHead: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
-    paddingVertical: spacing.sm + 4,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth * 2,
+    marginBottom: spacing.md,
   },
-  rowStacked: {
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-  },
-  left: {
+  cardTitle: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    flexShrink: 1,
+  },
+  heading: {
+    fontFamily: font.semibold,
+    fontSize: 17,
+    letterSpacing: -0.2,
+    flexShrink: 1,
+  },
+  link: {
+    fontFamily: font.semibold,
+    fontSize: 13,
     flexShrink: 0,
   },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: radius.pill,
+  rows: {
+    gap: spacing.md,
   },
-  label: {
+  row: {
+    gap: spacing.xs + 2,
+  },
+  rowHead: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  rowHeadStacked: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+  name: {
     fontFamily: font.semibold,
     fontSize: 14,
-  },
-  right: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
     flexShrink: 1,
+  },
+  amounts: {
+    fontFamily: font.semibold,
+    fontSize: 13,
+    fontVariant: ['tabular-nums'],
+    flexShrink: 0,
+  },
+  meta: {
+    fontFamily: font.medium,
+    fontSize: 11.5,
+    fontVariant: ['tabular-nums'],
   },
   detail: {
     fontFamily: font.medium,
     fontSize: 13,
     flexShrink: 1,
-  },
-  chevron: {
-    fontFamily: font.semibold,
-    fontSize: 18,
-    flexShrink: 0,
   },
 });

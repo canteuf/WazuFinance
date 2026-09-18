@@ -1,16 +1,11 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { ActivityIndicator, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
+import { Card } from '@/components/ui/card';
 import { usePeriodSummary } from '@/hooks/use-period-summary';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { formatBalance, formatDelta, formatSignedBare } from '@/lib/money';
-import {
-  font,
-  radius,
-  spacing,
-  stackAtFontScale,
-  useColors,
-  useElevation,
-} from '@/theme/tokens';
+import { font, radius, spacing, stackAtFontScale, useColors } from '@/theme/tokens';
 
 /**
  * Même plafond, et pour la même raison, que le champ montant de la saisie :
@@ -32,7 +27,6 @@ const MAX_FONT_SCALE = 1.4;
  */
 export function PeriodSummary() {
   const colors = useColors();
-  const elevation = useElevation();
   const { fontScale } = useWindowDimensions();
   const { summary, previous, label, isLoading, error } = usePeriodSummary();
 
@@ -85,52 +79,70 @@ export function PeriodSummary() {
             courant, qui se lirait comme une progression alors qu'il n'y a
             simplement rien eu avant. */}
         {previous && (previous.income !== 0 || previous.expense !== 0) ? (
-          <Text style={[styles.delta, { color: colors.textMuted }]}>
-            <Text
-              style={{
-                // Un recul reste en couleur de texte, pas en danger : dépenser
-                // plus qu'à la période précédente est ordinaire, pas une alerte.
-                color:
-                  summary.balance - previous.balance >= 0 ? colors.positive : colors.text,
-              }}
-            >
-              {formatDelta(summary.balance - previous.balance)} €
-            </Text>
-            {' par rapport à la précédente'}
-          </Text>
+          (() => {
+            const delta = summary.balance - previous.balance;
+            const up = delta >= 0;
+
+            return (
+              // Pastille plutôt que ligne de texte : l'écart est une
+              // information autonome, pas la suite de la phrase du solde. Le
+              // fond la détache du chiffre sans lui disputer sa taille.
+              <View style={[styles.delta, { backgroundColor: colors.surfaceMuted }]}>
+                <MaterialCommunityIcons
+                  name={up ? 'arrow-up' : 'arrow-down'}
+                  size={13}
+                  // Un recul reste en couleur de texte, pas en danger :
+                  // dépenser plus qu'à la période précédente est ordinaire.
+                  color={up ? colors.positive : colors.text}
+                />
+                <Text
+                  style={[styles.deltaText, { color: up ? colors.positive : colors.text }]}
+                >
+                  {formatDelta(delta)} €
+                </Text>
+                <Text style={[styles.deltaText, { color: colors.textMuted }]}>
+                  vs période précédente
+                </Text>
+              </View>
+            );
+          })()
         ) : null}
       </View>
 
       <View style={[styles.split, stacked && styles.splitStacked]}>
-        <View
-          style={[
-            styles.stat,
-            stacked && styles.statStacked,
-            elevation.card,
-            { backgroundColor: colors.surface },
-          ]}
-        >
-          <Text style={[styles.statKey, { color: colors.textMuted }]}>Entrées</Text>
+        <Card style={[styles.stat, stacked ? styles.statStacked : null]}>
+          <View style={styles.statHead}>
+            <Text style={[styles.statKey, { color: colors.textMuted }]}>Entrées</Text>
+            <View style={[styles.statIcon, { backgroundColor: colors.surfaceMuted }]}>
+              <MaterialCommunityIcons
+                name="arrow-bottom-left"
+                size={13}
+                color={colors.positive}
+              />
+            </View>
+          </View>
           {/* Entrées en positif, sorties en neutre : même convention que la
               liste des opérations, où seul un revenu se colore. */}
           <Text style={[styles.statValue, { color: colors.positive }]}>
             {formatSignedBare(summary.income, 'income')}
           </Text>
-        </View>
+        </Card>
 
-        <View
-          style={[
-            styles.stat,
-            stacked && styles.statStacked,
-            elevation.card,
-            { backgroundColor: colors.surface },
-          ]}
-        >
-          <Text style={[styles.statKey, { color: colors.textMuted }]}>Sorties</Text>
+        <Card style={[styles.stat, stacked ? styles.statStacked : null]}>
+          <View style={styles.statHead}>
+            <Text style={[styles.statKey, { color: colors.textMuted }]}>Sorties</Text>
+            <View style={[styles.statIcon, { backgroundColor: colors.surfaceMuted }]}>
+              <MaterialCommunityIcons
+                name="arrow-top-right"
+                size={13}
+                color={colors.textMuted}
+              />
+            </View>
+          </View>
           <Text style={[styles.statValue, { color: colors.text }]}>
             {formatSignedBare(summary.expense, 'expense')}
           </Text>
-        </View>
+        </Card>
       </View>
     </View>
   );
@@ -168,8 +180,21 @@ const styles = StyleSheet.create({
     fontSize: 22,
   },
   delta: {
-    fontFamily: font.medium,
-    fontSize: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs + 1,
+    paddingVertical: spacing.xs + 1,
+    paddingHorizontal: spacing.sm + 2,
+    borderRadius: radius.pill,
+    // Se limite à son contenu : étirée, la pastille se lirait comme une barre.
+    alignSelf: 'flex-start',
+    flexShrink: 1,
+    flexWrap: 'wrap',
+  },
+  deltaText: {
+    fontFamily: font.semibold,
+    fontSize: 11.5,
+    fontVariant: ['tabular-nums'],
   },
   split: {
     flexDirection: 'row',
@@ -181,9 +206,6 @@ const styles = StyleSheet.create({
   },
   stat: {
     flex: 1,
-    borderRadius: radius.sm + 3,
-    paddingVertical: spacing.sm + 4,
-    paddingHorizontal: spacing.sm + 4,
     gap: spacing.xs,
   },
   statStacked: {
@@ -193,16 +215,30 @@ const styles = StyleSheet.create({
     flex: 0,
     alignSelf: 'stretch',
   },
+  statHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  statIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
   statKey: {
     fontFamily: font.semibold,
-    fontSize: 9.5,
-    letterSpacing: 0.76,
-    textTransform: 'uppercase',
+    fontSize: 10.5,
+    letterSpacing: 0.4,
+    flexShrink: 1,
   },
   statValue: {
-    fontFamily: font.bold,
-    fontSize: 15,
-    letterSpacing: -0.15,
+    fontFamily: font.semibold,
+    fontSize: 18,
+    letterSpacing: -0.25,
     fontVariant: ['tabular-nums'],
   },
   error: {

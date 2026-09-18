@@ -83,7 +83,7 @@ export function TransactionRow({ transaction }: { transaction: TransactionWithCa
             // Le nom vient de la base ; @expo/vector-icons le type de façon
             // stricte, d'où la conversion explicite.
             name={icon as React.ComponentProps<typeof MaterialCommunityIcons>['name']}
-            size={16}
+            size={19}
             color={tone.tint}
           />
         </View>
@@ -110,8 +110,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm + 2,
     paddingVertical: spacing.sm + 4,
-    paddingHorizontal: spacing.sm + 4,
-    borderRadius: radius.sm + 3,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
   },
   rowStacked: {
     // La pastille reste en haut du bloc de texte, qui compte alors trois
@@ -119,9 +119,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   glyph: {
-    width: 30,
-    height: 30,
-    borderRadius: radius.sm,
+    width: 40,
+    height: 40,
+    // Ronde, comme les pastilles de budget et d'épargne : c'est la même
+    // grammaire d'identité d'un poste d'un bout à l'autre de l'app.
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -131,16 +133,16 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: font.semibold,
-    fontSize: 13,
+    fontSize: 14,
     letterSpacing: -0.07,
   },
   note: {
     fontFamily: font.regular,
-    fontSize: 11,
+    fontSize: 12,
   },
   amount: {
-    fontFamily: font.bold,
-    fontSize: 13,
+    fontFamily: font.semibold,
+    fontSize: 15,
     letterSpacing: -0.13,
     // Les montants s'alignent en colonne : sans chiffres tabulaires, la
     // virgule danse d'une ligne à l'autre.

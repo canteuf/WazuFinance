@@ -103,7 +103,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.xs,
     borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: radius.sm + 3,
+    // Le rayon des petites puces du système, comme les badges de catégorie
+    // de l'historique.
+    borderRadius: radius.sm,
     alignItems: 'center',
     gap: spacing.xs,
     position: 'relative',
