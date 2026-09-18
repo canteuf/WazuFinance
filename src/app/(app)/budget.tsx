@@ -19,6 +19,7 @@ import { useCategories } from '@/hooks/use-categories';
 import { useCategoryBreakdown } from '@/hooks/use-category-breakdown';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { font, spacing, useColors } from '@/theme/tokens';
+import { goBackOr } from '@/lib/navigation';
 
 /**
  * Une seule route pour les deux modes : création sans paramètre, édition avec
@@ -82,7 +83,7 @@ export default function BudgetScreen() {
         <Text style={[styles.errorTitle, { color: colors.danger }]}>
           {groupError ? dataErrorMessage(groupError) : 'Aucun groupe actif.'}
         </Text>
-        <Button title="Retour" variant="ghost" onPress={() => router.back()} />
+        <Button title="Retour" variant="ghost" onPress={() => goBackOr(router, '/budgets')} />
       </View>
     );
   }
@@ -99,7 +100,7 @@ export default function BudgetScreen() {
         <Text style={[styles.errorTitle, { color: colors.danger }]}>
           {dataErrorMessage(budgetsError ?? categoriesError ?? slicesError)}
         </Text>
-        <Button title="Retour" variant="ghost" onPress={() => router.back()} />
+        <Button title="Retour" variant="ghost" onPress={() => goBackOr(router, '/budgets')} />
       </View>
     );
   }
@@ -114,7 +115,7 @@ export default function BudgetScreen() {
         <Text style={[styles.errorTitle, { color: colors.danger }]}>
           Ce budget n’existe plus.
         </Text>
-        <Button title="Retour" variant="ghost" onPress={() => router.back()} />
+        <Button title="Retour" variant="ghost" onPress={() => goBackOr(router, '/budgets')} />
       </View>
     );
   }
@@ -126,7 +127,7 @@ export default function BudgetScreen() {
       updateBudget.mutate(
         { id: existing.id, patch: { amount: values.amount } },
         {
-          onSuccess: () => router.back(),
+          onSuccess: () => goBackOr(router, '/budgets'),
           onError: (error) => setErrorText(dataErrorMessage(error)),
         }
       );
@@ -136,7 +137,7 @@ export default function BudgetScreen() {
     createBudget.mutate(
       { groupId: activeGroupId as string, categoryId: values.categoryId, amount: values.amount },
       {
-        onSuccess: () => router.back(),
+        onSuccess: () => goBackOr(router, '/budgets'),
         onError: (error) => setErrorText(dataErrorMessage(error)),
       }
     );
@@ -147,7 +148,7 @@ export default function BudgetScreen() {
       return;
     }
     deleteBudget.mutate(existing.id, {
-      onSuccess: () => router.back(),
+      onSuccess: () => goBackOr(router, '/budgets'),
       onError: (error) => setErrorText(dataErrorMessage(error)),
     });
   }
@@ -167,7 +168,7 @@ export default function BudgetScreen() {
           accessibilityRole="button"
           accessibilityLabel="Fermer"
           hitSlop={spacing.sm}
-          onPress={() => router.back()}
+          onPress={() => goBackOr(router, '/budgets')}
           style={styles.closeButton}
         >
           <Text style={[styles.closeLabel, { color: colors.textMuted }]}>✕</Text>

@@ -7,6 +7,7 @@ import { useActiveGroup } from '@/hooks/use-active-group';
 import { useGroupMutations } from '@/hooks/use-group-mutations';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { font, radius, spacing, useColors } from '@/theme/tokens';
+import { goBackOr } from '@/lib/navigation';
 
 /** Créer un groupe partagé (spec section 1, écran 7). formSheet, un seul champ. */
 export default function GroupCreateScreen() {
@@ -32,7 +33,7 @@ export default function GroupCreateScreen() {
         // l'utilisateur resterait sur son compte personnel sans comprendre où
         // est passé le groupe qu'il vient de créer.
         setActiveGroupId(groupId);
-        router.back();
+        goBackOr(router, '/groups');
       },
       onError: (error) => setErrorText(dataErrorMessage(error)),
     });
@@ -46,7 +47,7 @@ export default function GroupCreateScreen() {
           accessibilityRole="button"
           accessibilityLabel="Fermer"
           hitSlop={spacing.sm}
-          onPress={() => router.back()}
+          onPress={() => goBackOr(router, '/groups')}
           style={styles.closeButton}
         >
           <Text style={[styles.closeLabel, { color: colors.textMuted }]}>✕</Text>

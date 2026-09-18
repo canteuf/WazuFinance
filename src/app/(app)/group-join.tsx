@@ -7,6 +7,7 @@ import { useActiveGroup } from '@/hooks/use-active-group';
 import { useGroupMutations } from '@/hooks/use-group-mutations';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { font, radius, spacing, useColors } from '@/theme/tokens';
+import { goBackOr } from '@/lib/navigation';
 
 /**
  * Rejoindre un groupe par code d'invitation (spec section 1, écran 7).
@@ -35,7 +36,7 @@ export default function GroupJoinScreen() {
     joinGroup.mutate(code.trim().toLowerCase(), {
       onSuccess: (groupId) => {
         setActiveGroupId(groupId);
-        router.back();
+        goBackOr(router, '/groups');
       },
       onError: (error) => setErrorText(dataErrorMessage(error)),
     });
@@ -49,7 +50,7 @@ export default function GroupJoinScreen() {
           accessibilityRole="button"
           accessibilityLabel="Fermer"
           hitSlop={spacing.sm}
-          onPress={() => router.back()}
+          onPress={() => goBackOr(router, '/groups')}
           style={styles.closeButton}
         >
           <Text style={[styles.closeLabel, { color: colors.textMuted }]}>✕</Text>

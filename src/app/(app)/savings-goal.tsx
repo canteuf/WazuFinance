@@ -20,6 +20,7 @@ import { useSavingsGoalMutations } from '@/hooks/use-savings-goal-mutations';
 import { useSavingsGoals } from '@/hooks/use-savings-goals';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { font, spacing, useColors } from '@/theme/tokens';
+import { goBackOr } from '@/lib/navigation';
 
 /**
  * Une seule route pour les deux modes : création sans paramètre, édition
@@ -57,7 +58,7 @@ export default function SavingsGoalScreen() {
         <Text style={[styles.errorTitle, { color: colors.danger }]}>
           {error ? dataErrorMessage(error) : 'Session introuvable.'}
         </Text>
-        <Button title="Retour" variant="ghost" onPress={() => router.back()} />
+        <Button title="Retour" variant="ghost" onPress={() => goBackOr(router, '/savings-goals')} />
       </View>
     );
   }
@@ -71,7 +72,7 @@ export default function SavingsGoalScreen() {
         <Text style={[styles.errorTitle, { color: colors.danger }]}>
           Cet objectif n’existe plus.
         </Text>
-        <Button title="Retour" variant="ghost" onPress={() => router.back()} />
+        <Button title="Retour" variant="ghost" onPress={() => goBackOr(router, '/savings-goals')} />
       </View>
     );
   }
@@ -83,7 +84,7 @@ export default function SavingsGoalScreen() {
       updateGoal.mutate(
         { id: existing.id, patch: values },
         {
-          onSuccess: () => router.back(),
+          onSuccess: () => goBackOr(router, '/savings-goals'),
           onError: (mutationError) => setErrorText(dataErrorMessage(mutationError)),
         }
       );
@@ -93,7 +94,7 @@ export default function SavingsGoalScreen() {
     createGoal.mutate(
       { ...values, userId: userId as string },
       {
-        onSuccess: () => router.back(),
+        onSuccess: () => goBackOr(router, '/savings-goals'),
         onError: (mutationError) => setErrorText(dataErrorMessage(mutationError)),
       }
     );
@@ -104,7 +105,7 @@ export default function SavingsGoalScreen() {
       return;
     }
     deleteGoal.mutate(existing.id, {
-      onSuccess: () => router.back(),
+      onSuccess: () => goBackOr(router, '/savings-goals'),
       onError: (mutationError) => setErrorText(dataErrorMessage(mutationError)),
     });
   }
@@ -124,7 +125,7 @@ export default function SavingsGoalScreen() {
           accessibilityRole="button"
           accessibilityLabel="Fermer"
           hitSlop={spacing.sm}
-          onPress={() => router.back()}
+          onPress={() => goBackOr(router, '/savings-goals')}
           style={styles.closeButton}
         >
           <Text style={[styles.closeLabel, { color: colors.textMuted }]}>✕</Text>

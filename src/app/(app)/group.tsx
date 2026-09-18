@@ -11,6 +11,7 @@ import { useGroupInvitation } from '@/hooks/use-group-invitation';
 import { useGroupMembers } from '@/hooks/use-group-members';
 import { useGroupMutations } from '@/hooks/use-group-mutations';
 import { dataErrorMessage } from '@/lib/data-errors';
+import { goBackOr } from '@/lib/navigation';
 import { font, spacing, useColors } from '@/theme/tokens';
 
 /**
@@ -71,8 +72,8 @@ export default function GroupScreen() {
     removeGroupMember.mutate(
       { groupId: id, userId },
       {
-        // Pas router.back() : sur le web, après un rechargement sur /group, la
-        // pile ne contient que cet écran et GO_BACK n'est traité par personne.
+        // Après un départ, revenir sur /group n'aurait aucun sens : on vise la
+        // liste directement plutôt que de remonter la pile.
         onSuccess: () => router.dismissTo('/groups'),
         onError: (error) => setActionError(dataErrorMessage(error)),
       }
@@ -92,7 +93,7 @@ export default function GroupScreen() {
     return (
       <View style={styles.centered}>
         <Text style={[styles.errorTitle, { color: colors.danger }]}>Groupe introuvable.</Text>
-        <Button title="Retour" variant="ghost" onPress={() => router.back()} />
+        <Button title="Retour" variant="ghost" onPress={() => goBackOr(router, '/groups')} />
       </View>
     );
   }
@@ -104,7 +105,7 @@ export default function GroupScreen() {
           accessibilityRole="button"
           accessibilityLabel="Retour"
           hitSlop={spacing.sm}
-          onPress={() => router.back()}
+          onPress={() => goBackOr(router, '/groups')}
         >
           <Text style={[styles.back, { color: colors.textMuted }]}>‹</Text>
         </Pressable>

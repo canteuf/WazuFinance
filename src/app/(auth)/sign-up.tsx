@@ -7,6 +7,7 @@ import { Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
 import { useAuth } from '@/hooks/use-auth';
 import { authErrorMessage } from '@/lib/auth-errors';
+import { goBackOr } from '@/lib/navigation';
 import { validateDisplayName, validateEmail, validatePassword } from '@/lib/validation';
 import { font, spacing, useColors } from '@/theme/tokens';
 
@@ -137,7 +138,11 @@ export default function SignUpScreen() {
       {notice ? <Text style={[styles.message, { color: colors.primary }]}>{notice}</Text> : null}
 
       <Button title="Créer mon compte" loading={submitting} onPress={() => void handleSubmit()} />
-      <Button title="J’ai déjà un compte" variant="ghost" onPress={() => router.back()} />
+      <Button
+        title="J’ai déjà un compte"
+        variant="ghost"
+        onPress={() => goBackOr(router, '/sign-in')}
+      />
     </Screen>
   );
 }

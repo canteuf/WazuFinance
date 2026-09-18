@@ -11,6 +11,7 @@ import { useCategories } from '@/hooks/use-categories';
 import { formatActivity, formatActivityTime } from '@/lib/activity-format';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { font, radius, spacing, useColors } from '@/theme/tokens';
+import { goBackOr } from '@/lib/navigation';
 
 // Référence stable, comme dans history.tsx.
 function ItemSeparator() {
@@ -181,7 +182,7 @@ export default function ActivityScreen() {
           accessibilityRole="button"
           accessibilityLabel="Retour"
           hitSlop={spacing.sm}
-          onPress={() => router.back()}
+          onPress={() => goBackOr(router, '/history')}
         >
           <Text style={[styles.back, { color: colors.textMuted }]}>‹</Text>
         </Pressable>

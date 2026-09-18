@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '@/components/ui/screen';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { font, radius, spacing, useColors } from '@/theme/tokens';
+import { goBackOr } from '@/lib/navigation';
 
 /**
  * Groupes de l'utilisateur (spec section 1, écran 7) : bascule du groupe
@@ -24,7 +25,7 @@ export default function GroupsScreen() {
           accessibilityRole="button"
           accessibilityLabel="Retour"
           hitSlop={spacing.sm}
-          onPress={() => router.back()}
+          onPress={() => goBackOr(router, '/')}
         >
           <Text style={[styles.back, { color: colors.textMuted }]}>‹</Text>
         </Pressable>

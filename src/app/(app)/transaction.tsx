@@ -21,6 +21,7 @@ import { useTransaction } from '@/hooks/use-transaction';
 import { useTransactionMutations } from '@/hooks/use-transaction-mutations';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { font, spacing, useColors } from '@/theme/tokens';
+import { goBackOr } from '@/lib/navigation';
 
 /**
  * Une seule route pour les deux modes : création sans paramètre, édition avec
@@ -61,7 +62,7 @@ export default function TransactionScreen() {
         <Text style={[styles.errorTitle, { color: colors.danger }]}>
           {groupError ? dataErrorMessage(groupError) : 'Aucun groupe actif.'}
         </Text>
-        <Button title="Retour" variant="ghost" onPress={() => router.back()} />
+        <Button title="Retour" variant="ghost" onPress={() => goBackOr(router, '/')} />
       </View>
     );
   }
@@ -84,7 +85,7 @@ export default function TransactionScreen() {
         <Text style={[styles.errorTitle, { color: colors.danger }]}>
           {dataErrorMessage(existing.error)}
         </Text>
-        <Button title="Retour" variant="ghost" onPress={() => router.back()} />
+        <Button title="Retour" variant="ghost" onPress={() => goBackOr(router, '/')} />
       </View>
     );
   }
@@ -96,7 +97,7 @@ export default function TransactionScreen() {
       updateTransaction.mutate(
         { id, patch: values },
         {
-          onSuccess: () => router.back(),
+          onSuccess: () => goBackOr(router, '/'),
           onError: (error) => setErrorText(dataErrorMessage(error)),
         }
       );
@@ -106,7 +107,7 @@ export default function TransactionScreen() {
     createTransaction.mutate(
       { ...values, groupId: activeGroupId as string, userId: userId as string },
       {
-        onSuccess: () => router.back(),
+        onSuccess: () => goBackOr(router, '/'),
         onError: (error) => setErrorText(dataErrorMessage(error)),
       }
     );
@@ -117,7 +118,7 @@ export default function TransactionScreen() {
       return;
     }
     deleteTransaction.mutate(id, {
-      onSuccess: () => router.back(),
+      onSuccess: () => goBackOr(router, '/'),
       onError: (error) => setErrorText(dataErrorMessage(error)),
     });
   }
@@ -152,7 +153,7 @@ export default function TransactionScreen() {
           accessibilityRole="button"
           accessibilityLabel="Fermer"
           hitSlop={spacing.sm}
-          onPress={() => router.back()}
+          onPress={() => goBackOr(router, '/')}
           style={styles.closeButton}
         >
           <Text style={[styles.closeLabel, { color: colors.textMuted }]}>✕</Text>
