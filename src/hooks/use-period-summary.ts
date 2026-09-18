@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getPeriodSummary, type PeriodSummary } from '@/data/summary';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { formatPeriodLabel, periodBounds, periodPresets, todayIso } from '@/lib/dates';
+import { periodProgress, type PeriodProgress } from '@/lib/period-progress';
 import { queryKeys } from '@/lib/query-keys';
 
 /** Repli quand le groupe actif n'est pas encore résolu : le mois calendaire. */
@@ -20,6 +21,8 @@ export function usePeriodSummary(): {
   /** Période précédente, pour la comparaison. `undefined` tant qu'elle charge. */
   previous: PeriodSummary | undefined;
   label: string;
+  /** Où en est la période en jours. Calculée sur les mêmes bornes que les totaux, jamais redérivée par un composant. */
+  progress: PeriodProgress;
   isLoading: boolean;
   error: unknown;
 } {
@@ -54,6 +57,8 @@ export function usePeriodSummary(): {
     summary: current.data,
     previous: previous.data,
     label: formatPeriodLabel(from, to),
+    // Dérivée des mêmes bornes que les totaux : la règle du projet veut que tout ce qui décrit la période parte d'un seul calcul, sans quoi l'en-tête et les chiffres finissent par parler de deux périodes différentes.
+    progress: periodProgress(today, from, to),
     // Seule la période en cours conditionne l'affichage : la comparaison est un complément, et attendre sa réponse retarderait le solde sans raison.
     isLoading: current.isLoading,
     error: current.error,

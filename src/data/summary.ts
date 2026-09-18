@@ -4,6 +4,8 @@ export type PeriodSummary = {
   income: number;
   expense: number;
   balance: number;
+  /** Nombre d'écritures de la période, entrées et sorties confondues. */
+  txCount: number;
 };
 
 /**
@@ -31,6 +33,8 @@ export async function getPeriodSummary(
     income: Number(data.income),
     expense: Number(data.expense),
     balance: Number(data.balance),
+    // count(*) est coulé en integer côté base, donc il arrive déjà en nombre JSON — Number() ne sert ici qu'à ne pas faire d'exception dans la lecture.
+    txCount: Number(data.tx_count),
   };
 }
 

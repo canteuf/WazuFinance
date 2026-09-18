@@ -482,6 +482,7 @@ export type Database = {
           balance: number
           expense: number
           income: number
+          tx_count: number
         }[]
       }
       shares_group_with: { Args: { other_user_id: string }; Returns: boolean }

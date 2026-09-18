@@ -2,9 +2,11 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { ActivityIndicator, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { Card } from '@/components/ui/card';
+import { ProgressBar } from '@/components/ui/progress-bar';
 import { usePeriodSummary } from '@/hooks/use-period-summary';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { formatBalance, formatDelta, formatSignedBare } from '@/lib/money';
+import { formatAmount, formatBalance, formatDelta, formatSignedBare } from '@/lib/money';
+import { dailyAllowance } from '@/lib/period-progress';
 import { font, radius, spacing, stackAtFontScale, useColors } from '@/theme/tokens';
 
 /**
@@ -22,9 +24,12 @@ const MAX_FONT_SCALE = 1.4;
 export function PeriodSummary() {
   const colors = useColors();
   const { fontScale } = useWindowDimensions();
-  const { summary, previous, label, isLoading, error } = usePeriodSummary();
+  const { summary, previous, label, progress, isLoading, error } = usePeriodSummary();
 
   const stacked = fontScale >= stackAtFontScale;
+
+  // Ce qui reste à dépenser par jour : le solde, pas les sorties. Un solde négatif ou une période close rendent `null`, et la ligne disparaît.
+  const allowance = summary ? dailyAllowance(summary.balance, progress.remainingDays) : null;
 
   if (error) {
     return (
@@ -94,6 +99,32 @@ export function PeriodSummary() {
         ) : null}
       </View>
 
+      {/* Rythme de la période : où l'on en est, et ce qui reste par jour. La barre suit le temps écoulé, pas la dépense — c'est la référence contre laquelle se lit le solde au-dessus. */}
+      <View style={styles.pace}>
+        <View style={styles.paceHead}>
+          <Text style={[styles.paceLabel, { color: colors.textMuted }]}>
+            {progress.ratio >= 1
+              ? 'Période close'
+              : `${Math.round(progress.ratio * 100)} % de la période`}
+          </Text>
+          <Text style={[styles.paceLabel, { color: colors.textMuted }]}>
+            {progress.remainingDays === 0
+              ? 'Terminée'
+              : progress.remainingDays === 1
+                ? 'Dernier jour'
+                : `Reste ${progress.remainingDays} j`}
+          </Text>
+        </View>
+        <ProgressBar ratio={progress.ratio} tone="accent" />
+        {allowance !== null ? (
+          <Text style={[styles.paceAllowance, { color: colors.textMuted }]}>
+            {/* Le solde réparti sur les jours qui restent. Absent quand le solde est négatif ou la période close : dans ces deux cas la division ne dit plus rien d'utile. */}
+            <Text style={{ color: colors.text }}>{formatAmount(allowance)} €</Text> par jour
+            jusqu’à la fin
+          </Text>
+        ) : null}
+      </View>
+
       <View style={[styles.split, stacked && styles.splitStacked]}>
         <Card style={[styles.stat, stacked ? styles.statStacked : null]}>
           <View style={styles.statHead}>
@@ -125,6 +156,14 @@ export function PeriodSummary() {
           </View>
           <Text style={[styles.statValue, { color: colors.text }]}>
             {formatSignedBare(summary.expense, 'expense')}
+          </Text>
+          {/* Compté par Postgres, pas par la liste : le tableau de bord n'affiche que les dernières opérations, et compter ce qu'il a sous la main annoncerait « 5 » pour une période qui en contient trente. */}
+          <Text style={[styles.statCaption, { color: colors.textMuted }]}>
+            {summary.txCount === 0
+              ? 'Aucune opération'
+              : summary.txCount === 1
+                ? '1 opération'
+                : `${summary.txCount} opérations`}
           </Text>
         </Card>
       </View>
@@ -220,6 +259,30 @@ const styles = StyleSheet.create({
     fontFamily: font.semibold,
     fontSize: 18,
     letterSpacing: -0.25,
+    fontVariant: ['tabular-nums'],
+  },
+  statCaption: {
+    fontFamily: font.regular,
+    fontSize: 11.5,
+    marginTop: 1,
+  },
+  pace: {
+    gap: spacing.xs + 2,
+  },
+  paceHead: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  paceLabel: {
+    fontFamily: font.semibold,
+    fontSize: 11.5,
+    fontVariant: ['tabular-nums'],
+  },
+  paceAllowance: {
+    fontFamily: font.regular,
+    fontSize: 12,
     fontVariant: ['tabular-nums'],
   },
   error: {
