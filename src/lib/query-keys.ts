@@ -34,4 +34,7 @@ export const queryKeys = {
   // Un groupe à la fois, comme `activity` : rien de ce qui invalide `['transactions']`/`['budgets']` ne concerne les membres ou les invitations, pas de nichage sous ces préfixes.
   groupMembers: (groupId: string) => ['groupMembers', groupId] as const,
   groupInvitation: (groupId: string) => ['groupInvitation', groupId] as const,
+  // Clés plates, sans groupe, comme savingsGoals : le profil et les blocages de suppression appartiennent à l'utilisateur, et useClearCacheOnUserChange() est la seule frontière qui compte.
+  profile: () => ['profile'] as const,
+  deletionBlockers: () => ['deletionBlockers'] as const,
 };

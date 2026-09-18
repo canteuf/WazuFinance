@@ -18,6 +18,7 @@ import {
   type HistoryFilterState,
 } from '@/components/history/filter-bar';
 import { TransactionRow } from '@/components/transaction/transaction-row';
+import { AccountButton } from '@/components/ui/account-button';
 import { Button } from '@/components/ui/button';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useCategories } from '@/hooks/use-categories';
@@ -142,6 +143,7 @@ export default function HistoryScreen() {
             <Text style={[styles.headerLinkLabel, { color: colors.primary }]}>Activité</Text>
           </Pressable>
         </Link>
+        <AccountButton />
       </View>
 
       {/* `isEmptyError` ne vaut vrai que pour l'échec du premier chargement (voir use-transaction-history.ts) : un refetch en arrière-plan qui échoue sur un filtre légitimement vide ne doit pas faire disparaître la barre de filtres, seule issue pour l'élargir. */}

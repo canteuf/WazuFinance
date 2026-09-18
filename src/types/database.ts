@@ -470,11 +470,19 @@ export type Database = {
         }[]
       }
       create_shared_group: { Args: { name: string }; Returns: string }
+      delete_own_account: { Args: never; Returns: undefined }
       is_group_member: { Args: { gid: string }; Returns: boolean }
       is_group_owner: { Args: { gid: string }; Returns: boolean }
       join_group_with_code: {
         Args: { invitation_code: string }
         Returns: string
+      }
+      owned_groups_with_other_members: {
+        Args: never
+        Returns: {
+          id: string
+          name: string
+        }[]
       }
       period_summary: {
         Args: { p_from: string; p_group_id: string; p_to: string }

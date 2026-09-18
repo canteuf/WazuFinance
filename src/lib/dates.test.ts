@@ -5,6 +5,7 @@ import {
   isoToDate,
   periodBounds,
   periodPresets,
+  periodStartDayLabel,
   todayIso,
 } from '@/lib/dates';
 
@@ -128,5 +129,16 @@ describe('periodPresets', () => {
     const presets = periodPresets('2026-03-01', 28);
     expect(presets[0].from).toBe('2026-02-28');
     expect(presets[2].from).toBe('2025-12-28');
+  });
+});
+
+describe('periodStartDayLabel', () => {
+  it('abrège le premier jour en ordinal', () => {
+    expect(periodStartDayLabel(1)).toBe('le 1er');
+  });
+
+  it('écrit les autres jours en chiffres seuls', () => {
+    expect(periodStartDayLabel(2)).toBe('le 2');
+    expect(periodStartDayLabel(28)).toBe('le 28');
   });
 });

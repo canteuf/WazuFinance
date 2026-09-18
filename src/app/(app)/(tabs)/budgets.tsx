@@ -3,6 +3,7 @@ import { Link, useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BudgetRow } from '@/components/budget/budget-row';
+import { AccountButton } from '@/components/ui/account-button';
 import { Screen } from '@/components/ui/screen';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useBudgetProgress } from '@/hooks/use-budget-progress';
@@ -46,14 +47,17 @@ export default function BudgetsScreen() {
       }
     >
       {/* Pas de bouton retour : l'écran est une destination d'onglet, pas une page empilée. Le sous-titre annonce l'ordre de la liste, qui n'est ni alphabétique ni chronologique et mérite d'être dit. */}
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Enveloppes</Text>
-        {items.length > 0 ? (
-          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            {items.length === 1 ? '1 budget suivi' : `${items.length} budgets suivis`} · les
-            plus urgents d’abord
-          </Text>
-        ) : null}
+      <View style={styles.headerRow}>
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: colors.text }]}>Enveloppes</Text>
+          {items.length > 0 ? (
+            <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+              {items.length === 1 ? '1 budget suivi' : `${items.length} budgets suivis`} · les
+              plus urgents d’abord
+            </Text>
+          ) : null}
+        </View>
+        <AccountButton />
       </View>
 
       {blockingError ? (
@@ -84,8 +88,15 @@ export default function BudgetsScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
   header: {
     gap: 3,
+    flexShrink: 1,
   },
   title: {
     fontFamily: font.bold,

@@ -24,6 +24,7 @@ function AppStack() {
       {/* Les quatre destinations racines vivent dans (tabs) et partagent la barre d'onglets. Tout ce qui suit s'ouvre au-dessus d'elles : une pile pour les écrans pleins, une feuille pour les formulaires courts — dans les deux cas la barre disparaît, ce qui est la convention attendue d'un écran ouvert depuis un onglet. */}
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="activity" />
+      <Stack.Screen name="settings" />
       <Stack.Screen
         name="budget"
         options={{

@@ -7,10 +7,9 @@ import { CategoryBreakdown } from '@/components/dashboard/category-breakdown';
 import { PeriodSummary } from '@/components/dashboard/period-summary';
 import { RecentTransactions } from '@/components/dashboard/recent-transactions';
 import { SavingsEntry } from '@/components/dashboard/savings-entry';
-import { Button } from '@/components/ui/button';
+import { AccountButton } from '@/components/ui/account-button';
 import { Screen } from '@/components/ui/screen';
 import { useActiveGroup } from '@/hooks/use-active-group';
-import { useAuth } from '@/hooks/use-auth';
 import { useRecentTransactions } from '@/hooks/use-recent-transactions';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
@@ -23,7 +22,6 @@ import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 export default function DashboardScreen() {
   const colors = useColors();
   const elevation = useElevation();
-  const { signOut } = useAuth();
   const { activeGroup, error: groupError } = useActiveGroup();
   const { transactions, isLoading: transactionsLoading, error: transactionsError } =
     useRecentTransactions();
@@ -56,19 +54,22 @@ export default function DashboardScreen() {
       {/* Le nom du groupe est une étiquette, pas un titre : c'est le solde qui domine l'écran. Le mettre en grand inversait la hiérarchie et faisait passer l'information principale au second plan.
 
           Ouvre /groups (écran 7) : bascule de groupe actif, création, adhésion, gestion des membres. */}
-      <Link href="/groups" asChild>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Groupe actif : ${activeGroup?.name ?? '…'}. Gérer les groupes`}
-          style={StyleSheet.flatten([styles.header])}
-        >
-          <View style={[styles.groupDot, { backgroundColor: colors.primary }]} />
-          <Text style={[styles.groupName, { color: colors.textMuted }]} numberOfLines={1}>
-            {activeGroup?.name ?? '…'}
-          </Text>
-          <MaterialCommunityIcons name="chevron-down" size={18} color={colors.textMuted} />
-        </Pressable>
-      </Link>
+      <View style={styles.topRow}>
+        <Link href="/groups" asChild>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Groupe actif : ${activeGroup?.name ?? '…'}. Gérer les groupes`}
+            style={StyleSheet.flatten([styles.header])}
+          >
+            <View style={[styles.groupDot, { backgroundColor: colors.primary }]} />
+            <Text style={[styles.groupName, { color: colors.textMuted }]} numberOfLines={1}>
+              {activeGroup?.name ?? '…'}
+            </Text>
+            <MaterialCommunityIcons name="chevron-down" size={18} color={colors.textMuted} />
+          </Pressable>
+        </Link>
+        <AccountButton />
+      </View>
 
       {/* La carte porte ses propres états de chargement et d'erreur : un résumé en échec ne doit pas emporter la liste, qui a pu aboutir. */}
       <PeriodSummary />
@@ -98,18 +99,23 @@ export default function DashboardScreen() {
       ) : (
         <RecentTransactions transactions={transactions} />
       )}
-
-      {/* Sa place est dans les paramètres du compte (écran 8), pas au bas du tableau de bord — mais cet écran n'existe pas encore, et retirer la déconnexion enfermerait l'utilisateur dans sa session. Il reste ici, discret, jusqu'à ce que l'écran 8 le recueille. */}
-      <Button title="Se déconnecter" variant="ghost" onPress={() => void signOut()} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    // Cède la largeur au bouton de compte plutôt que de le pousser hors de l'écran avec un nom de groupe long.
+    flexShrink: 1,
   },
   groupDot: {
     width: 8,

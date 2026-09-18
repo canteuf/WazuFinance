@@ -86,6 +86,15 @@ export function formatPeriodLabel(from: string, to: string): string {
   return `du ${shortDateFormatter.format(start)} au ${shortDateFormatter.format(last)}`;
 }
 
+/**
+ * Jour de début de période, pour une phrase : « le 1er », « le 5 ».
+ *
+ * Le français n'abrège en ordinal que le premier jour du mois ; les autres s'écrivent en chiffres seuls.
+ */
+export function periodStartDayLabel(day: number): string {
+  return day === 1 ? 'le 1er' : `le ${day}`;
+}
+
 export type PeriodPresetId = 'current' | 'previous' | 'last3' | 'all';
 
 export type PeriodPreset = {

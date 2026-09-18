@@ -15,7 +15,20 @@ const MESSAGES: Record<string, string> = {
   over_request_rate_limit: 'Trop de tentatives. Réessayez dans quelques minutes.',
   validation_failed: 'Vérifiez les informations saisies.',
   signup_disabled: "Les inscriptions sont désactivées sur ce projet.",
+  same_password: 'Le nouveau mot de passe doit être différent de l’actuel.',
 };
+
+/**
+ * Le mot de passe actuel, redemandé avant une action sensible, est faux.
+ *
+ * Erreur dédiée plutôt que `invalid_credentials` : son message générique, « Email ou mot de passe incorrect », serait trompeur ici, où l'email n'est pas saisi. L'écran l'affiche sous le champ concerné.
+ */
+export class CurrentPasswordError extends Error {
+  constructor() {
+    super('Mot de passe actuel incorrect.');
+    this.name = 'CurrentPasswordError';
+  }
+}
 
 export function authErrorMessage(error: unknown): string {
   if (error instanceof AuthError) {

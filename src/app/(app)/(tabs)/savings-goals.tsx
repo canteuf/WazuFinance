@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { SavingsGoalRow } from '@/components/savings/savings-goal-row';
+import { AccountButton } from '@/components/ui/account-button';
 import { Screen } from '@/components/ui/screen';
 import { useSavingsGoals } from '@/hooks/use-savings-goals';
 import { dataErrorMessage } from '@/lib/data-errors';
@@ -49,14 +50,17 @@ export default function SavingsGoalsScreen() {
       }
     >
       {/* Pas de bouton retour : destination d'onglet, pas page empilée. Le sous-titre compte les objectifs plutôt que d'afficher un total provisionné : sommer des montants ici passerait par des flottants binaires, et la règle du projet veut que les agrégats de montants soient calculés par Postgres. Aucun RPC ne le fait pour les objectifs, et en écrire un pour une ligne d'en-tête serait disproportionné. */}
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Objectifs</Text>
-        {items.length > 0 ? (
-          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            {items.length === 1 ? '1 objectif' : `${items.length} objectifs`}
-            {reached > 0 ? ` · ${reached === 1 ? '1 atteint' : `${reached} atteints`}` : ''}
-          </Text>
-        ) : null}
+      <View style={styles.headerRow}>
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: colors.text }]}>Objectifs</Text>
+          {items.length > 0 ? (
+            <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+              {items.length === 1 ? '1 objectif' : `${items.length} objectifs`}
+              {reached > 0 ? ` · ${reached === 1 ? '1 atteint' : `${reached} atteints`}` : ''}
+            </Text>
+          ) : null}
+        </View>
+        <AccountButton />
       </View>
 
       {blockingError ? (
@@ -85,8 +89,15 @@ export default function SavingsGoalsScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
   header: {
     gap: 3,
+    flexShrink: 1,
   },
   title: {
     fontFamily: font.bold,

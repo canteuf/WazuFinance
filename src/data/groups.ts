@@ -129,6 +129,24 @@ export async function removeMember(groupId: string, userId: string): Promise<voi
   }
 }
 
+/**
+ * Règle le jour où démarre la période budgétaire du groupe. La contrainte `between 1 and 28` vit en base ; `budget_groups_update_owner` n'autorise que le propriétaire.
+ *
+ * `.select('id').single()` : un simple membre voit sa ligne filtrée par la policy, et doit obtenir une erreur plutôt qu'une réussite silencieuse.
+ */
+export async function updatePeriodStartDay(groupId: string, day: number): Promise<void> {
+  const { error } = await supabase
+    .from('budget_groups')
+    .update({ period_start_day: day })
+    .eq('id', groupId)
+    .select('id')
+    .single();
+
+  if (error) {
+    throw error;
+  }
+}
+
 export type GroupInvitation = {
   id: string;
   code: string;
