@@ -7,9 +7,9 @@
  *
  * puis remettre cet en-tête et les alias d'enums en fin de fichier.
  *
- * Toujours régénérer depuis --linked, jamais depuis --local : la pile locale
- * tourne une autre version de PostgREST et omet le bloc __InternalSupabase.
- * Si la migration n'est pas encore poussée, la pousser d'abord.
+ * Toujours régénérer depuis --linked, jamais depuis --local : la pile locale tourne une autre version de PostgREST et omet le bloc __InternalSupabase. Si la migration n'est pas encore poussée, la pousser d'abord.
+ *
+ * Sous PowerShell, l'opérateur de redirection écrit en UTF-16 : le fichier ne compile alors plus, tsc ne trouvant plus aucun export, et git le voit comme binaire. Rediriger vers `Out-File -Encoding utf8`, ou relire le fichier et le réécrire en UTF-8 après coup.
  */
 
 export type Json =
