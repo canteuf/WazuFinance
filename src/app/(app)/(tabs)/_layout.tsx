@@ -1,8 +1,12 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Tabs } from 'expo-router';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { font, useColors } from '@/theme/tokens';
+
+/** Hauteur de la barre elle-même, hors zone sûre : une icône, son libellé, et de quoi respirer. */
+const BAR_HEIGHT = 60;
 
 /**
  * Barre d'onglets des quatre destinations racines.
@@ -13,6 +17,7 @@ import { font, useColors } from '@/theme/tokens';
  */
 export default function TabsLayout() {
   const colors = useColors();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -25,9 +30,10 @@ export default function TabsLayout() {
           borderTopColor: colors.border,
           // Sans cette ligne, RN pose une bordure d'un point plein qui se lit comme un trait gris sur le fond « Carnet ».
           borderTopWidth: StyleSheet.hairlineWidth,
-          // La hauteur par défaut serre le libellé sous l'icône dès que la police système grossit.
-          height: Platform.OS === 'ios' ? 88 : 64,
+          // La hauteur se déduit du contenu plus la zone sûre du bas, elle n'est pas fixée : une hauteur en dur ignore la barre de gestes Android et le libellé se fait couper par elle. `insets.bottom` vaut zéro sur un appareil à boutons physiques, où seul le rembourrage de base subsiste.
+          height: BAR_HEIGHT + insets.bottom,
           paddingTop: 6,
+          paddingBottom: insets.bottom,
         },
         tabBarLabelStyle: {
           fontFamily: font.semibold,
