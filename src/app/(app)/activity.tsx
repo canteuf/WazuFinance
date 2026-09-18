@@ -1,17 +1,19 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useActivity } from '@/hooks/use-activity';
 import { useAuth } from '@/hooks/use-auth';
 import { useCategories } from '@/hooks/use-categories';
 import { formatActivity, formatActivityTime } from '@/lib/activity-format';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { font, radius, spacing, useColors } from '@/theme/tokens';
 import { goBackOr } from '@/lib/navigation';
+import { font, radius, spacing, useColors } from '@/theme/tokens';
 
 // Référence stable, comme dans history.tsx.
 function ItemSeparator() {
@@ -135,18 +137,32 @@ export default function ActivityScreen() {
       <FlatList
         data={entries}
         keyExtractor={(entry) => entry.id}
-        renderItem={({ item }) => (
-          <View
-            style={[styles.entry, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          >
-            <Text style={[styles.sentence, { color: colors.text }]}>
-              {formatActivity(item, currentUserId, categories)}
-            </Text>
-            <Text style={[styles.time, { color: colors.textMuted }]}>
-              {formatActivityTime(item.occurred_at)}
-            </Text>
-          </View>
-        )}
+        renderItem={({ item }) => {
+          const removed = item.action === 'delete';
+
+          return (
+            <Card>
+              <View style={styles.entry}>
+                {/* La pastille dit l'action avant la phrase : dans un fil qu'on parcourt, la nature du changement se lit à la forme et à la couleur, sans attendre le verbe au milieu de la phrase. */}
+                <View style={[styles.glyph, { backgroundColor: colors.surfaceMuted }]}>
+                  <MaterialCommunityIcons
+                    name={removed ? 'trash-can-outline' : 'pencil-outline'}
+                    size={17}
+                    color={removed ? colors.danger : colors.warning}
+                  />
+                </View>
+                <View style={styles.entryText}>
+                  <Text style={[styles.sentence, { color: colors.text }]}>
+                    {formatActivity(item, currentUserId, categories)}
+                  </Text>
+                  <Text style={[styles.time, { color: colors.textMuted }]}>
+                    {formatActivityTime(item.occurred_at)}
+                  </Text>
+                </View>
+              </View>
+            </Card>
+          );
+        }}
         ListEmptyComponent={renderEmpty()}
         ListFooterComponent={renderFooter()}
         onEndReached={loadMore}
@@ -170,9 +186,14 @@ export default function ActivityScreen() {
           hitSlop={spacing.sm}
           onPress={() => goBackOr(router, '/history')}
         >
-          <Text style={[styles.back, { color: colors.textMuted }]}>‹</Text>
+          <MaterialCommunityIcons name="chevron-left" size={26} color={colors.textMuted} />
         </Pressable>
-        <Text style={[styles.title, { color: colors.text }]}>Activité</Text>
+        <View style={styles.headerText}>
+          <Text style={[styles.title, { color: colors.text }]}>Journal</Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+            Modifications et suppressions
+          </Text>
+        </View>
       </View>
 
       {renderBody()}
@@ -186,21 +207,24 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
+    alignItems: 'flex-start',
+    gap: spacing.xs,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.md,
   },
-  back: {
-    fontFamily: font.semibold,
-    fontSize: 30,
-    lineHeight: 34,
+  headerText: {
+    gap: 3,
+    flexShrink: 1,
   },
   title: {
     fontFamily: font.bold,
-    fontSize: 18,
-    letterSpacing: -0.2,
+    fontSize: 24,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontFamily: font.regular,
+    fontSize: 12.5,
   },
   content: {
     paddingHorizontal: spacing.lg,
@@ -210,10 +234,21 @@ const styles = StyleSheet.create({
     height: spacing.sm - 1,
   },
   entry: {
-    gap: spacing.xs,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth * 2,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm + 2,
+  },
+  glyph: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  entryText: {
+    gap: 2,
+    flexShrink: 1,
   },
   sentence: {
     fontFamily: font.medium,

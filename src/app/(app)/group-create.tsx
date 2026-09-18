@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -6,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useGroupMutations } from '@/hooks/use-group-mutations';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { font, radius, spacing, useColors } from '@/theme/tokens';
 import { goBackOr } from '@/lib/navigation';
+import { font, radius, spacing, useColors } from '@/theme/tokens';
 
 /** Créer un groupe partagé (spec section 1, écran 7). formSheet, un seul champ. */
 export default function GroupCreateScreen() {
@@ -48,7 +49,7 @@ export default function GroupCreateScreen() {
           onPress={() => goBackOr(router, '/groups')}
           style={styles.closeButton}
         >
-          <Text style={[styles.closeLabel, { color: colors.textMuted }]}>✕</Text>
+          <MaterialCommunityIcons name="close" size={20} color={colors.textMuted} />
         </Pressable>
       </View>
 
@@ -93,10 +94,6 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: spacing.xs,
-  },
-  closeLabel: {
-    fontFamily: font.semibold,
-    fontSize: 18,
   },
   form: {
     gap: spacing.md,

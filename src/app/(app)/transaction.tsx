@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -140,7 +141,7 @@ export default function TransactionScreen() {
           onPress={() => goBackOr(router, '/')}
           style={styles.closeButton}
         >
-          <Text style={[styles.closeLabel, { color: colors.textMuted }]}>✕</Text>
+          <MaterialCommunityIcons name="close" size={20} color={colors.textMuted} />
         </Pressable>
       </View>
 
@@ -175,10 +176,6 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: spacing.xs,
-  },
-  closeLabel: {
-    fontFamily: font.semibold,
-    fontSize: 18,
   },
   scrollContent: {
     flexGrow: 1,
