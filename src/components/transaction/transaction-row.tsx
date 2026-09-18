@@ -20,7 +20,14 @@ import {
 /**
  * Une opération dans une liste, sur le tableau de bord comme dans l'historique. Partagée pour que l'empilement à forte échelle de police n'existe qu'à un seul endroit.
  */
-export function TransactionRow({ transaction }: { transaction: TransactionWithCategory }) {
+export function TransactionRow({
+  transaction,
+  inGroup = false,
+}: {
+  transaction: TransactionWithCategory;
+  /** Vrai quand la ligne vit dans une carte partagée avec ses voisines : elle n'a alors ni fond, ni relief, ni rayon propres, c'est la carte qui les porte. */
+  inGroup?: boolean;
+}) {
   const colors = useColors();
   const elevation = useElevation();
   const isDark = useIsDark();
@@ -34,12 +41,15 @@ export function TransactionRow({ transaction }: { transaction: TransactionWithCa
 
   const edited = wasEdited(transaction);
 
-  // « Carrefour · aujourd'hui », ou la seule date quand il n'y a pas de note. Sans la date, deux lignes de la même catégorie sont indiscernables. « modifié » en fin de ligne : un mot, jamais une icône seule. Le détail — qui, quoi, avant, après — est dans l'écran Activité.
-  const meta = [
-    transaction.note,
-    formatOccurredOn(transaction.occurred_on),
-    edited ? 'modifié' : null,
-  ]
+  const categoryName = transaction.category?.name ?? 'Sans catégorie';
+
+  // La note tient le titre quand elle existe : c'est « Biocoop » qu'on reconnaît d'un coup d'œil dans une liste, pas « Alimentation », qui se répète sur dix lignes. Sans note, la catégorie reprend le titre plutôt que de laisser la ligne sans nom.
+  const title = transaction.note?.trim() || categoryName;
+  // Le badge ne répète pas le titre : quand la note manque, la catégorie est déjà en titre.
+  const showCategoryBadge = title !== categoryName;
+
+  // « aujourd'hui · modifié ». « modifié » en toutes lettres, jamais une icône seule. Le détail — qui, quoi, avant, après — est dans l'écran Activité.
+  const meta = [formatOccurredOn(transaction.occurred_on), edited ? 'modifié' : null]
     .filter((part): part is string => Boolean(part))
     .join(' · ');
 
@@ -60,14 +70,14 @@ export function TransactionRow({ transaction }: { transaction: TransactionWithCa
     <Link href={`/transaction?id=${transaction.id}`} asChild>
       <Pressable
         accessibilityRole="button"
-        // Le lecteur d'écran lit cette étiquette à la place des textes de la ligne : sans ce suffixe, « modifié » n'existe que pour qui voit.
-        accessibilityLabel={`Modifier ${transaction.category?.name ?? 'opération'}${edited ? '. Opération modifiée' : ''}`}
+        // Le lecteur d'écran lit cette étiquette à la place des textes de la ligne : la catégorie y reste énoncée même quand elle n'est plus le titre, puisqu'elle n'apparaît alors que dans un badge visuel. Sans le suffixe, « modifié » n'existe que pour qui voit.
+        accessibilityLabel={`Modifier ${title}${showCategoryBadge ? `, ${categoryName}` : ''}${edited ? '. Opération modifiée' : ''}`}
         // Aplati : <Link asChild> transmet le style à son enfant et avertit s'il reçoit un tableau.
         style={StyleSheet.flatten([
           styles.row,
           stacked && styles.rowStacked,
-          elevation.card,
-          { backgroundColor: colors.surface },
+          inGroup ? null : elevation.card,
+          inGroup ? null : { backgroundColor: colors.surface },
         ])}
       >
         <View style={[styles.glyph, { backgroundColor: tone.surface }]}>
@@ -81,11 +91,20 @@ export function TransactionRow({ transaction }: { transaction: TransactionWithCa
 
         <View style={styles.rowText}>
           <Text numberOfLines={stacked ? 2 : 1} style={[styles.name, { color: colors.text }]}>
-            {transaction.category?.name ?? 'Sans catégorie'}
+            {title}
           </Text>
-          <Text numberOfLines={stacked ? 2 : 1} style={[styles.note, { color: colors.textMuted }]}>
-            {meta}
-          </Text>
+          <View style={[styles.metaRow, stacked && styles.metaRowStacked]}>
+            {showCategoryBadge ? (
+              <View style={[styles.categoryTag, { backgroundColor: colors.surfaceMuted }]}>
+                <Text style={[styles.categoryTagLabel, { color: colors.text }]} numberOfLines={1}>
+                  {categoryName}
+                </Text>
+              </View>
+            ) : null}
+            <Text numberOfLines={1} style={[styles.note, { color: colors.textMuted }]}>
+              {meta}
+            </Text>
+          </View>
           {stacked ? amount : null}
         </View>
 
@@ -111,23 +130,47 @@ const styles = StyleSheet.create({
   glyph: {
     width: 40,
     height: 40,
-    // Ronde, comme les pastilles de budget et d'épargne : c'est la même grammaire d'identité d'un poste d'un bout à l'autre de l'app.
-    borderRadius: radius.pill,
+    // Carrée à coins arrondis, comme la pastille d'une enveloppe : le rond est réservé aux personnes, le carré arrondi aux postes de dépense.
+    borderRadius: radius.sm + 2,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   rowText: {
     flex: 1,
-    gap: 1,
+    gap: 3,
   },
   name: {
     fontFamily: font.semibold,
-    fontSize: 14,
-    letterSpacing: -0.07,
+    fontSize: 15,
+    letterSpacing: -0.1,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  metaRowStacked: {
+    // À fort grossissement, le badge et la date ne tiennent plus côte à côte.
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 3,
+  },
+  categoryTag: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: radius.sm,
+    flexShrink: 1,
+  },
+  categoryTagLabel: {
+    fontFamily: font.semibold,
+    fontSize: 11,
+    lineHeight: 15,
   },
   note: {
     fontFamily: font.regular,
     fontSize: 12,
+    flexShrink: 1,
   },
   amount: {
     fontFamily: font.semibold,

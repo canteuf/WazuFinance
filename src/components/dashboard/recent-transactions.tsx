@@ -1,6 +1,8 @@
+import { Fragment } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { TransactionRow } from '@/components/transaction/transaction-row';
+import { Card } from '@/components/ui/card';
 import type { TransactionWithCategory } from '@/data/transactions';
 import { font, spacing, useColors } from '@/theme/tokens';
 
@@ -20,18 +22,24 @@ export function RecentTransactions({
     );
   }
 
+  // Une seule carte à filets plutôt qu'une carte par ligne : les dernières opérations forment un relevé, et autant de feuillets détachés donnaient à chaque dépense le poids d'un objet à part.
   return (
-    <View style={styles.list}>
-      {transactions.map((transaction) => (
-        <TransactionRow key={transaction.id} transaction={transaction} />
+    <Card flush>
+      {transactions.map((transaction, index) => (
+        <Fragment key={transaction.id}>
+          {index > 0 ? <View style={[styles.divider, { backgroundColor: colors.border }]} /> : null}
+          <TransactionRow transaction={transaction} inGroup />
+        </Fragment>
       ))}
-    </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  list: {
-    gap: spacing.sm + 2,
+  divider: {
+    height: StyleSheet.hairlineWidth * 2,
+    // Décalé du bord : le filet sépare les lignes, il ne barre pas la carte.
+    marginHorizontal: spacing.md,
   },
   empty: {
     fontFamily: font.regular,

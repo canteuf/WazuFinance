@@ -1,4 +1,5 @@
-import { Link, useRouter } from 'expo-router';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { Link } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -24,7 +25,6 @@ import { useTransactionHistory } from '@/hooks/use-transaction-history';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { periodPresets, todayIso } from '@/lib/dates';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
-import { goBackOr } from '@/lib/navigation';
 
 // Référence stable : une fonction inline recréée à chaque rendu ferait de chaque séparateur un composant neuf, monté puis démonté à chaque frappe.
 function ItemSeparator() {
@@ -39,7 +39,6 @@ function ItemSeparator() {
 export default function HistoryScreen() {
   const colors = useColors();
   const elevation = useElevation();
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { activeGroup, isLoading: groupLoading } = useActiveGroup();
 
@@ -128,15 +127,8 @@ export default function HistoryScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+      {/* Pas de bouton retour : l'écran est une destination d'onglet, pas une page empilée. */}
       <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Retour"
-          hitSlop={spacing.sm}
-          onPress={() => goBackOr(router, '/')}
-        >
-          <Text style={[styles.back, { color: colors.textMuted }]}>‹</Text>
-        </Pressable>
         <Text style={[styles.title, { color: colors.text }]}>Opérations</Text>
         {/* C'est ici qu'on vient vérifier ses opérations ; le tableau de bord porte déjà assez d'éléments. */}
         <Link href="/activity" asChild>
@@ -194,7 +186,7 @@ export default function HistoryScreen() {
             { backgroundColor: colors.primary, bottom: insets.bottom + spacing.lg },
           ])}
         >
-          <Text style={[styles.fabLabel, { color: colors.primaryText }]}>+</Text>
+          <MaterialCommunityIcons name="plus" size={28} color={colors.primaryText} />
         </Pressable>
       </Link>
     </View>
@@ -215,15 +207,10 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
   },
-  back: {
-    fontFamily: font.semibold,
-    fontSize: 30,
-    lineHeight: 34,
-  },
   title: {
     fontFamily: font.bold,
-    fontSize: 18,
-    letterSpacing: -0.2,
+    fontSize: 24,
+    letterSpacing: -0.5,
     flexShrink: 1,
   },
   headerLink: {
@@ -267,13 +254,8 @@ const styles = StyleSheet.create({
     right: spacing.lg,
     width: 56,
     height: 56,
-    borderRadius: radius.lg + 8,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  fabLabel: {
-    fontFamily: font.medium,
-    fontSize: 30,
-    lineHeight: 34,
   },
 });

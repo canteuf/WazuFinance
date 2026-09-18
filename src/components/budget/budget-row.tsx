@@ -76,7 +76,13 @@ export function BudgetRow({
 
   // La pastille de catégorie prend la couleur du statut dès qu'il y a une alerte : c'est le premier élément que l'œil rencontre sur la rangée, et une liste triée par urgence doit se lire sans traverser chaque ligne. Sous le seuil, elle revient à la teinte habituelle du poste, qui sert à le reconnaître d'un coup d'œil.
   const iconTint = item.status === 'ok' ? tone.tint : statusColor[item.status];
-  const iconSurface = item.status === 'ok' ? tone.surface : colors.surfaceMuted;
+  // Le fond suit la même règle que le contenu : un aplat très dilué de la couleur du statut en Carnet, la surface neutre en Nocturne où un aplat clair perdrait le contraste du glyphe posé dessus.
+  const iconSurface =
+    item.status === 'ok'
+      ? tone.surface
+      : isDark
+        ? colors.surfaceMuted
+        : `${statusColor[item.status]}1F`;
 
   // Au-delà du seuil, le nom et les montants s'empilent plutôt que de se disputer la largeur — même motif que budgets-entry.tsx.
   const stacked = fontScale >= stackAtFontScale;
@@ -92,7 +98,8 @@ export function BudgetRow({
     >
       <View style={[styles.head, stacked && styles.headStacked]}>
         <View style={styles.identity}>
-          <View style={[styles.dot, { backgroundColor: iconSurface }]}>
+          {/* Carrée à coins arrondis plutôt que ronde : le rond désigne une personne (avatar, membre d'un groupe), le carré arrondi un poste de dépense. La distinction se tient d'un écran à l'autre. */}
+          <View style={[styles.glyph, { backgroundColor: iconSurface }]}>
             <MaterialCommunityIcons
               // Le nom vient de la base ; @expo/vector-icons le type strictement.
               name={
@@ -100,21 +107,20 @@ export function BudgetRow({
                   typeof MaterialCommunityIcons
                 >['name']
               }
-              size={18}
+              size={20}
               color={iconTint}
             />
           </View>
           <View style={styles.identityText}>
-            <Text style={[styles.name, { color: colors.text }]}>{categoryName}</Text>
+            <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
+              {categoryName}
+            </Text>
             <Text style={[styles.percent, { color: statusColor[item.status] }]}>
               {percent} % du plafond
             </Text>
           </View>
         </View>
-        <StatusBadge
-          tone={item.status}
-          label={badgeText(item)}
-        />
+        <StatusBadge tone={item.status} label={badgeText(item)} />
       </View>
 
       {/* Le dépensé passe devant : c'est le chiffre qu'on vient chercher, le plafond n'est là que pour lui donner son échelle. Les deux étaient auparavant de même taille, et la rangée n'avait pas de point d'entrée pour l'œil. */}
@@ -130,17 +136,23 @@ export function BudgetRow({
       {/* Le plancher de 2 % ne vaut que si quelque chose a été dépensé : un budget à zéro ne doit pas afficher un filet qui ferait croire à une dépense. ProgressBar s'en charge à partir du seul ratio. */}
       <ProgressBar ratio={item.spent === 0 ? 0 : item.ratio} tone={item.status} size="lg" />
 
-      <Text style={[styles.status, { color: colors.textMuted }]}>
-        {statusText(item)}
-        {edited ? ' · modifié' : ''}
-      </Text>
+      {/* Pied de carte : l'état à gauche, la période du plafond à droite. Deux informations de même poids, qu'aligner sur une seule ligne sépare mieux qu'une phrase les enchaînant. */}
+      <View style={styles.foot}>
+        <Text style={[styles.status, { color: statusColor[item.status] }]} numberOfLines={1}>
+          {statusText(item)}
+        </Text>
+        <Text style={[styles.period, { color: colors.textMuted }]}>
+          {item.budget.period === 'weekly' ? 'Hebdomadaire' : 'Mensuel'}
+          {edited ? ' · modifié' : ''}
+        </Text>
+      </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
-    gap: spacing.sm,
+    gap: spacing.sm + 2,
     padding: spacing.md,
     borderRadius: radius.md,
   },
@@ -157,9 +169,9 @@ const styles = StyleSheet.create({
   },
   identity: {
     flexDirection: 'row',
-    // Aligné en tête : sous le nom vient le pourcentage, et centrer décalerait la pastille vers le bas du bloc.
-    alignItems: 'flex-start',
-    gap: spacing.sm,
+    // Centré sur les deux lignes de texte : la pastille fait leur hauteur cumulée, et l'aligner en tête la décalerait vers le haut du bloc.
+    alignItems: 'center',
+    gap: spacing.sm + 2,
     // Cède au badge plutôt que de le pousser hors de l'écran à fort grossissement de police.
     flexShrink: 1,
   },
@@ -167,17 +179,18 @@ const styles = StyleSheet.create({
     gap: 1,
     flexShrink: 1,
   },
-  dot: {
-    width: 34,
-    height: 34,
-    borderRadius: radius.pill,
+  glyph: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.sm + 2,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   name: {
     fontFamily: font.semibold,
-    fontSize: 15,
-    letterSpacing: -0.1,
+    fontSize: 16,
+    letterSpacing: -0.2,
     flexShrink: 1,
   },
   percent: {
@@ -202,8 +215,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontVariant: ['tabular-nums'],
   },
+  foot: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
   status: {
-    fontFamily: font.medium,
+    fontFamily: font.semibold,
     fontSize: 12.5,
+    // Cède au libellé de période plutôt que de le pousser hors de la carte.
+    flexShrink: 1,
+  },
+  period: {
+    fontFamily: font.regular,
+    fontSize: 12,
+    flexShrink: 0,
   },
 });
