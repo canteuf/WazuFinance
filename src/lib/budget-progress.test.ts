@@ -30,8 +30,7 @@ describe('budgetProgress', () => {
   });
 
   it('donne zéro dépensé à une catégorie absente de la répartition', () => {
-    // category_breakdown fait une jointure interne : une catégorie sans
-    // dépense n'y figure pas du tout, elle n'y figure pas à zéro.
+    // category_breakdown fait une jointure interne : une catégorie sans dépense n'y figure pas du tout, elle n'y figure pas à zéro.
     const [row] = budgetProgress([budget('cat-1', 200)], []);
 
     expect(row.spent).toBe(0);
@@ -92,8 +91,7 @@ describe('budgetProgress', () => {
       ]
     );
 
-    // Les fixtures de ce test construisent toujours une catégorie ; la
-    // nullabilité du type reflète RLS, pas ce scénario.
+    // Les fixtures de ce test construisent toujours une catégorie ; la nullabilité du type reflète RLS, pas ce scénario.
     expect(rows.map((row) => row.budget.category?.name)).toEqual([
       'Dépassé',
       'Proche',

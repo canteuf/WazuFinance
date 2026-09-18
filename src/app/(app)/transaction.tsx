@@ -24,8 +24,7 @@ import { font, spacing, useColors } from '@/theme/tokens';
 import { goBackOr } from '@/lib/navigation';
 
 /**
- * Une seule route pour les deux modes : création sans paramètre, édition avec
- * ?id=. Le formulaire est ainsi écrit et corrigé une seule fois.
+ * Une seule route pour les deux modes : création sans paramètre, édition avec ?id=. Le formulaire est ainsi écrit et corrigé une seule fois.
  */
 export default function TransactionScreen() {
   const colors = useColors();
@@ -42,8 +41,7 @@ export default function TransactionScreen() {
 
   const userId = session?.user.id;
 
-  // Tous les hooks ci-dessus s'exécutent à chaque rendu ; les retours
-  // conditionnels qui suivent n'en court-circuitent aucun.
+  // Tous les hooks ci-dessus s'exécutent à chaque rendu ; les retours conditionnels qui suivent n'en court-circuitent aucun.
   if (groupLoading) {
     return (
       <View style={styles.centered}>
@@ -52,10 +50,7 @@ export default function TransactionScreen() {
     );
   }
 
-  // Sans cette branche, un chargement des adhésions en échec (ou l'absence
-  // de groupe actif) tombait sur une feuille fitToContents vide : ni
-  // contenu, ni message, ni sortie. Le bouton Retour reste la seule issue
-  // fiable, la poignée de la feuille ne l'étant pas sur toutes les plateformes.
+  // Sans cette branche, un chargement des adhésions en échec (ou l'absence de groupe actif) tombait sur une feuille fitToContents vide : ni contenu, ni message, ni sortie. Le bouton Retour reste la seule issue fiable, la poignée de la feuille ne l'étant pas sur toutes les plateformes.
   if (groupError || !activeGroupId || !userId) {
     return (
       <View style={styles.centered}>
@@ -75,10 +70,7 @@ export default function TransactionScreen() {
     );
   }
 
-  // React Query v5 laisse isLoading à false une fois l'échec établi : sans ce
-  // garde, un fetch en échec (réseau, ligne supprimée, accès révoqué) laisse
-  // passer un formulaire vide sous le titre « Modifier », et l'enregistrer
-  // écraserait la vraie transaction avec des valeurs ressaisies de zéro.
+  // React Query v5 laisse isLoading à false une fois l'échec établi : sans ce garde, un fetch en échec (réseau, ligne supprimée, accès révoqué) laisse passer un formulaire vide sous le titre « Modifier », et l'enregistrer écraserait la vraie transaction avec des valeurs ressaisies de zéro.
   if (typeof id === 'string' && existing.isError) {
     return (
       <View style={styles.centered}>
@@ -134,17 +126,9 @@ export default function TransactionScreen() {
     : undefined;
 
   return (
-    // sheetAllowedDetents: 'fitToContents' calcule la hauteur de la feuille à
-    // partir de celle du contenu ; flex: 1 empêcherait cette mesure (la vue
-    // s'étirerait pour remplir un espace disponible qui n'existe pas encore).
-    // maxHeight borne la feuille à une fraction de l'écran : le ScrollView
-    // ci-dessous devient alors le seul à défiler, clavier ouvert compris, au
-    // lieu que fitToContents mesure un contenu plus haut que l'écran.
+    // sheetAllowedDetents: 'fitToContents' calcule la hauteur de la feuille à partir de celle du contenu ; flex: 1 empêcherait cette mesure (la vue s'étirerait pour remplir un espace disponible qui n'existe pas encore). maxHeight borne la feuille à une fraction de l'écran : le ScrollView ci-dessous devient alors le seul à défiler, clavier ouvert compris, au lieu que fitToContents mesure un contenu plus haut que l'écran.
     <View style={[styles.sheet, { backgroundColor: colors.background, maxHeight: windowHeight * 0.92 }]}>
-      {/* Une formSheet n'accepte pas de header natif : le titre et la
-          fermeture sont du contenu ordinaire (spec, contrainte Android). Sur
-          le web, la présentation retombe sur un écran plein sans navigation
-          native : ce bouton est la seule sortie hors du retour navigateur. */}
+      {/* Une formSheet n'accepte pas de header natif : le titre et la fermeture sont du contenu ordinaire (spec, contrainte Android). Sur le web, la présentation retombe sur un écran plein sans navigation native : ce bouton est la seule sortie hors du retour navigateur. */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>
           {typeof id === 'string' ? 'Modifier l’opération' : 'Nouvelle opération'}

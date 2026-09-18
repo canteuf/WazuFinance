@@ -5,10 +5,7 @@ import type { ActivityAction, ActivitySubject, Json } from '@/types/database';
 /**
  * Phrases du journal d'activité.
  *
- * Module pur, sans dépendance au framework, couvert par Jest comme `money` et
- * `dates`. `ActivityLogRow` reprend les alias `ActivitySubject` et
- * `ActivityAction` des types générés plutôt que de recopier les mêmes unions :
- * `Tables<'activity_log'>` lui reste assignable.
+ * Module pur, sans dépendance au framework, couvert par Jest comme `money` et `dates`. `ActivityLogRow` reprend les alias `ActivitySubject` et `ActivityAction` des types générés plutôt que de recopier les mêmes unions : `Tables<'activity_log'>` lui reste assignable.
  */
 export type ActivityLogRow = {
   subject: ActivitySubject;
@@ -28,8 +25,7 @@ const UNKNOWN_ACTOR = "Hors de l'app";
 const NO_CATEGORY = 'Sans catégorie';
 const DELETED_CATEGORY = 'catégorie supprimée';
 
-// Hissés au niveau du module, comme dans dates.ts : construire un
-// Intl.DateTimeFormat coûte cher, et leur config ne dépend d'aucun argument.
+// Hissés au niveau du module, comme dans dates.ts : construire un Intl.DateTimeFormat coûte cher, et leur config ne dépend d'aucun argument.
 const dayFormatter = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' });
 const dayWithYearFormatter = new Intl.DateTimeFormat('fr-FR', {
   day: 'numeric',
@@ -39,9 +35,7 @@ const dayWithYearFormatter = new Intl.DateTimeFormat('fr-FR', {
 const timeFormatter = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
 /**
- * `old_values` et `new_values` arrivent typés `Json` : une chaîne, un tableau
- * ou `null` y sont possibles en principe. Tout ce qui n'est pas un objet est
- * lu comme un objet vide — la phrase perd ses détails, le fil ne plante pas.
+ * `old_values` et `new_values` arrivent typés `Json` : une chaîne, un tableau ou `null` y sont possibles en principe. Tout ce qui n'est pas un objet est lu comme un objet vide — la phrase perd ses détails, le fil ne plante pas.
  */
 function asObject(value: Json | null): JsonObject {
   return typeof value === 'object' && value !== null && !Array.isArray(value) ? value : {};
@@ -66,10 +60,7 @@ function formatDay(iso: string | null): string | null {
 }
 
 /**
- * Postgres rend de zéro à six décimales de seconde, zéros de fin retirés
- * (« 16:00:00.5 »). Le format ISO d'ECMAScript en attend exactement trois, et
- * Hermes est plus strict que V8 : on ramène toute fraction à trois chiffres —
- * tronquée ou complétée — avant de lire.
+ * Postgres rend de zéro à six décimales de seconde, zéros de fin retirés (« 16:00:00.5 »). Le format ISO d'ECMAScript en attend exactement trois, et Hermes est plus strict que V8 : on ramène toute fraction à trois chiffres — tronquée ou complétée — avant de lire.
  */
 function parseTimestamp(value: string): number {
   return Date.parse(
@@ -113,10 +104,7 @@ function amountChange(before: JsonObject, after: JsonObject): string | null {
 }
 
 /**
- * Nom d'une opération : le même que dans la liste, sa catégorie — celle
- * d'avant le changement, puisque c'est sous ce nom que les membres la
- * connaissaient —, suivie de la note comme sur la ligne d'information de
- * TransactionRow.
+ * Nom d'une opération : le même que dans la liste, sa catégorie — celle d'avant le changement, puisque c'est sous ce nom que les membres la connaissaient —, suivie de la note comme sur la ligne d'information de TransactionRow.
  */
 function transactionLabel(before: JsonObject, categories: readonly CategoryName[]): string {
   const name = categoryLabel(readString(before, 'category_id'), categories);
@@ -125,10 +113,7 @@ function transactionLabel(before: JsonObject, categories: readonly CategoryName[
 }
 
 /**
- * Détail d'une modification d'opération, dans un ordre fixe. Un champ absent
- * de cette liste est ignoré à l'affichage ; une valeur malformée fait tomber
- * sa seule partie, pas la phrase. Quand la catégorie change, seule la
- * nouvelle est donnée : l'ancienne est déjà dans le nom.
+ * Détail d'une modification d'opération, dans un ordre fixe. Un champ absent de cette liste est ignoré à l'affichage ; une valeur malformée fait tomber sa seule partie, pas la phrase. Quand la catégorie change, seule la nouvelle est donnée : l'ancienne est déjà dans le nom.
  */
 function transactionChanges(
   entry: ActivityLogRow,
@@ -170,9 +155,7 @@ function transactionChanges(
 }
 
 /**
- * Une phrase par entrée. Une entrée sans détail affichable garde sa phrase
- * courte (« Marie a modifié Restaurants ») : un journal de confiance ne cache
- * pas d'entrée.
+ * Une phrase par entrée. Une entrée sans détail affichable garde sa phrase courte (« Marie a modifié Restaurants ») : un journal de confiance ne cache pas d'entrée.
  */
 export function formatActivity(
   entry: ActivityLogRow,
@@ -232,10 +215,7 @@ export function formatActivityTime(occurredAt: string, now: Date = new Date()): 
 /**
  * Vrai si la ligne a été réellement modifiée depuis sa saisie.
  *
- * Fiable grâce à la base : touch_updated_at() ne bouge plus sur un
- * enregistrement sans changement, et la migration du journal a remis
- * updated_at à created_at sur toutes les lignes existantes. Les deux valeurs
- * sont comparées comme des instants.
+ * Fiable grâce à la base : touch_updated_at() ne bouge plus sur un enregistrement sans changement, et la migration du journal a remis updated_at à created_at sur toutes les lignes existantes. Les deux valeurs sont comparées comme des instants.
  */
 export function wasEdited(row: { created_at: string; updated_at: string }): boolean {
   return parseTimestamp(row.updated_at) > parseTimestamp(row.created_at);

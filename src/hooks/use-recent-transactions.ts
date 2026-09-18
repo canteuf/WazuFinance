@@ -14,11 +14,7 @@ const DEFAULT_START_DAY = 1;
 /**
  * Dernières opérations de la période en cours pour le groupe actif.
  *
- * Mêmes bornes que `usePeriodSummary` et `useCategoryBreakdown` : les quatre
- * blocs du tableau de bord décrivent la même période. Sans cette borne, une
- * opération de la période précédente apparaissait sous un solde qui ne la
- * comptait pas, puis disparaissait au passage à l'historique — qui s'ouvre,
- * lui, sur la période en cours.
+ * Mêmes bornes que `usePeriodSummary` et `useCategoryBreakdown` : les quatre blocs du tableau de bord décrivent la même période. Sans cette borne, une opération de la période précédente apparaissait sous un solde qui ne la comptait pas, puis disparaissait au passage à l'historique — qui s'ouvre, lui, sur la période en cours.
  */
 export function useRecentTransactions(): {
   transactions: TransactionWithCategory[];

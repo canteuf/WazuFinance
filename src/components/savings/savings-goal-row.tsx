@@ -38,8 +38,7 @@ export function SavingsGoalRow({
   const accent = reached ? colors.positive : colors.primary;
   const percent = item.percent;
 
-  // Au-delà du seuil, le nom et les montants s'empilent plutôt que de se
-  // disputer la largeur — même motif que budget-row.tsx.
+  // Au-delà du seuil, le nom et les montants s'empilent plutôt que de se disputer la largeur — même motif que budget-row.tsx.
   const stacked = fontScale >= stackAtFontScale;
 
   return (
@@ -70,9 +69,7 @@ export function SavingsGoalRow({
         </View>
       </View>
 
-      {/* Le provisionné domine, la cible lui donne son échelle, le
-          pourcentage ferme la ligne à droite — l'ordre dans lequel on lit
-          « où j'en suis ». */}
+      {/* Le provisionné domine, la cible lui donne son échelle, le pourcentage ferme la ligne à droite — l'ordre dans lequel on lit « où j'en suis ». */}
       <View style={[styles.figures, stacked && styles.figuresStacked]}>
         <View style={styles.amountsRow}>
           <Text style={[styles.current, { color: reached ? colors.positive : colors.text }]}>
@@ -139,8 +136,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   figuresStacked: {
-    // Au-delà du seuil, le pourcentage passe sous les montants plutôt que de
-    // les comprimer jusqu'à la troncature.
+    // Au-delà du seuil, le pourcentage passe sous les montants plutôt que de les comprimer jusqu'à la troncature.
     flexDirection: 'column',
     alignItems: 'flex-start',
   },

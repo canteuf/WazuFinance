@@ -13,8 +13,7 @@ import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 /**
  * Objectifs d'épargne (spec 2.5, écran 6).
  *
- * Portée personnelle : useSavingsGoals() ne prend aucun paramètre de groupe,
- * la policy RLS ne renvoie déjà que les objectifs de l'utilisateur courant.
+ * Portée personnelle : useSavingsGoals() ne prend aucun paramètre de groupe, la policy RLS ne renvoie déjà que les objectifs de l'utilisateur courant.
  */
 export default function SavingsGoalsScreen() {
   const colors = useColors();
@@ -25,9 +24,7 @@ export default function SavingsGoalsScreen() {
   const items = useMemo(() => goals.map(savingsProgress), [goals]);
   const reached = items.filter((item) => item.status === 'reached').length;
 
-  // Seul l'échec du tout premier chargement bloque l'écran : TanStack garde
-  // les dernières données valides après un rafraîchissement raté en
-  // arrière-plan — même règle que budgets.tsx et activity.tsx.
+  // Seul l'échec du tout premier chargement bloque l'écran : TanStack garde les dernières données valides après un rafraîchissement raté en arrière-plan — même règle que budgets.tsx et activity.tsx.
   const blockingError: unknown = isLoadingError ? error : null;
 
   return (
@@ -39,9 +36,7 @@ export default function SavingsGoalsScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Ajouter un objectif"
-            // Aplati : <Link asChild> transmet le style à son enfant via un
-            // Slot, qui lève une erreur de rendu en développement s'il reçoit
-            // un tableau.
+            // Aplati : <Link asChild> transmet le style à son enfant via un Slot, qui lève une erreur de rendu en développement s'il reçoit un tableau.
             style={StyleSheet.flatten([
               styles.fab,
               elevation.floating,
@@ -53,13 +48,7 @@ export default function SavingsGoalsScreen() {
         </Link>
       }
     >
-      {/* Pas de bouton retour : destination d'onglet, pas page empilée.
-          Le sous-titre compte les objectifs plutôt que d'afficher un total
-          provisionné : sommer des montants ici passerait par des flottants
-          binaires, et la règle du projet veut que les agrégats de montants
-          soient calculés par Postgres. Aucun RPC ne le fait pour les
-          objectifs, et en écrire un pour une ligne d'en-tête serait
-          disproportionné. */}
+      {/* Pas de bouton retour : destination d'onglet, pas page empilée. Le sous-titre compte les objectifs plutôt que d'afficher un total provisionné : sommer des montants ici passerait par des flottants binaires, et la règle du projet veut que les agrégats de montants soient calculés par Postgres. Aucun RPC ne le fait pour les objectifs, et en écrire un pour une ligne d'en-tête serait disproportionné. */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Objectifs</Text>
         {items.length > 0 ? (

@@ -26,9 +26,7 @@ describe('dataErrorMessage', () => {
   });
 
   it("reconnaît une panne réseau à la forme réellement renvoyée par postgrest-js", () => {
-    // Le client installé attrape toute panne de transport et renvoie un objet
-    // littéral, pas une Error : code vide, message préfixé par le nom de
-    // l'exception JS d'origine.
+    // Le client installé attrape toute panne de transport et renvoie un objet littéral, pas une Error : code vide, message préfixé par le nom de l'exception JS d'origine.
     expect(
       dataErrorMessage({
         message: 'TypeError: Network request failed',

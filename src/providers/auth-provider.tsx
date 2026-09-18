@@ -9,9 +9,7 @@ export type AuthState = {
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   /**
-   * Renvoie `needsEmailConfirmation` : quand la confirmation d'email est
-   * activée sur le projet Supabase, signUp ne crée pas de session et
-   * l'utilisateur doit d'abord cliquer le lien reçu.
+   * Renvoie `needsEmailConfirmation` : quand la confirmation d'email est activée sur le projet Supabase, signUp ne crée pas de session et l'utilisateur doit d'abord cliquer le lien reçu.
    */
   signUp: (
     email: string,
@@ -38,8 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     });
 
-    // Couvre connexion, déconnexion et TOKEN_REFRESHED, y compris depuis un
-    // autre onglet ou après expiration.
+    // Couvre connexion, déconnexion et TOKEN_REFRESHED, y compris depuis un autre onglet ou après expiration.
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       setIsLoading(false);

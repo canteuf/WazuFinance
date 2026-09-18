@@ -159,6 +159,7 @@ Out, with reasons:
 ## Conventions
 
 - File names kebab-case; components PascalCase.
+- **Comments are never hard-wrapped.** One paragraph is one physical line, however long — `//`, `/* */` and `{/* */}` alike. `.vscode/settings.json` sets `editor.wordWrap: "on"`, so the editor folds them to the window width; re-wrapping them by hand at ~80 columns undoes that, and turns a one-word edit into a diff spanning every line of the paragraph. A blank line still separates paragraphs, and bullets, JSDoc tags and indented code samples keep their own lines.
 - User-facing strings in French, code identifiers in English. SQL comments in French, matching the spec.
 - Supabase errors are mapped to French text by code in [src/lib/auth-errors.ts](src/lib/auth-errors.ts) — map codes, never message strings, which change between versions.
 - TypeScript strict, no `any`. `src/types/database.ts` is **generated** — never edit it by hand. After any migration: `npx supabase gen types typescript --linked > src/types/database.ts`, then restore the header comment and the enum aliases at the end of the file.

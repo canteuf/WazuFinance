@@ -1,13 +1,9 @@
 /**
  * Variables d'environnement publiques.
  *
- * Le bundler Expo remplace `process.env.EXPO_PUBLIC_*` à la compilation, et
- * uniquement en notation pointée : ni destructuration, ni accès dynamique.
- * D'où les deux lectures littérales ci-dessous.
+ * Le bundler Expo remplace `process.env.EXPO_PUBLIC_*` à la compilation, et uniquement en notation pointée : ni destructuration, ni accès dynamique. D'où les deux lectures littérales ci-dessous.
  *
- * Ces valeurs finissent en clair dans le bundle. C'est acceptable pour l'URL et
- * la clé anon, qui sont conçues pour être publiques : la sécurité repose sur les
- * policies RLS, pas sur le secret de la clé. Aucune clé service_role ici.
+ * Ces valeurs finissent en clair dans le bundle. C'est acceptable pour l'URL et la clé anon, qui sont conçues pour être publiques : la sécurité repose sur les policies RLS, pas sur le secret de la clé. Aucune clé service_role ici.
  */
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;

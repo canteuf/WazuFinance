@@ -9,17 +9,11 @@ export type ProgressTone = BudgetStatus | 'accent' | 'positive';
 /**
  * Piste et remplissage d'une progression.
  *
- * La couleur suit le statut déjà calculé par `budgetProgress()` — accent sous
- * le seuil, ocre à partir de 80 %, rouge brique au dépassement — plutôt que de
- * comparer à nouveau le ratio ici : deux définitions du même seuil finiraient
- * par diverger, et celle qui fait foi est couverte par Jest.
+ * La couleur suit le statut déjà calculé par `budgetProgress()` — accent sous le seuil, ocre à partir de 80 %, rouge brique au dépassement — plutôt que de comparer à nouveau le ratio ici : deux définitions du même seuil finiraient par diverger, et celle qui fait foi est couverte par Jest.
  *
- * Un objectif d'épargne n'a pas de statut de budget : il passe « accent » ou
- * « positive », parce qu'atteindre une cible d'épargne est une réussite, pas
- * un dépassement.
+ * Un objectif d'épargne n'a pas de statut de budget : il passe « accent » ou « positive », parce qu'atteindre une cible d'épargne est une réussite, pas un dépassement.
  *
- * Trois fichiers portaient la même piste, le même remplissage et la même
- * formule de largeur recopiée mot pour mot ; ils partagent désormais celle-ci.
+ * Trois fichiers portaient la même piste, le même remplissage et la même formule de largeur recopiée mot pour mot ; ils partagent désormais celle-ci.
  */
 export function ProgressBar({
   ratio,
@@ -42,10 +36,7 @@ export function ProgressBar({
           ? colors.positive
           : colors.primary;
 
-  // Un remplissage nul à 0 % est juste ; au-delà, un filet de 2 % garde la
-  // barre lisible quand la part est minuscule. Elle sature à 100 % : le
-  // dépassement se lit dans le chiffre et la couleur, pas dans une barre qui
-  // déborderait de sa piste.
+  // Un remplissage nul à 0 % est juste ; au-delà, un filet de 2 % garde la barre lisible quand la part est minuscule. Elle sature à 100 % : le dépassement se lit dans le chiffre et la couleur, pas dans une barre qui déborderait de sa piste.
   const width: DimensionValue =
     ratio <= 0 ? 0 : `${Math.min(Math.max(ratio * 100, 2), 100)}%`;
 

@@ -22,9 +22,7 @@ import { font, spacing, useColors } from '@/theme/tokens';
 import { goBackOr } from '@/lib/navigation';
 
 /**
- * Une seule route pour les deux modes : création sans paramètre, édition avec
- * ?id=. Même parti que pour les transactions — le formulaire est écrit et
- * corrigé une seule fois.
+ * Une seule route pour les deux modes : création sans paramètre, édition avec ?id=. Même parti que pour les transactions — le formulaire est écrit et corrigé une seule fois.
  */
 export default function BudgetScreen() {
   const colors = useColors();
@@ -47,10 +45,7 @@ export default function BudgetScreen() {
   /**
    * Catégories de dépense sans budget, les plus dépensées d'abord.
    *
-   * C'est là que se fait la découverte : l'écran 5 ne liste que les budgets
-   * définis, donc c'est au moment de choisir qu'on montre où l'argent part
-   * vraiment. Une catégorie absente de la répartition n'a rien coûté sur la
-   * période et se range après celles qui ont coûté.
+   * C'est là que se fait la découverte : l'écran 5 ne liste que les budgets définis, donc c'est au moment de choisir qu'on montre où l'argent part vraiment. Une catégorie absente de la répartition n'a rien coûté sur la période et se range après celles qui ont coûté.
    */
   const availableCategories = useMemo(() => {
     const budgeted = new Set(budgets.map((budget) => budget.category_id));
@@ -65,10 +60,7 @@ export default function BudgetScreen() {
       });
   }, [budgets, categories, slices]);
 
-  // Les quatre requêtes se chargent en parallèle ; tant qu'une seule d'entre
-  // elles n'est pas arrivée, `categories`/`slices` valent [] par défaut de
-  // leur hook, ce qui rendrait à tort « Toutes les catégories de dépense ont
-  // déjà un budget. » si on ne couvrait pas aussi ces deux chargements.
+  // Les quatre requêtes se chargent en parallèle ; tant qu'une seule d'entre elles n'est pas arrivée, `categories`/`slices` valent [] par défaut de leur hook, ce qui rendrait à tort « Toutes les catégories de dépense ont déjà un budget. » si on ne couvrait pas aussi ces deux chargements.
   if (groupLoading || budgetsLoading || categoriesLoading || slicesLoading) {
     return (
       <View style={styles.centered}>
@@ -88,12 +80,7 @@ export default function BudgetScreen() {
     );
   }
 
-  // Une panne réseau ou un refus RLS sur l'une de ces trois requêtes laisse sa
-  // donnée à vide ([] pour budgets/categories/slices) : sans ce garde,
-  // l'édition afficherait à tort « Ce budget n'existe plus », et la création
-  // afficherait à tort « Toutes les catégories de dépense ont déjà un
-  // budget. » — le même faux message que la correction précédente visait à
-  // supprimer côté chargement, ici atteint par la voie erreur.
+  // Une panne réseau ou un refus RLS sur l'une de ces trois requêtes laisse sa donnée à vide ([] pour budgets/categories/slices) : sans ce garde, l'édition afficherait à tort « Ce budget n'existe plus », et la création afficherait à tort « Toutes les catégories de dépense ont déjà un budget. » — le même faux message que la correction précédente visait à supprimer côté chargement, ici atteint par la voie erreur.
   if (budgetsError || categoriesError || slicesError) {
     return (
       <View style={styles.centered}>
@@ -105,10 +92,7 @@ export default function BudgetScreen() {
     );
   }
 
-  // Le budget visé n'est plus dans la liste : supprimé par un autre membre
-  // pendant que la feuille était ouverte, ou identifiant périmé. Sans ce
-  // garde, le formulaire s'ouvrirait vide sous le titre « Modifier » et
-  // l'enregistrer créerait un doublon.
+  // Le budget visé n'est plus dans la liste : supprimé par un autre membre pendant que la feuille était ouverte, ou identifiant périmé. Sans ce garde, le formulaire s'ouvrirait vide sous le titre « Modifier » et l'enregistrer créerait un doublon.
   if (typeof id === 'string' && !existing) {
     return (
       <View style={styles.centered}>
@@ -190,9 +174,7 @@ export default function BudgetScreen() {
           lockedCategory={
             existing
               ? {
-                  // `existing.category` peut être `null` : RLS masque la ligne
-                  // jointe quand le budget pointe une catégorie hors de portée
-                  // du groupe. `category_id` reste toujours connu, lui.
+                  // `existing.category` peut être `null` : RLS masque la ligne jointe quand le budget pointe une catégorie hors de portée du groupe. `category_id` reste toujours connu, lui.
                   id: existing.category?.id ?? existing.category_id,
                   name: existing.category?.name ?? 'Catégorie inconnue',
                 }

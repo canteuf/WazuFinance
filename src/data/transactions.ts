@@ -10,14 +10,9 @@ const SELECT_WITH_CATEGORY = '*, category:categories(id, name, icon)';
 /**
  * Dernières opérations du groupe sur une période, les plus récentes d'abord.
  *
- * Les bornes ne sont pas optionnelles : le reste du tableau de bord (solde,
- * entrées, sorties, répartition) décrit une période, et une liste qui
- * remonterait au-delà placerait le loyer du mois dernier sous « Solde de
- * septembre ». Semi-ouvertes [from, to), comme partout ailleurs.
+ * Les bornes ne sont pas optionnelles : le reste du tableau de bord (solde, entrées, sorties, répartition) décrit une période, et une liste qui remonterait au-delà placerait le loyer du mois dernier sous « Solde de septembre ». Semi-ouvertes [from, to), comme partout ailleurs.
  *
- * Le tri reprend transactions_group_occurred_idx (group_id, occurred_on desc,
- * id desc) : l'index couvre le filtre et l'ordre, et le départage par id rend
- * la pagination de l'écran 3 stable quand plusieurs lignes partagent une date.
+ * Le tri reprend transactions_group_occurred_idx (group_id, occurred_on desc, id desc) : l'index couvre le filtre et l'ordre, et le départage par id rend la pagination de l'écran 3 stable quand plusieurs lignes partagent une date.
  */
 export async function listRecent(
   groupId: string,
@@ -75,8 +70,7 @@ export async function create(
     .from('transactions')
     .insert({
       group_id: input.groupId,
-      // La policy transactions_insert_member exige user_id = auth.uid() : cette
-      // valeur est vérifiée en base, pas seulement ici.
+      // La policy transactions_insert_member exige user_id = auth.uid() : cette valeur est vérifiée en base, pas seulement ici.
       user_id: input.userId,
       category_id: input.categoryId,
       type: input.type,
@@ -119,9 +113,7 @@ export async function update(
 }
 
 export async function remove(id: string): Promise<void> {
-  // .select().single() force une erreur si RLS a filtré la ligne cible (id
-  // erroné, appartenance périmée) : sans lui, zéro ligne supprimée serait
-  // encore un succès silencieux, contrairement à update().
+  // .select().single() force une erreur si RLS a filtré la ligne cible (id erroné, appartenance périmée) : sans lui, zéro ligne supprimée serait encore un succès silencieux, contrairement à update().
   const { error } = await supabase
     .from('transactions')
     .delete()
@@ -151,14 +143,9 @@ export type TransactionCursor = {
 /**
  * Une page de l'historique, les plus récentes d'abord.
  *
- * La pagination porte sur le couple `(occurred_on, id)` et non sur un décalage.
- * Avec `.range()`, une insertion entre deux pages décale toutes les suivantes
- * et fait apparaître une ligne deux fois ; une suppression en saute une. Le
- * Realtime insérant pendant le défilement, ce n'est pas une hypothèse.
+ * La pagination porte sur le couple `(occurred_on, id)` et non sur un décalage. Avec `.range()`, une insertion entre deux pages décale toutes les suivantes et fait apparaître une ligne deux fois ; une suppression en saute une. Le Realtime insérant pendant le défilement, ce n'est pas une hypothèse.
  *
- * L'invariant est couvert par supabase/tests/transaction_paging_test.sql, dont
- * les fixtures partagent volontairement une date : c'est le seul cas où le
- * départage par `id` compte.
+ * L'invariant est couvert par supabase/tests/transaction_paging_test.sql, dont les fixtures partagent volontairement une date : c'est le seul cas où le départage par `id` compte.
  */
 export async function listPage(
   groupId: string,
@@ -171,8 +158,7 @@ export async function listPage(
     .select(SELECT_WITH_CATEGORY)
     .eq('group_id', groupId);
 
-  // Bornes semi-ouvertes, comme period_summary : la borne haute est exclue,
-  // ce qui supprime la classe de bugs « 30 ou 31 jours ».
+  // Bornes semi-ouvertes, comme period_summary : la borne haute est exclue, ce qui supprime la classe de bugs « 30 ou 31 jours ».
   if (filters.from !== null) {
     query = query.gte('occurred_on', filters.from);
   }
@@ -187,9 +173,7 @@ export async function listPage(
   }
 
   if (cursor !== null) {
-    // PostgREST n'exprime pas la comparaison de couples `(a, b) < (c, d)` :
-    // ce `or` produit le même prédicat. Les deux valeurs viennent d'une ligne
-    // déjà renvoyée par le serveur, jamais d'une saisie.
+    // PostgREST n'exprime pas la comparaison de couples `(a, b) < (c, d)` : ce `or` produit le même prédicat. Les deux valeurs viennent d'une ligne déjà renvoyée par le serveur, jamais d'une saisie.
     query = query.or(
       `occurred_on.lt.${cursor.occurredOn},` +
         `and(occurred_on.eq.${cursor.occurredOn},id.lt.${cursor.id})`

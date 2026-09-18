@@ -14,8 +14,7 @@ const PREVIEW_COUNT = 3;
 /**
  * Résume l'état des budgets en une phrase.
  *
- * Le compte des dépassements passe avant celui des alertes : c'est
- * l'information qui appelle une action.
+ * Le compte des dépassements passe avant celui des alertes : c'est l'information qui appelle une action.
  */
 function summarise(over: number, warning: number, total: number): string {
   if (total === 0) {
@@ -27,9 +26,7 @@ function summarise(over: number, warning: number, total: number): string {
 
   const parts: string[] = [];
   if (over > 0) {
-    // « plafond atteint » et non « dépassé » : le statut `over` commence à
-    // exactement 100 %, où rien n'est encore dépassé. Un budget dépassé a
-    // forcément atteint son plafond, donc la formule est juste dans les deux cas.
+    // « plafond atteint » et non « dépassé » : le statut `over` commence à exactement 100 %, où rien n'est encore dépassé. Un budget dépassé a forcément atteint son plafond, donc la formule est juste dans les deux cas.
     parts.push(over === 1 ? '1 plafond atteint' : `${over} plafonds atteints`);
   }
   if (warning > 0) {
@@ -43,28 +40,19 @@ export function BudgetsEntry() {
   const { fontScale } = useWindowDimensions();
   const { items, isLoading, error } = useBudgetProgress();
 
-  // Ni squelette ni message d'erreur : cette ligne est d'abord un point
-  // d'entrée. Un budget dont l'état est inconnu se rejoint quand même, et un
-  // bandeau d'erreur de plus sur le tableau de bord n'apprendrait rien que la
-  // carte de résumé ne dise déjà.
+  // Ni squelette ni message d'erreur : cette ligne est d'abord un point d'entrée. Un budget dont l'état est inconnu se rejoint quand même, et un bandeau d'erreur de plus sur le tableau de bord n'apprendrait rien que la carte de résumé ne dise déjà.
   const over = items.filter((item) => item.status === 'over').length;
   const warning = items.filter((item) => item.status === 'warning').length;
 
-  // Au-delà du seuil, le libellé et le détail s'empilent plutôt que de se
-  // disputer la largeur — comme les autres rangées à deux colonnes du projet.
+  // Au-delà du seuil, le libellé et le détail s'empilent plutôt que de se disputer la largeur — comme les autres rangées à deux colonnes du projet.
   const stacked = fontScale >= stackAtFontScale;
 
   const accent = over > 0 ? colors.danger : warning > 0 ? colors.warning : colors.textMuted;
-  // TanStack Query garde les dernières données valides quand un refetch en
-  // arrière-plan échoue : tant que `items` contient quelque chose, on montre
-  // l'état du dernier succès plutôt qu'un « Voir » neutre qui contredirait la
-  // pastille de couleur calculée sur ces mêmes données. « Voir » ne revient
-  // que lorsqu'il n'y a réellement rien à résumer.
+  // TanStack Query garde les dernières données valides quand un refetch en arrière-plan échoue : tant que `items` contient quelque chose, on montre l'état du dernier succès plutôt qu'un « Voir » neutre qui contredirait la pastille de couleur calculée sur ces mêmes données. « Voir » ne revient que lorsqu'il n'y a réellement rien à résumer.
   const detail =
     (isLoading || error) && items.length === 0 ? 'Voir' : summarise(over, warning, items.length);
 
-  // Les plus urgents d'abord : `budgetProgress()` a déjà trié par statut puis
-  // par ratio, il n'y a qu'à prendre la tête de liste.
+  // Les plus urgents d'abord : `budgetProgress()` a déjà trié par statut puis par ratio, il n'y a qu'à prendre la tête de liste.
   const preview = items.slice(0, PREVIEW_COUNT);
 
   return (
@@ -163,8 +151,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   rowHeadStacked: {
-    // Le nom et les montants cèdent chacun leur propre ligne au lieu de se
-    // rétrécir l'un l'autre.
+    // Le nom et les montants cèdent chacun leur propre ligne au lieu de se rétrécir l'un l'autre.
     flexDirection: 'column',
     alignItems: 'flex-start',
   },

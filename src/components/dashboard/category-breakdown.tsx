@@ -11,8 +11,7 @@ import { font, radius, spacing, useColors, useIsDark } from '@/theme/tokens';
 /**
  * Nombre de parts détaillées avant regroupement.
  *
- * Au-delà, les barres deviennent trop fines pour se comparer d'un coup d'œil,
- * et le tableau de bord n'est pas l'écran où l'on épluche le détail.
+ * Au-delà, les barres deviennent trop fines pour se comparer d'un coup d'œil, et le tableau de bord n'est pas l'écran où l'on épluche le détail.
  */
 const VISIBLE_SLICES = 5;
 
@@ -26,8 +25,7 @@ type Row = {
 /**
  * Regroupe la queue de distribution en une part unique.
  *
- * Sans ça, un groupe utilisant les quatorze catégories du seed produirait
- * quatorze barres dont la moitié à moins de 2 % — illisibles et sans intérêt.
+ * Sans ça, un groupe utilisant les quatorze catégories du seed produirait quatorze barres dont la moitié à moins de 2 % — illisibles et sans intérêt.
  */
 function toRows(slices: CategorySlice[]): Row[] {
   const head = slices.slice(0, VISIBLE_SLICES).map((slice) => ({
@@ -47,8 +45,7 @@ function toRows(slices: CategorySlice[]): Row[] {
     {
       key: 'others',
       name: `${tail.length} autres`,
-      // Teinte neutre : ce regroupement n'est pas une catégorie et ne doit pas
-      // emprunter la couleur de l'une d'elles.
+      // Teinte neutre : ce regroupement n'est pas une catégorie et ne doit pas emprunter la couleur de l'une d'elles.
       icon: 'dots-horizontal',
       total: tail.reduce((sum, slice) => sum + slice.total, 0),
     },
@@ -58,13 +55,9 @@ function toRows(slices: CategorySlice[]): Row[] {
 /**
  * Répartition des dépenses de la période (spec 2.6).
  *
- * Des barres construites en Views plutôt qu'un graphique : aucune bibliothèque
- * à installer, le rendu suit l'échelle de police système, et une barre
- * horizontale se compare mieux qu'un secteur de camembert.
+ * Des barres construites en Views plutôt qu'un graphique : aucune bibliothèque à installer, le rendu suit l'échelle de police système, et une barre horizontale se compare mieux qu'un secteur de camembert.
  *
- * Les proportions se calculent sur la somme des parts, jamais sur le total des
- * sorties du résumé : celui-ci inclut les dépenses sans catégorie, que la
- * répartition ne montre pas, et les barres n'atteindraient jamais 100 %.
+ * Les proportions se calculent sur la somme des parts, jamais sur le total des sorties du résumé : celui-ci inclut les dépenses sans catégorie, que la répartition ne montre pas, et les barres n'atteindraient jamais 100 %.
  */
 export function CategoryBreakdown() {
   const colors = useColors();
@@ -89,8 +82,7 @@ export function CategoryBreakdown() {
     );
   }
 
-  // Aucune dépense sur la période : la liste voisine dit déjà qu'il n'y a rien.
-  // Un second état vide ne ferait que répéter la même information.
+  // Aucune dépense sur la période : la liste voisine dit déjà qu'il n'y a rien. Un second état vide ne ferait que répéter la même information.
   if (slices.length === 0) {
     return null;
   }
@@ -107,9 +99,7 @@ export function CategoryBreakdown() {
         </Text>
       </View>
 
-      {/* Ruban des proportions : les mêmes parts que les barres ci-dessous,
-          mises bout à bout. Il donne la composition de la période d'un seul
-          regard, là où les barres servent à comparer poste par poste. */}
+      {/* Ruban des proportions : les mêmes parts que les barres ci-dessous, mises bout à bout. Il donne la composition de la période d'un seul regard, là où les barres servent à comparer poste par poste. */}
       <View style={styles.ribbon}>
         {rows.map((row) => {
           const tone = categoryTone({ id: row.key, icon: row.icon }, isDark);
@@ -141,8 +131,7 @@ export function CategoryBreakdown() {
             >
               <View style={styles.rowHead}>
                 <View style={styles.legend}>
-                  {/* La pastille rattache la ligne à sa tranche du ruban :
-                      sans elle, les deux lectures ne se raccordent pas. */}
+                  {/* La pastille rattache la ligne à sa tranche du ruban : sans elle, les deux lectures ne se raccordent pas. */}
                   <View style={[styles.legendDot, { backgroundColor: tone.tint }]} />
                   <Text numberOfLines={1} style={[styles.name, { color: colors.text }]}>
                     {row.name}
@@ -153,15 +142,12 @@ export function CategoryBreakdown() {
                 </Text>
               </View>
 
-              {/* La piste porte la teinte en fond très atténué, la barre la
-                  teinte pleine : la part se lit même sans comparer les
-                  longueurs entre elles. */}
+              {/* La piste porte la teinte en fond très atténué, la barre la teinte pleine : la part se lit même sans comparer les longueurs entre elles. */}
               <View style={[styles.track, { backgroundColor: tone.surface }]}>
                 <View
                   style={[
                     styles.bar,
-                    // Un plancher visible : une part à 0,4 % doit rester une
-                    // barre, pas un trait invisible qu'on prend pour un bug.
+                    // Un plancher visible : une part à 0,4 % doit rester une barre, pas un trait invisible qu'on prend pour un bug.
                     { width: `${Math.max(share * 100, 2)}%`, backgroundColor: tone.tint },
                   ]}
                 />
@@ -206,8 +192,7 @@ const styles = StyleSheet.create({
   ribbonSlice: {
     height: '100%',
     borderRadius: radius.pill,
-    // Sans base nulle, flexGrow partage la place restante au lieu de la
-    // totalité : les tranches ne seraient plus proportionnelles.
+    // Sans base nulle, flexGrow partage la place restante au lieu de la totalité : les tranches ne seraient plus proportionnelles.
     flexBasis: 0,
   },
   rows: {
@@ -238,8 +223,7 @@ const styles = StyleSheet.create({
     fontFamily: font.regular,
     fontSize: 14,
     letterSpacing: -0.07,
-    // Cède au montant plutôt que de le pousser hors de l'écran à fort
-    // grossissement de police.
+    // Cède au montant plutôt que de le pousser hors de l'écran à fort grossissement de police.
     flexShrink: 1,
   },
   amount: {

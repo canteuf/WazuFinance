@@ -16,11 +16,9 @@ import { dataErrorMessage } from '@/lib/data-errors';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 
 /**
- * Point d'entrée de la saisie, et vue de la période en cours : solde, écart
- * avec la période précédente, répartition des dépenses, dernières opérations.
+ * Point d'entrée de la saisie, et vue de la période en cours : solde, écart avec la période précédente, répartition des dépenses, dernières opérations.
  *
- * Couvre la spec 2.6 hors sélecteur de période et vue multi-groupes, qui
- * appartiennent respectivement à l'écran 3 et à l'écran 7.
+ * Couvre la spec 2.6 hors sélecteur de période et vue multi-groupes, qui appartiennent respectivement à l'écran 3 et à l'écran 7.
  */
 export default function DashboardScreen() {
   const colors = useColors();
@@ -30,16 +28,12 @@ export default function DashboardScreen() {
   const { transactions, isLoading: transactionsLoading, error: transactionsError } =
     useRecentTransactions();
 
-  // Un chargement des adhésions en échec prime : sans groupe résolu, il n'y a
-  // rien de fiable à tirer des transactions (la requête est de toute façon
-  // désactivée tant qu'aucun groupe actif n'existe).
+  // Un chargement des adhésions en échec prime : sans groupe résolu, il n'y a rien de fiable à tirer des transactions (la requête est de toute façon désactivée tant qu'aucun groupe actif n'existe).
   const error = groupError ?? transactionsError;
 
   return (
     <Screen
-      // Un tableau de bord se lit de haut en bas. Centré, il laissait
-      // plusieurs centaines de pixels de vide au-dessus du solde sur un grand
-      // écran, et repoussait l'information principale vers le milieu.
+      // Un tableau de bord se lit de haut en bas. Centré, il laissait plusieurs centaines de pixels de vide au-dessus du solde sur un grand écran, et repoussait l'information principale vers le milieu.
       align="top"
       inTabs
       floatingAction={
@@ -47,8 +41,7 @@ export default function DashboardScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Ajouter une opération"
-            // Aplati : <Link asChild> transmet le style à son enfant et avertit
-            // s'il reçoit un tableau.
+            // Aplati : <Link asChild> transmet le style à son enfant et avertit s'il reçoit un tableau.
             style={StyleSheet.flatten([
               styles.fab,
               elevation.floating,
@@ -60,12 +53,9 @@ export default function DashboardScreen() {
         </Link>
       }
     >
-      {/* Le nom du groupe est une étiquette, pas un titre : c'est le solde
-          qui domine l'écran. Le mettre en grand inversait la hiérarchie et
-          faisait passer l'information principale au second plan.
+      {/* Le nom du groupe est une étiquette, pas un titre : c'est le solde qui domine l'écran. Le mettre en grand inversait la hiérarchie et faisait passer l'information principale au second plan.
 
-          Ouvre /groups (écran 7) : bascule de groupe actif, création,
-          adhésion, gestion des membres. */}
+          Ouvre /groups (écran 7) : bascule de groupe actif, création, adhésion, gestion des membres. */}
       <Link href="/groups" asChild>
         <Pressable
           accessibilityRole="button"
@@ -80,13 +70,10 @@ export default function DashboardScreen() {
         </Pressable>
       </Link>
 
-      {/* La carte porte ses propres états de chargement et d'erreur : un
-          résumé en échec ne doit pas emporter la liste, qui a pu aboutir. */}
+      {/* La carte porte ses propres états de chargement et d'erreur : un résumé en échec ne doit pas emporter la liste, qui a pu aboutir. */}
       <PeriodSummary />
 
-      {/* Ne rend rien tant qu'aucune dépense n'existe sur la période : la liste
-          voisine annonce déjà l'absence d'opérations, et un second état vide ne
-          ferait que répéter la même chose. */}
+      {/* Ne rend rien tant qu'aucune dépense n'existe sur la période : la liste voisine annonce déjà l'absence d'opérations, et un second état vide ne ferait que répéter la même chose. */}
       <CategoryBreakdown />
 
       <BudgetsEntry />
@@ -97,10 +84,7 @@ export default function DashboardScreen() {
         <Text style={[styles.section, { color: colors.text }]} numberOfLines={1}>
           Dernières opérations
         </Text>
-        {/* Ouvre l'historique aux filtres par défaut : période en cours, tous
-            types, toutes catégories. La liste ci-dessous porte les mêmes
-            bornes, donc « Tout voir » élargit sans jamais retirer une ligne
-            déjà visible. */}
+        {/* Ouvre l'historique aux filtres par défaut : période en cours, tous types, toutes catégories. La liste ci-dessous porte les mêmes bornes, donc « Tout voir » élargit sans jamais retirer une ligne déjà visible. */}
         <Link href="/history" style={[styles.sectionLink, { color: colors.primary }]}>
           Tout voir
         </Link>
@@ -109,18 +93,13 @@ export default function DashboardScreen() {
       {error ? (
         <Text style={[styles.error, { color: colors.danger }]}>{dataErrorMessage(error)}</Text>
       ) : transactionsLoading ? (
-        // Sans cette branche, le premier rendu affichait « Aucune opération »
-        // avant de basculer sur les données une fois arrivées : un faux état
-        // vide à chaque démarrage à froid.
+        // Sans cette branche, le premier rendu affichait « Aucune opération » avant de basculer sur les données une fois arrivées : un faux état vide à chaque démarrage à froid.
         <ActivityIndicator color={colors.primary} />
       ) : (
         <RecentTransactions transactions={transactions} />
       )}
 
-      {/* Sa place est dans les paramètres du compte (écran 8), pas au bas du
-          tableau de bord — mais cet écran n'existe pas encore, et retirer la
-          déconnexion enfermerait l'utilisateur dans sa session. Il reste ici,
-          discret, jusqu'à ce que l'écran 8 le recueille. */}
+      {/* Sa place est dans les paramètres du compte (écran 8), pas au bas du tableau de bord — mais cet écran n'existe pas encore, et retirer la déconnexion enfermerait l'utilisateur dans sa session. Il reste ici, discret, jusqu'à ce que l'écran 8 le recueille. */}
       <Button title="Se déconnecter" variant="ghost" onPress={() => void signOut()} />
     </Screen>
   );
@@ -146,8 +125,7 @@ const styles = StyleSheet.create({
     fontFamily: font.semibold,
     fontSize: 17,
     letterSpacing: -0.2,
-    // Peut rétrécir jusqu'à tronquer plutôt que pousser « Tout voir » hors de
-    // l'écran à fort grossissement de police (RN met flexShrink à 0 par défaut).
+    // Peut rétrécir jusqu'à tronquer plutôt que pousser « Tout voir » hors de l'écran à fort grossissement de police (RN met flexShrink à 0 par défaut).
     flexShrink: 1,
   },
   sectionRow: {
@@ -159,8 +137,7 @@ const styles = StyleSheet.create({
   sectionLink: {
     fontFamily: font.semibold,
     fontSize: 12,
-    // Garde sa largeur : c'est le seul accès à l'historique, il ne doit
-    // jamais céder de place au libellé qui le précède.
+    // Garde sa largeur : c'est le seul accès à l'historique, il ne doit jamais céder de place au libellé qui le précède.
     flexShrink: 0,
   },
   error: {

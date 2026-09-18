@@ -4,8 +4,7 @@ import { createInvitation, getActiveInvitation, revokeInvitation } from '@/data/
 import { queryKeys } from '@/lib/query-keys';
 
 /**
- * Invitation active d'un groupe (au plus une à la fois, spec section 1) et
- * ses mutations. Désactivé tant que groupId est vide.
+ * Invitation active d'un groupe (au plus une à la fois, spec section 1) et ses mutations. Désactivé tant que groupId est vide.
  */
 export function useGroupInvitation(groupId: string, createdBy: string | undefined) {
   const queryClient = useQueryClient();
@@ -14,8 +13,7 @@ export function useGroupInvitation(groupId: string, createdBy: string | undefine
     queryKey: queryKeys.groupInvitation(groupId),
     queryFn: () => getActiveInvitation(groupId),
     enabled: groupId !== '',
-    // Pas de temps réel sur account_memberships (voir CLAUDE.md) : sans ça,
-    // une régénération faite ailleurs ne se voit qu'après le staleTime.
+    // Pas de temps réel sur account_memberships (voir CLAUDE.md) : sans ça, une régénération faite ailleurs ne se voit qu'après le staleTime.
     refetchOnMount: 'always',
   });
 
@@ -28,11 +26,7 @@ export function useGroupInvitation(groupId: string, createdBy: string | undefine
     onSuccess: invalidate,
   });
 
-  // Régénérer révoque l'invitation active avant d'en créer une nouvelle : deux
-  // appels séparés. Si le second échoue après que le premier a réussi, le
-  // code révoqué resterait affiché comme actif sans onSettled — invalider ici
-  // même en cas d'échec partiel, contrairement à generate ci-dessus qui n'a
-  // pas cet état intermédiaire.
+  // Régénérer révoque l'invitation active avant d'en créer une nouvelle : deux appels séparés. Si le second échoue après que le premier a réussi, le code révoqué resterait affiché comme actif sans onSettled — invalider ici même en cas d'échec partiel, contrairement à generate ci-dessus qui n'a pas cet état intermédiaire.
   const regenerate = useMutation({
     mutationFn: async (activeInvitationId: string) => {
       await revokeInvitation(activeInvitationId);

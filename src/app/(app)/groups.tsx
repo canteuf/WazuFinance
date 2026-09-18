@@ -7,11 +7,9 @@ import { font, radius, spacing, useColors } from '@/theme/tokens';
 import { goBackOr } from '@/lib/navigation';
 
 /**
- * Groupes de l'utilisateur (spec section 1, écran 7) : bascule du groupe
- * actif, création d'un groupe partagé, adhésion par code.
+ * Groupes de l'utilisateur (spec section 1, écran 7) : bascule du groupe actif, création d'un groupe partagé, adhésion par code.
  *
- * `useActiveGroup().groups` est déjà chargée par ActiveGroupProvider : cet
- * écran n'ouvre aucune requête, il affiche et bascule ce qui existe déjà.
+ * `useActiveGroup().groups` est déjà chargée par ActiveGroupProvider : cet écran n'ouvre aucune requête, il affiche et bascule ce qui existe déjà.
  */
 export default function GroupsScreen() {
   const colors = useColors();

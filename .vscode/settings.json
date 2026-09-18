@@ -3,5 +3,9 @@
     "source.fixAll": "explicit",
     "source.organizeImports": "explicit",
     "source.sortMembers": "explicit"
-  }
+  },
+  // Les commentaires du projet tiennent sur une seule ligne physique, quelle que soit leur longueur : c'est l'éditeur qui les replie à la largeur de la fenêtre, pas l'auteur à une colonne arbitraire.
+  "editor.wordWrap": "on",
+  // Une ligne repliée reprend à l'indentation de la première, sans quoi la suite d'un commentaire se colle à la marge et ne se rattache plus visuellement à son bloc.
+  "editor.wrappingIndent": "same"
 }

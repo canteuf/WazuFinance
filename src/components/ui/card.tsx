@@ -6,13 +6,9 @@ import { radius, spacing, useColors, useElevation } from '@/theme/tokens';
 /**
  * Surface de niveau 1 : le feuillet posé sur le fond « Carnet ».
  *
- * Trois endroits répétaient les mêmes quatre lignes (fond, rayon, ombre,
- * liseré en Nocturne) et les valeurs de rayon avaient déjà commencé à
- * diverger. Une seule définition les tient ensemble.
+ * Trois endroits répétaient les mêmes quatre lignes (fond, rayon, ombre, liseré en Nocturne) et les valeurs de rayon avaient déjà commencé à diverger. Une seule définition les tient ensemble.
  *
- * `flush` retire le rembourrage pour les cartes qui portent une liste de
- * rangées : ce sont alors les rangées qui rembourrent, sans quoi un
- * séparateur ne pourrait pas courir d'un bord à l'autre.
+ * `flush` retire le rembourrage pour les cartes qui portent une liste de rangées : ce sont alors les rangées qui rembourrent, sans quoi un séparateur ne pourrait pas courir d'un bord à l'autre.
  */
 export function Card({
   children,

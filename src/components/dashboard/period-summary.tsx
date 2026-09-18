@@ -8,22 +8,16 @@ import { formatBalance, formatDelta, formatSignedBare } from '@/lib/money';
 import { font, radius, spacing, stackAtFontScale, useColors } from '@/theme/tokens';
 
 /**
- * Même plafond, et pour la même raison, que le champ montant de la saisie :
- * la largeur disponible pour le solde est celle de l'écran, pas celle d'un
- * conteneur qu'on peut élargir. Partout ailleurs on suit l'échelle système.
+ * Même plafond, et pour la même raison, que le champ montant de la saisie : la largeur disponible pour le solde est celle de l'écran, pas celle d'un conteneur qu'on peut élargir. Partout ailleurs on suit l'échelle système.
  */
 const MAX_FONT_SCALE = 1.4;
 
 /**
  * Solde de la période en cours, entrées et sorties.
  *
- * Le solde n'est pas posé sur une carte : il s'inscrit à même le fond, en tête
- * de l'écran, et c'est ce qui en fait l'élément dominant. Seules les deux
- * statistiques sont encadrées — leur cadre les désigne comme un détail du
- * chiffre au-dessus, pas comme son égal.
+ * Le solde n'est pas posé sur une carte : il s'inscrit à même le fond, en tête de l'écran, et c'est ce qui en fait l'élément dominant. Seules les deux statistiques sont encadrées — leur cadre les désigne comme un détail du chiffre au-dessus, pas comme son égal.
  *
- * L'erreur reste locale : si le résumé échoue alors que les dernières
- * opérations sont arrivées, masquer la liste priverait de ce qui fonctionne.
+ * L'erreur reste locale : si le résumé échoue alors que les dernières opérations sont arrivées, masquer la liste priverait de ce qui fonctionne.
  */
 export function PeriodSummary() {
   const colors = useColors();
@@ -55,16 +49,14 @@ export function PeriodSummary() {
       <View style={styles.balanceBlock}>
         <Text style={[styles.label, { color: colors.textMuted }]}>Solde {label}</Text>
         <View style={styles.balanceRow}>
-          {/* Un solde négatif en cours de période est ordinaire, pas une
-              alerte : il reste en couleur de texte. Seul son signe l'annonce. */}
+          {/* Un solde négatif en cours de période est ordinaire, pas une alerte : il reste en couleur de texte. Seul son signe l'annonce. */}
           <Text
             maxFontSizeMultiplier={MAX_FONT_SCALE}
             style={[styles.balance, { color: colors.text }]}
           >
             {formatBalance(summary.balance)}
           </Text>
-          {/* Le symbole est plus petit et en retrait : il accompagne le
-              chiffre au lieu de lui disputer sa place. */}
+          {/* Le symbole est plus petit et en retrait : il accompagne le chiffre au lieu de lui disputer sa place. */}
           <Text
             maxFontSizeMultiplier={MAX_FONT_SCALE}
             style={[styles.currency, { color: colors.textMuted }]}
@@ -73,26 +65,19 @@ export function PeriodSummary() {
           </Text>
         </View>
 
-        {/* Comparaison de la spec 2.6. Absente tant que la période précédente
-            charge, et surtout tant qu'elle n'a rien contenu : comparer à une
-            période sans aucune opération produirait un écart égal au solde
-            courant, qui se lirait comme une progression alors qu'il n'y a
-            simplement rien eu avant. */}
+        {/* Comparaison de la spec 2.6. Absente tant que la période précédente charge, et surtout tant qu'elle n'a rien contenu : comparer à une période sans aucune opération produirait un écart égal au solde courant, qui se lirait comme une progression alors qu'il n'y a simplement rien eu avant. */}
         {previous && (previous.income !== 0 || previous.expense !== 0) ? (
           (() => {
             const delta = summary.balance - previous.balance;
             const up = delta >= 0;
 
             return (
-              // Pastille plutôt que ligne de texte : l'écart est une
-              // information autonome, pas la suite de la phrase du solde. Le
-              // fond la détache du chiffre sans lui disputer sa taille.
+              // Pastille plutôt que ligne de texte : l'écart est une information autonome, pas la suite de la phrase du solde. Le fond la détache du chiffre sans lui disputer sa taille.
               <View style={[styles.delta, { backgroundColor: colors.surfaceMuted }]}>
                 <MaterialCommunityIcons
                   name={up ? 'arrow-up' : 'arrow-down'}
                   size={13}
-                  // Un recul reste en couleur de texte, pas en danger :
-                  // dépenser plus qu'à la période précédente est ordinaire.
+                  // Un recul reste en couleur de texte, pas en danger : dépenser plus qu'à la période précédente est ordinaire.
                   color={up ? colors.positive : colors.text}
                 />
                 <Text
@@ -121,8 +106,7 @@ export function PeriodSummary() {
               />
             </View>
           </View>
-          {/* Entrées en positif, sorties en neutre : même convention que la
-              liste des opérations, où seul un revenu se colore. */}
+          {/* Entrées en positif, sorties en neutre : même convention que la liste des opérations, où seul un revenu se colore. */}
           <Text style={[styles.statValue, { color: colors.positive }]}>
             {formatSignedBare(summary.income, 'income')}
           </Text>
@@ -153,8 +137,7 @@ const styles = StyleSheet.create({
     gap: spacing.md + 2,
   },
   balanceBlock: {
-    // Entre le libellé de période et le montant : l'écart précédent collait
-    // les deux, alors que le libellé doit se lire comme un intertitre.
+    // Entre le libellé de période et le montant : l'écart précédent collait les deux, alors que le libellé doit se lire comme un intertitre.
     gap: spacing.sm + 2,
   },
   label: {
@@ -209,9 +192,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   statStacked: {
-    // En colonne, flex: 1 ferait partager aux deux blocs une hauteur que rien
-    // ne fixe : ils se réduiraient à zéro. On les laisse à leur hauteur de
-    // contenu et on les étire en largeur.
+    // En colonne, flex: 1 ferait partager aux deux blocs une hauteur que rien ne fixe : ils se réduiraient à zéro. On les laisse à leur hauteur de contenu et on les étire en largeur.
     flex: 0,
     alignSelf: 'stretch',
   },

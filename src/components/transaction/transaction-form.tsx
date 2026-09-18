@@ -37,8 +37,7 @@ type TransactionFormProps = {
 /**
  * Formulaire partagé entre création et édition.
  *
- * Les valeurs par défaut de la spec 4.3 sont posées ici : type dépense, date
- * du jour, et catégorie pré-remplie avec la dernière utilisée dans ce groupe.
+ * Les valeurs par défaut de la spec 4.3 sont posées ici : type dépense, date du jour, et catégorie pré-remplie avec la dernière utilisée dans ce groupe.
  */
 export function TransactionForm({
   groupId,
@@ -56,16 +55,14 @@ export function TransactionForm({
   const [amountText, setAmountText] = useState(
     initialValues ? initialValues.amount.toFixed(2).replace('.', ',') : ''
   );
-  // Sélection brute : posée par la présélection initiale, la lecture de la
-  // dernière catégorie utilisée, ou un choix explicite dans CategoryPicker.
+  // Sélection brute : posée par la présélection initiale, la lecture de la dernière catégorie utilisée, ou un choix explicite dans CategoryPicker.
   const [categorySelection, setCategorySelection] = useState<string | null>(
     initialValues?.categoryId ?? null
   );
   const [note, setNote] = useState(initialValues?.note ?? '');
   const [occurredOn, setOccurredOn] = useState(initialValues?.occurredOn ?? todayIso());
   const [touched, setTouched] = useState(false);
-  // Deuxième étape de confirmation avant suppression, voir le bloc de rendu
-  // plus bas pour la justification de ce choix.
+  // Deuxième étape de confirmation avant suppression, voir le bloc de rendu plus bas pour la justification de ce choix.
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const { categories, isLoading: categoriesLoading, error: categoriesError } = useCategories(type);
@@ -86,12 +83,7 @@ export function TransactionForm({
     };
   }, [groupId, initialValues]);
 
-  // Changer de type invalide la catégorie courante, qui appartient à l'autre
-  // liste. Dérivé au rendu plutôt que synchronisé par un effet (même choix
-  // que ActiveGroupProvider) : tant que categoriesLoading est vrai, la liste
-  // est encore vide et ne prouve rien, donc on garde la sélection telle
-  // quelle — sinon le premier rendu de l'édition effacerait la catégorie
-  // pré-remplie avant même que la liste ne soit arrivée.
+  // Changer de type invalide la catégorie courante, qui appartient à l'autre liste. Dérivé au rendu plutôt que synchronisé par un effet (même choix que ActiveGroupProvider) : tant que categoriesLoading est vrai, la liste est encore vide et ne prouve rien, donc on garde la sélection telle quelle — sinon le premier rendu de l'édition effacerait la catégorie pré-remplie avant même que la liste ne soit arrivée.
   const categoryId =
     categorySelection !== null &&
     !categoriesLoading &&
@@ -136,9 +128,7 @@ export function TransactionForm({
       {amountError ? <Text style={[styles.error, { color: colors.danger }]}>{amountError}</Text> : null}
 
       {categoriesError ? (
-        // Sans ce message, un chargement des catégories en échec rend la
-        // grille vide sans explication : valider affiche « Choisissez une
-        // catégorie » alors qu'il n'y a rien à choisir.
+        // Sans ce message, un chargement des catégories en échec rend la grille vide sans explication : valider affiche « Choisissez une catégorie » alors qu'il n'y a rien à choisir.
         <Text style={[styles.error, { color: colors.danger }]}>
           {dataErrorMessage(categoriesError)}
         </Text>
@@ -183,10 +173,7 @@ export function TransactionForm({
 
       {onDelete ? (
         confirmingDelete ? (
-          // Confirmation portée par l'état du composant, pas par Alert.alert :
-          // cette app est aussi testée dans un navigateur, où Alert.alert ne
-          // fait rien — une confirmation qui en dépendrait rendrait la
-          // suppression silencieusement impossible sur le web.
+          // Confirmation portée par l'état du composant, pas par Alert.alert : cette app est aussi testée dans un navigateur, où Alert.alert ne fait rien — une confirmation qui en dépendrait rendrait la suppression silencieusement impossible sur le web.
           <View style={styles.deleteRow}>
             <Button
               title="Confirmer la suppression"

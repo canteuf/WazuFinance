@@ -21,8 +21,7 @@ function ItemSeparator() {
 /**
  * Journal des modifications et suppressions du groupe actif.
  *
- * N'utilise pas `Screen`, pour la même raison que l'historique : une
- * `FlatList` dans un `ScrollView` perd sa virtualisation.
+ * N'utilise pas `Screen`, pour la même raison que l'historique : une `FlatList` dans un `ScrollView` perd sa virtualisation.
  */
 export default function ActivityScreen() {
   const colors = useColors();
@@ -31,9 +30,7 @@ export default function ActivityScreen() {
   const { session } = useAuth();
   const { isLoading: groupLoading, error: groupError, activeGroupId } = useActiveGroup();
 
-  // Toutes les catégories, dépense et revenu : une entrée peut viser l'une ou
-  // l'autre. Tant qu'elles chargent, aucune phrase n'est rendue — sans elles,
-  // chaque entrée afficherait « catégorie supprimée » un instant.
+  // Toutes les catégories, dépense et revenu : une entrée peut viser l'une ou l'autre. Tant qu'elles chargent, aucune phrase n'est rendue — sans elles, chaque entrée afficherait « catégorie supprimée » un instant.
   const {
     categories,
     isLoading: categoriesLoading,
@@ -48,15 +45,7 @@ export default function ActivityScreen() {
 
   const currentUserId = session?.user.id ?? null;
 
-  // TanStack garde `data` et ne remplit `error` qu'après l'échec d'un
-  // rafraîchissement en arrière-plan : revenir hors ligne au premier plan
-  // après plus de 30 s ne doit donc pas remplacer un journal déjà chargé par
-  // la vue d'erreur plein écran. Une erreur ne bloque l'écran que si elle
-  // laisse l'utilisateur sans rien d'utile à voir : le groupe en erreur sans
-  // aucun groupe actif, ou les catégories en erreur sans aucune catégorie
-  // déjà chargée. Le journal lui-même garde son propre traitement plus bas
-  // (isEmptyError) : seul l'échec du tout premier chargement vide l'écran,
-  // celui d'une page suivante va en pied de liste.
+  // TanStack garde `data` et ne remplit `error` qu'après l'échec d'un rafraîchissement en arrière-plan : revenir hors ligne au premier plan après plus de 30 s ne doit donc pas remplacer un journal déjà chargé par la vue d'erreur plein écran. Une erreur ne bloque l'écran que si elle laisse l'utilisateur sans rien d'utile à voir : le groupe en erreur sans aucun groupe actif, ou les catégories en erreur sans aucune catégorie déjà chargée. Le journal lui-même garde son propre traitement plus bas (isEmptyError) : seul l'échec du tout premier chargement vide l'écran, celui d'une page suivante va en pied de liste.
   const groupBlockingError = groupError !== null && activeGroupId === null;
   const categoriesBlockingError = categoriesError !== null && categories.length === 0;
 
@@ -70,8 +59,7 @@ export default function ActivityScreen() {
   }
 
   function renderEmpty() {
-    // La requête du journal est désactivée tant que le groupe actif n'est pas
-    // résolu : son `isLoading` reste à `false` et afficherait l'état vide.
+    // La requête du journal est désactivée tant que le groupe actif n'est pas résolu : son `isLoading` reste à `false` et afficherait l'état vide.
     if (isLoading || groupLoading) {
       return <ActivityIndicator color={colors.primary} style={styles.centered} />;
     }
@@ -102,9 +90,7 @@ export default function ActivityScreen() {
 
   function renderBody() {
     if (groupBlockingError) {
-      // Même motif que budgets.tsx : sans groupe actif, il n'y a rien à
-      // réessayer que la résolution des adhésions elle-même, que ce bouton ne
-      // relance pas — les deux requêtes qu'il relancerait restent désactivées.
+      // Même motif que budgets.tsx : sans groupe actif, il n'y a rien à réessayer que la résolution des adhésions elle-même, que ce bouton ne relance pas — les deux requêtes qu'il relancerait restent désactivées.
       return (
         <View style={styles.centered}>
           <Text style={[styles.error, { color: colors.danger }]}>

@@ -18,9 +18,7 @@ import {
 } from '@/theme/tokens';
 
 /**
- * Une opération dans une liste, sur le tableau de bord comme dans
- * l'historique. Partagée pour que l'empilement à forte échelle de police
- * n'existe qu'à un seul endroit.
+ * Une opération dans une liste, sur le tableau de bord comme dans l'historique. Partagée pour que l'empilement à forte échelle de police n'existe qu'à un seul endroit.
  */
 export function TransactionRow({ transaction }: { transaction: TransactionWithCategory }) {
   const colors = useColors();
@@ -36,10 +34,7 @@ export function TransactionRow({ transaction }: { transaction: TransactionWithCa
 
   const edited = wasEdited(transaction);
 
-  // « Carrefour · aujourd'hui », ou la seule date quand il n'y a pas de note.
-  // Sans la date, deux lignes de la même catégorie sont indiscernables.
-  // « modifié » en fin de ligne : un mot, jamais une icône seule. Le détail
-  // — qui, quoi, avant, après — est dans l'écran Activité.
+  // « Carrefour · aujourd'hui », ou la seule date quand il n'y a pas de note. Sans la date, deux lignes de la même catégorie sont indiscernables. « modifié » en fin de ligne : un mot, jamais une icône seule. Le détail — qui, quoi, avant, après — est dans l'écran Activité.
   const meta = [
     transaction.note,
     formatOccurredOn(transaction.occurred_on),
@@ -48,8 +43,7 @@ export function TransactionRow({ transaction }: { transaction: TransactionWithCa
     .filter((part): part is string => Boolean(part))
     .join(' · ');
 
-  // Même nœud dans les deux dispositions : sous le nom quand on empile, en
-  // bout de ligne sinon.
+  // Même nœud dans les deux dispositions : sous le nom quand on empile, en bout de ligne sinon.
   const amount = (
     <Text
       style={[
@@ -66,11 +60,9 @@ export function TransactionRow({ transaction }: { transaction: TransactionWithCa
     <Link href={`/transaction?id=${transaction.id}`} asChild>
       <Pressable
         accessibilityRole="button"
-        // Le lecteur d'écran lit cette étiquette à la place des textes de la
-        // ligne : sans ce suffixe, « modifié » n'existe que pour qui voit.
+        // Le lecteur d'écran lit cette étiquette à la place des textes de la ligne : sans ce suffixe, « modifié » n'existe que pour qui voit.
         accessibilityLabel={`Modifier ${transaction.category?.name ?? 'opération'}${edited ? '. Opération modifiée' : ''}`}
-        // Aplati : <Link asChild> transmet le style à son enfant et avertit
-        // s'il reçoit un tableau.
+        // Aplati : <Link asChild> transmet le style à son enfant et avertit s'il reçoit un tableau.
         style={StyleSheet.flatten([
           styles.row,
           stacked && styles.rowStacked,
@@ -80,8 +72,7 @@ export function TransactionRow({ transaction }: { transaction: TransactionWithCa
       >
         <View style={[styles.glyph, { backgroundColor: tone.surface }]}>
           <MaterialCommunityIcons
-            // Le nom vient de la base ; @expo/vector-icons le type de façon
-            // stricte, d'où la conversion explicite.
+            // Le nom vient de la base ; @expo/vector-icons le type de façon stricte, d'où la conversion explicite.
             name={icon as React.ComponentProps<typeof MaterialCommunityIcons>['name']}
             size={19}
             color={tone.tint}
@@ -114,15 +105,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   rowStacked: {
-    // La pastille reste en haut du bloc de texte, qui compte alors trois
-    // lignes au lieu de deux.
+    // La pastille reste en haut du bloc de texte, qui compte alors trois lignes au lieu de deux.
     alignItems: 'flex-start',
   },
   glyph: {
     width: 40,
     height: 40,
-    // Ronde, comme les pastilles de budget et d'épargne : c'est la même
-    // grammaire d'identité d'un poste d'un bout à l'autre de l'app.
+    // Ronde, comme les pastilles de budget et d'épargne : c'est la même grammaire d'identité d'un poste d'un bout à l'autre de l'app.
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -144,8 +133,7 @@ const styles = StyleSheet.create({
     fontFamily: font.semibold,
     fontSize: 15,
     letterSpacing: -0.13,
-    // Les montants s'alignent en colonne : sans chiffres tabulaires, la
-    // virgule danse d'une ligne à l'autre.
+    // Les montants s'alignent en colonne : sans chiffres tabulaires, la virgule danse d'une ligne à l'autre.
     fontVariant: ['tabular-nums'],
   },
   amountStacked: {

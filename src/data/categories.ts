@@ -4,9 +4,7 @@ import type { Tables } from '@/types/database';
 export type Category = Tables<'categories'>;
 
 /**
- * Catégories utilisables dans un groupe : les catégories par défaut
- * (group_id IS NULL, communes à tous et en lecture seule) et celles créées
- * dans le groupe.
+ * Catégories utilisables dans un groupe : les catégories par défaut (group_id IS NULL, communes à tous et en lecture seule) et celles créées dans le groupe.
  */
 export async function listForGroup(groupId: string): Promise<Category[]> {
   const { data, error } = await supabase

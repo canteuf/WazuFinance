@@ -6,9 +6,7 @@ import { queryKeys } from '@/lib/query-keys';
 /**
  * Création, adhésion et retrait d'un groupe.
  *
- * Chaque mutation invalide `queryKeys.memberships()` : le groupe actif ou la
- * liste des groupes a pu changer (nouveau groupe créé, groupe rejoint,
- * membre — soi-même ou un autre — retiré).
+ * Chaque mutation invalide `queryKeys.memberships()` : le groupe actif ou la liste des groupes a pu changer (nouveau groupe créé, groupe rejoint, membre — soi-même ou un autre — retiré).
  */
 export function useGroupMutations() {
   const queryClient = useQueryClient();

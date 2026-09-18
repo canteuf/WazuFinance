@@ -5,20 +5,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { spacing, useColors } from '@/theme/tokens';
 
 /**
- * Conteneur d'écran : zones sûres, fond thématisé et remontée du contenu quand
- * le clavier iOS s'ouvre — indispensable sur les formulaires d'auth.
+ * Conteneur d'écran : zones sûres, fond thématisé et remontée du contenu quand le clavier iOS s'ouvre — indispensable sur les formulaires d'auth.
  *
- * `floatingAction` (le bouton + du dashboard) est rendu hors du ScrollView et
- * épinglé en bas à droite : le contenu défile sous lui, mais lui ne défile
- * jamais. Un bouton placé dans le flux du ScrollView descendrait avec une
- * liste qui s'allonge et finirait hors de portée sans faire défiler — ce que
- * la saisie en 3 tapotements ne permet pas.
+ * `floatingAction` (le bouton + du dashboard) est rendu hors du ScrollView et épinglé en bas à droite : le contenu défile sous lui, mais lui ne défile jamais. Un bouton placé dans le flux du ScrollView descendrait avec une liste qui s'allonge et finirait hors de portée sans faire défiler — ce que la saisie en 3 tapotements ne permet pas.
  *
- * `align` décide du sort de la place restante quand le contenu est plus court
- * que l'écran. « center » convient à un formulaire court, qu'on veut au milieu
- * du regard ; « top » à un écran qui se lit de haut en bas, où centrer creuse
- * un vide au-dessus du titre et repousse l'information principale vers le
- * milieu de l'écran.
+ * `align` décide du sort de la place restante quand le contenu est plus court que l'écran. « center » convient à un formulaire court, qu'on veut au milieu du regard ; « top » à un écran qui se lit de haut en bas, où centrer creuse un vide au-dessus du titre et repousse l'information principale vers le milieu de l'écran.
  */
 export function Screen({
   children,
@@ -30,10 +21,7 @@ export function Screen({
   floatingAction?: ReactNode;
   align?: 'center' | 'top';
   /**
-   * Vrai pour les quatre écrans d'onglet. La barre d'onglets occupe déjà le
-   * bas de l'écran et gère sa propre zone sûre : lui ajouter celle du Screen
-   * creuserait une bande vide au-dessus d'elle, et un bouton flottant calé
-   * sur le bas passerait derrière.
+   * Vrai pour les quatre écrans d'onglet. La barre d'onglets occupe déjà le bas de l'écran et gère sa propre zone sûre : lui ajouter celle du Screen creuserait une bande vide au-dessus d'elle, et un bouton flottant calé sur le bas passerait derrière.
    */
   inTabs?: boolean;
 }) {
@@ -77,16 +65,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    // flexGrow, et non flex : le contenu garde sa hauteur naturelle dès qu'il
-    // dépasse l'écran, et ne remplit la place restante que s'il en reste.
+    // flexGrow, et non flex : le contenu garde sa hauteur naturelle dès qu'il dépasse l'écran, et ne remplit la place restante que s'il en reste.
     flexGrow: 1,
     padding: spacing.lg,
   },
   contentCentered: {
     justifyContent: 'center',
   },
-  // Espace sous le contenu pour que le dernier élément (ex. « Se déconnecter »)
-  // ne se retrouve pas masqué derrière le bouton flottant (56px + sa marge).
+  // Espace sous le contenu pour que le dernier élément (ex. « Se déconnecter ») ne se retrouve pas masqué derrière le bouton flottant (56px + sa marge).
   contentWithFloating: {
     paddingBottom: spacing.xl * 3,
   },
@@ -94,9 +80,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 420,
     alignSelf: 'center',
-    // Rythme entre les blocs d'un écran. spacing.md serrait les blocs les uns
-    // contre les autres une fois l'écran aligné en haut : la hiérarchie ne se
-    // lisait plus, tout se touchait.
+    // Rythme entre les blocs d'un écran. spacing.md serrait les blocs les uns contre les autres une fois l'écran aligné en haut : la hiérarchie ne se lisait plus, tout se touchait.
     gap: spacing.lg,
   },
   floating: {

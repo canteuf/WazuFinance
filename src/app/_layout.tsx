@@ -34,8 +34,7 @@ export default function RootLayout() {
 }
 
 /**
- * Composant sans rendu : isolé de RootNavigator pour que la logique de garde
- * de navigation reste indépendante de la gestion du cache TanStack Query.
+ * Composant sans rendu : isolé de RootNavigator pour que la logique de garde de navigation reste indépendante de la gestion du cache TanStack Query.
  */
 function CacheSessionGuard() {
   useClearCacheOnUserChange();
@@ -43,15 +42,11 @@ function CacheSessionGuard() {
 }
 
 /**
- * Le splash reste affiché tant que la session persistée n'a pas été relue, pour
- * éviter le flash de l'écran de connexion chez un utilisateur déjà authentifié.
+ * Le splash reste affiché tant que la session persistée n'a pas été relue, pour éviter le flash de l'écran de connexion chez un utilisateur déjà authentifié.
  */
 function RootNavigator() {
   const { session, isLoading } = useAuth();
-  // React Native n'a pas de police de repli par famille : tant que Bricolage
-  // Grotesque n'est pas chargée, chaque écran s'afficherait dans la police
-  // système puis se recomposerait. On garde donc le splash sur les deux
-  // attentes à la fois.
+  // React Native n'a pas de police de repli par famille : tant que Bricolage Grotesque n'est pas chargée, chaque écran s'afficherait dans la police système puis se recomposerait. On garde donc le splash sur les deux attentes à la fois.
   const [fontsLoaded, fontError] = useFonts({
     BricolageGrotesque_400Regular,
     BricolageGrotesque_500Medium,
@@ -60,8 +55,7 @@ function RootNavigator() {
     BricolageGrotesque_800ExtraBold,
   });
 
-  // Un échec de chargement ne doit pas laisser l'app derrière son splash :
-  // mieux vaut la police système que rien.
+  // Un échec de chargement ne doit pas laisser l'app derrière son splash : mieux vaut la police système que rien.
   const fontsSettled = fontsLoaded || fontError !== null;
   const ready = !isLoading && fontsSettled;
 

@@ -16,13 +16,9 @@ const ICONS: Record<BadgeTone, React.ComponentProps<typeof MaterialCommunityIcon
 /**
  * Pastille d'état : un fond teinté, une icône, un mot.
  *
- * L'icône double la couleur, elle ne la décore pas — une coche se distingue
- * d'un triangle d'alerte là où deux aplats se ressemblent. Le texte dit la
- * même chose une troisième fois, ce que lit aussi un lecteur d'écran.
+ * L'icône double la couleur, elle ne la décore pas — une coche se distingue d'un triangle d'alerte là où deux aplats se ressemblent. Le texte dit la même chose une troisième fois, ce que lit aussi un lecteur d'écran.
  *
- * Les fonds sont composés ici plutôt qu'ajoutés aux jetons : ce sont des
- * teintes dérivées d'une couleur sémantique, utiles à ce seul composant, et
- * les porter dans `Colors` obligerait chaque thème à en déclarer trois de plus.
+ * Les fonds sont composés ici plutôt qu'ajoutés aux jetons : ce sont des teintes dérivées d'une couleur sémantique, utiles à ce seul composant, et les porter dans `Colors` obligerait chaque thème à en déclarer trois de plus.
  */
 export function StatusBadge({ tone, label }: { tone: BadgeTone; label: string }) {
   const colors = useColors();
@@ -37,9 +33,7 @@ export function StatusBadge({ tone, label }: { tone: BadgeTone; label: string })
           ? colors.positive
           : colors.textMuted;
 
-  // En Nocturne, un aplat clair derrière un texte clair perdrait son contraste :
-  // le fond reste sombre et c'est le texte qui porte la couleur. En Carnet,
-  // l'aplat pâle suffit et garde la pastille lisible de loin.
+  // En Nocturne, un aplat clair derrière un texte clair perdrait son contraste : le fond reste sombre et c'est le texte qui porte la couleur. En Carnet, l'aplat pâle suffit et garde la pastille lisible de loin.
   const surface = isDark ? colors.surfaceMuted : `${tint}1A`;
 
   return (

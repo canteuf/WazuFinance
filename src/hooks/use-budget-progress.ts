@@ -7,22 +7,16 @@ import { budgetProgress, type BudgetProgress } from '@/lib/budget-progress';
 /**
  * Budgets rapprochés des dépenses de la période en cours.
  *
- * Les bornes viennent de `useCategoryBreakdown`, donc les mêmes que le solde
- * et la répartition du tableau de bord : un plafond comparé à une autre
- * période que celle affichée en tête d'écran serait un chiffre faux.
+ * Les bornes viennent de `useCategoryBreakdown`, donc les mêmes que le solde et la répartition du tableau de bord : un plafond comparé à une autre période que celle affichée en tête d'écran serait un chiffre faux.
  *
- * Les deux requêtes sont indépendantes et déjà en cache pour l'une d'elles :
- * la répartition est lue par le tableau de bord, donc le bandeau ne coûte que
- * la lecture des plafonds.
+ * Les deux requêtes sont indépendantes et déjà en cache pour l'une d'elles : la répartition est lue par le tableau de bord, donc le bandeau ne coûte que la lecture des plafonds.
  */
 export function useBudgetProgress(): {
   items: BudgetProgress[];
   isLoading: boolean;
   error: unknown;
   /**
-   * Vrai quand l'une des deux lectures n'a jamais abouti : il n'y a alors rien
-   * de juste à montrer. Faux après l'échec d'un simple rafraîchissement, où
-   * TanStack garde les dernières données valides.
+   * Vrai quand l'une des deux lectures n'a jamais abouti : il n'y a alors rien de juste à montrer. Faux après l'échec d'un simple rafraîchissement, où TanStack garde les dernières données valides.
    */
   isEmptyError: boolean;
 } {
@@ -36,12 +30,10 @@ export function useBudgetProgress(): {
 
   return {
     items,
-    // Les deux comptent : afficher des plafonds sans leur consommation
-    // montrerait un instant chaque budget à 0 %, donc tous « ok ».
+    // Les deux comptent : afficher des plafonds sans leur consommation montrerait un instant chaque budget à 0 %, donc tous « ok ».
     isLoading: budgets.isLoading || breakdown.isLoading,
     error: budgets.error ?? breakdown.error,
-    // Les deux, pour la même raison : des plafonds chargés sans leur
-    // consommation se liraient tous à 0 %, donc tous « ok ».
+    // Les deux, pour la même raison : des plafonds chargés sans leur consommation se liraient tous à 0 %, donc tous « ok ».
     isEmptyError: budgets.isLoadingError || breakdown.isLoadingError,
   };
 }

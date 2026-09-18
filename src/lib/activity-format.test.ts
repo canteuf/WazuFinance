@@ -204,8 +204,7 @@ describe('formatActivity — valeurs malformées', () => {
 });
 
 describe('formatActivityTime', () => {
-  // Construits en heure locale puis passés par toISOString() : le test ne
-  // dépend pas du fuseau de la machine.
+  // Construits en heure locale puis passés par toISOString() : le test ne dépend pas du fuseau de la machine.
   const now = new Date(2026, 8, 10, 18, 0);
 
   it(`dit « Aujourd'hui » pour le jour même`, () => {

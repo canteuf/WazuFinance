@@ -20,9 +20,7 @@ import {
 /** Le texte dit ce que la couleur dit : un daltonien lit la même information. */
 function statusText(item: BudgetProgress): string {
   if (item.status === 'over') {
-    // À exactement 100 %, rien n'est dépassé : « Dépassé de 0,00 € » disait
-    // faux. Le statut reste `over` — le budget est épuisé, la prochaine
-    // dépense le dépassera —, seul le texte change.
+    // À exactement 100 %, rien n'est dépassé : « Dépassé de 0,00 € » disait faux. Le statut reste `over` — le budget est épuisé, la prochaine dépense le dépassera —, seul le texte change.
     if (item.remaining === 0) {
       return 'Plafond atteint';
     }
@@ -35,8 +33,7 @@ function statusText(item: BudgetProgress): string {
 }
 
 /**
- * Version courte pour la pastille, qui n'a la place que de quelques mots.
- * Le texte long reste dans l'étiquette d'accessibilité et sous la barre.
+ * Version courte pour la pastille, qui n'a la place que de quelques mots. Le texte long reste dans l'étiquette d'accessibilité et sous la barre.
  */
 function badgeText(item: BudgetProgress): string {
   if (item.status === 'over') {
@@ -63,9 +60,7 @@ export function BudgetRow({
   const { fontScale } = useWindowDimensions();
   const category = item.budget.category;
 
-  // `category` peut être `null` : RLS masque la ligne jointe quand le budget
-  // pointe une catégorie hors de portée du groupe. On retombe sur un libellé
-  // et une teinte neutres plutôt que de planter sur des champs manquants.
+  // `category` peut être `null` : RLS masque la ligne jointe quand le budget pointe une catégorie hors de portée du groupe. On retombe sur un libellé et une teinte neutres plutôt que de planter sur des champs manquants.
   const tone = category
     ? categoryTone({ id: category.id, icon: category.icon }, isDark)
     : { tint: colors.textMuted, surface: colors.surfaceMuted };
@@ -79,16 +74,11 @@ export function BudgetRow({
 
   const percent = Math.round(item.ratio * 100);
 
-  // La pastille de catégorie prend la couleur du statut dès qu'il y a une
-  // alerte : c'est le premier élément que l'œil rencontre sur la rangée, et
-  // une liste triée par urgence doit se lire sans traverser chaque ligne.
-  // Sous le seuil, elle revient à la teinte habituelle du poste, qui sert à
-  // le reconnaître d'un coup d'œil.
+  // La pastille de catégorie prend la couleur du statut dès qu'il y a une alerte : c'est le premier élément que l'œil rencontre sur la rangée, et une liste triée par urgence doit se lire sans traverser chaque ligne. Sous le seuil, elle revient à la teinte habituelle du poste, qui sert à le reconnaître d'un coup d'œil.
   const iconTint = item.status === 'ok' ? tone.tint : statusColor[item.status];
   const iconSurface = item.status === 'ok' ? tone.surface : colors.surfaceMuted;
 
-  // Au-delà du seuil, le nom et les montants s'empilent plutôt que de se
-  // disputer la largeur — même motif que budgets-entry.tsx.
+  // Au-delà du seuil, le nom et les montants s'empilent plutôt que de se disputer la largeur — même motif que budgets-entry.tsx.
   const stacked = fontScale >= stackAtFontScale;
   const edited = wasEdited(item.budget);
 
@@ -97,9 +87,7 @@ export function BudgetRow({
       accessibilityRole="button"
       accessibilityLabel={`${categoryName}, ${formatAmount(item.spent)} euros sur ${formatAmount(item.budget.amount)} euros, ${percent} %. ${statusText(item)}${edited ? '. Plafond modifié' : ''}`}
       onPress={onPress}
-      // L'élévation remplace le liseré : en Carnet une ombre basse détache la
-      // carte du fond, en Nocturne `elevation.card` porte déjà le liseré, qui
-      // est ce qui fait l'élévation sur fond sombre.
+      // L'élévation remplace le liseré : en Carnet une ombre basse détache la carte du fond, en Nocturne `elevation.card` porte déjà le liseré, qui est ce qui fait l'élévation sur fond sombre.
       style={[styles.row, elevation.card, { backgroundColor: colors.surface }]}
     >
       <View style={[styles.head, stacked && styles.headStacked]}>
@@ -129,10 +117,7 @@ export function BudgetRow({
         />
       </View>
 
-      {/* Le dépensé passe devant : c'est le chiffre qu'on vient chercher, le
-          plafond n'est là que pour lui donner son échelle. Les deux étaient
-          auparavant de même taille, et la rangée n'avait pas de point
-          d'entrée pour l'œil. */}
+      {/* Le dépensé passe devant : c'est le chiffre qu'on vient chercher, le plafond n'est là que pour lui donner son échelle. Les deux étaient auparavant de même taille, et la rangée n'avait pas de point d'entrée pour l'œil. */}
       <View style={styles.figures}>
         <Text style={[styles.spent, { color: statusColor[item.status] }]}>
           {formatAmount(item.spent)} €
@@ -142,9 +127,7 @@ export function BudgetRow({
         </Text>
       </View>
 
-      {/* Le plancher de 2 % ne vaut que si quelque chose a été dépensé : un
-          budget à zéro ne doit pas afficher un filet qui ferait croire à une
-          dépense. ProgressBar s'en charge à partir du seul ratio. */}
+      {/* Le plancher de 2 % ne vaut que si quelque chose a été dépensé : un budget à zéro ne doit pas afficher un filet qui ferait croire à une dépense. ProgressBar s'en charge à partir du seul ratio. */}
       <ProgressBar ratio={item.spent === 0 ? 0 : item.ratio} tone={item.status} size="lg" />
 
       <Text style={[styles.status, { color: colors.textMuted }]}>
@@ -168,19 +151,16 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   headStacked: {
-    // Le nom et les montants cèdent chacun leur propre ligne au lieu de se
-    // rétrécir l'un l'autre.
+    // Le nom et les montants cèdent chacun leur propre ligne au lieu de se rétrécir l'un l'autre.
     flexDirection: 'column',
     alignItems: 'flex-start',
   },
   identity: {
     flexDirection: 'row',
-    // Aligné en tête : sous le nom vient le pourcentage, et centrer
-    // décalerait la pastille vers le bas du bloc.
+    // Aligné en tête : sous le nom vient le pourcentage, et centrer décalerait la pastille vers le bas du bloc.
     alignItems: 'flex-start',
     gap: spacing.sm,
-    // Cède au badge plutôt que de le pousser hors de l'écran à fort
-    // grossissement de police.
+    // Cède au badge plutôt que de le pousser hors de l'écran à fort grossissement de police.
     flexShrink: 1,
   },
   identityText: {
@@ -208,8 +188,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: spacing.xs + 1,
-    // Aligné avec le texte qui le surplombe, pas avec la pastille : la
-    // colonne des chiffres doit se lire d'un trait vertical.
+    // Aligné avec le texte qui le surplombe, pas avec la pastille : la colonne des chiffres doit se lire d'un trait vertical.
     flexWrap: 'wrap',
   },
   spent: {

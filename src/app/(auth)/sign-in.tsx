@@ -41,8 +41,7 @@ export default function SignInScreen() {
     setSubmitting(true);
     try {
       await signIn(email, password);
-      // Pas de navigation ici : la garde du layout racine bascule sur (app)
-      // dès que la session arrive.
+      // Pas de navigation ici : la garde du layout racine bascule sur (app) dès que la session arrive.
     } catch (error) {
       setFormError(authErrorMessage(error));
     } finally {

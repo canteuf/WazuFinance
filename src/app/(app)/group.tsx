@@ -15,18 +15,15 @@ import { goBackOr } from '@/lib/navigation';
 import { font, spacing, useColors } from '@/theme/tokens';
 
 /**
- * Membres, invitation, exclusion et départ d'un groupe partagé (spec
- * section 1, écran 7).
+ * Membres, invitation, exclusion et départ d'un groupe partagé (spec section 1, écran 7).
  *
- * Le nom du groupe vient de useActiveGroup().groups, déjà chargée : cet
- * écran n'ouvre de requête que pour les membres et l'invitation.
+ * Le nom du groupe vient de useActiveGroup().groups, déjà chargée : cet écran n'ouvre de requête que pour les membres et l'invitation.
  */
 export default function GroupScreen() {
   const colors = useColors();
   const router = useRouter();
   const { id: rawId } = useLocalSearchParams<{ id?: string }>();
-  // Garde qui évite une assertion non sûre plutôt que de documenter un cas
-  // impossible : cette route n'est jamais ouverte sans id depuis groups.tsx.
+  // Garde qui évite une assertion non sûre plutôt que de documenter un cas impossible : cette route n'est jamais ouverte sans id depuis groups.tsx.
   const id = typeof rawId === 'string' ? rawId : '';
   const { session } = useAuth();
   const userId = session?.user.id;
@@ -72,8 +69,7 @@ export default function GroupScreen() {
     removeGroupMember.mutate(
       { groupId: id, userId },
       {
-        // Après un départ, revenir sur /group n'aurait aucun sens : on vise la
-        // liste directement plutôt que de remonter la pile.
+        // Après un départ, revenir sur /group n'aurait aucun sens : on vise la liste directement plutôt que de remonter la pile.
         onSuccess: () => router.dismissTo('/groups'),
         onError: (error) => setActionError(dataErrorMessage(error)),
       }

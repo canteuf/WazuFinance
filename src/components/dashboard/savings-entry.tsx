@@ -15,9 +15,7 @@ const PREVIEW_COUNT = 2;
 /**
  * Résume les objectifs d'épargne en une phrase.
  *
- * Même formule que BudgetsEntry, avec une seule dimension (atteint ou non)
- * au lieu de deux (dépassé/proche) : la spec 2.5 ne demande pas de palier
- * d'alerte comme la 2.4 le fait pour les budgets.
+ * Même formule que BudgetsEntry, avec une seule dimension (atteint ou non) au lieu de deux (dépassé/proche) : la spec 2.5 ne demande pas de palier d'alerte comme la 2.4 le fait pour les budgets.
  */
 function summarise(total: number, reached: number): string {
   if (total === 0) {
@@ -38,20 +36,15 @@ export function SavingsEntry() {
   const items = goals.map(savingsProgress);
   const reached = items.filter((item) => item.status === 'reached').length;
 
-  // Au-delà du seuil, le libellé et le détail s'empilent plutôt que de se
-  // disputer la largeur — comme les autres rangées à deux colonnes du projet.
+  // Au-delà du seuil, le libellé et le détail s'empilent plutôt que de se disputer la largeur — comme les autres rangées à deux colonnes du projet.
   const stacked = fontScale >= stackAtFontScale;
 
   const accent = reached > 0 ? colors.positive : colors.textMuted;
-  // TanStack Query garde les dernières données valides quand un refetch en
-  // arrière-plan échoue : tant que `goals` contient quelque chose, on montre
-  // l'état du dernier succès plutôt qu'un « Voir » neutre — même motif que
-  // BudgetsEntry.
+  // TanStack Query garde les dernières données valides quand un refetch en arrière-plan échoue : tant que `goals` contient quelque chose, on montre l'état du dernier succès plutôt qu'un « Voir » neutre — même motif que BudgetsEntry.
   const detail =
     (isLoading || error) && goals.length === 0 ? 'Voir' : summarise(items.length, reached);
 
-  // Les plus avancés d'abord : c'est l'ordre que `savings-goals.tsx` applique
-  // déjà, et celui qui rend l'aperçu encourageant plutôt que décourageant.
+  // Les plus avancés d'abord : c'est l'ordre que `savings-goals.tsx` applique déjà, et celui qui rend l'aperçu encourageant plutôt que décourageant.
   const preview = items.slice(0, PREVIEW_COUNT);
 
   return (

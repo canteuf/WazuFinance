@@ -3,8 +3,7 @@ import { AuthError } from '@supabase/supabase-js';
 /**
  * Messages d'erreur d'authentification en français.
  *
- * Supabase renvoie des messages en anglais destinés au développeur. On mappe les
- * codes stables plutôt que le texte, qui peut changer d'une version à l'autre.
+ * Supabase renvoie des messages en anglais destinés au développeur. On mappe les codes stables plutôt que le texte, qui peut changer d'une version à l'autre.
  */
 const MESSAGES: Record<string, string> = {
   invalid_credentials: 'Email ou mot de passe incorrect.',
@@ -24,8 +23,7 @@ export function authErrorMessage(error: unknown): string {
     if (known) {
       return known;
     }
-    // Pas de code exploitable : on retombe sur une formulation générique plutôt
-    // que d'afficher un message anglais à l'utilisateur.
+    // Pas de code exploitable : on retombe sur une formulation générique plutôt que d'afficher un message anglais à l'utilisateur.
     return `Échec de l'authentification (${error.code ?? error.status ?? 'inconnu'}).`;
   }
 

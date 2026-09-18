@@ -13,11 +13,7 @@ export type MembershipSummary = {
 /**
  * Groupes dont l'utilisateur courant est membre, le compte personnel en tête.
  *
- * Filtré par `user_id` : `account_memberships_select_member` autorise à voir
- * toutes les lignes des groupes dont l'appelant est membre, pas seulement la
- * sienne (nécessaire à `listGroupMembers`) — sans ce filtre, un groupe
- * partagé à plusieurs membres renvoie une ligne par membre au lieu d'une par
- * groupe. Resté invisible tant qu'aucun groupe partagé réel n'existait.
+ * Filtré par `user_id` : `account_memberships_select_member` autorise à voir toutes les lignes des groupes dont l'appelant est membre, pas seulement la sienne (nécessaire à `listGroupMembers`) — sans ce filtre, un groupe partagé à plusieurs membres renvoie une ligne par membre au lieu d'une par groupe. Resté invisible tant qu'aucun groupe partagé réel n'existait.
  */
 export async function listMemberships(userId: string): Promise<MembershipSummary[]> {
   const { data, error } = await supabase
@@ -59,9 +55,7 @@ export type GroupMember = {
 /**
  * Membres d'un groupe, avec leur rôle.
  *
- * Filtré par `group_id` : la policy `account_memberships_select_member` ne
- * restreint qu'aux groupes dont l'appelant est membre, elle ne réduit pas à
- * un seul groupe à la fois — le filtre explicite reste nécessaire ici.
+ * Filtré par `group_id` : la policy `account_memberships_select_member` ne restreint qu'aux groupes dont l'appelant est membre, elle ne réduit pas à un seul groupe à la fois — le filtre explicite reste nécessaire ici.
  */
 export async function listGroupMembers(groupId: string): Promise<GroupMember[]> {
   const { data, error } = await supabase
@@ -93,9 +87,7 @@ export async function listGroupMembers(groupId: string): Promise<GroupMember[]> 
 /**
  * Crée un groupe partagé et sa ligne d'adhésion `owner`, de façon atomique.
  *
- * Passe par la RPC `create_shared_group` plutôt qu'un double INSERT direct :
- * `account_memberships_insert_owner` exige déjà `is_group_owner(group_id)`,
- * qui ne peut jamais être vrai pour la toute première ligne d'un groupe.
+ * Passe par la RPC `create_shared_group` plutôt qu'un double INSERT direct : `account_memberships_insert_owner` exige déjà `is_group_owner(group_id)`, qui ne peut jamais être vrai pour la toute première ligne d'un groupe.
  */
 export async function createSharedGroup(name: string): Promise<string> {
   const { data, error } = await supabase.rpc('create_shared_group', { name });
@@ -119,12 +111,9 @@ export async function joinGroupWithCode(code: string): Promise<string> {
 }
 
 /**
- * Retire un membre d'un groupe — exclusion par le propriétaire, ou départ
- * volontaire quand `userId` est celui de l'appelant. Une seule fonction :
- * `account_memberships_delete_owner_or_self` décide déjà qui a le droit.
+ * Retire un membre d'un groupe — exclusion par le propriétaire, ou départ volontaire quand `userId` est celui de l'appelant. Une seule fonction : `account_memberships_delete_owner_or_self` décide déjà qui a le droit.
  *
- * `.select('id').single()` force une erreur si RLS ou la garde anti-orphelin
- * ont filtré/refusé la ligne visée, même précédent que `deleteSavingsGoal`.
+ * `.select('id').single()` force une erreur si RLS ou la garde anti-orphelin ont filtré/refusé la ligne visée, même précédent que `deleteSavingsGoal`.
  */
 export async function removeMember(groupId: string, userId: string): Promise<void> {
   const { error } = await supabase
@@ -169,9 +158,7 @@ export async function getActiveInvitation(groupId: string): Promise<GroupInvitat
 const INVITATION_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
- * Crée une invitation valide 7 jours. `code` n'est pas fourni : la base le
- * génère (défaut `encode(gen_random_bytes(4), 'hex')`), le client ne doit
- * jamais en inventer un.
+ * Crée une invitation valide 7 jours. `code` n'est pas fourni : la base le génère (défaut `encode(gen_random_bytes(4), 'hex')`), le client ne doit jamais en inventer un.
  */
 export async function createInvitation(
   groupId: string,

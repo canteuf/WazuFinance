@@ -22,9 +22,7 @@ export const DEFAULT_FILTERS: HistoryFilterState = {
 /**
  * Vrai tant qu'aucun filtre n'a été touché.
  *
- * Partagé entre la barre (qui décide d'afficher « Réinitialiser ») et l'écran
- * (qui choisit son message de liste vide) : deux comparaisons écrites
- * séparément finiraient par diverger d'un champ.
+ * Partagé entre la barre (qui décide d'afficher « Réinitialiser ») et l'écran (qui choisit son message de liste vide) : deux comparaisons écrites séparément finiraient par diverger d'un champ.
  */
 export function isDefaultFilters(state: HistoryFilterState): boolean {
   return (
@@ -57,16 +55,11 @@ function Chip({
   return (
     <Pressable
       accessibilityRole="button"
-      // Sans le nom du filtre, un lecteur d'écran annonce deux boutons
-      // « Tout » sans rien pour les distinguer — l'étiquette de rubrique est
-      // visuelle, elle ne rattache rien.
+      // Sans le nom du filtre, un lecteur d'écran annonce deux boutons « Tout » sans rien pour les distinguer — l'étiquette de rubrique est visuelle, elle ne rattache rien.
       accessibilityLabel={`${group} : ${label}`}
       accessibilityState={{ selected }}
       onPress={onPress}
-      // Sélectionnée, la pastille prend la couleur du texte, pas l'accent :
-      // l'accent désigne ce sur quoi on agit (le bouton d'ajout, un lien), et
-      // trois rangées de pastilles vertes le banaliseraient. Le contraste
-      // fond/texte suffit à montrer laquelle est active.
+      // Sélectionnée, la pastille prend la couleur du texte, pas l'accent : l'accent désigne ce sur quoi on agit (le bouton d'ajout, un lien), et trois rangées de pastilles vertes le banaliseraient. Le contraste fond/texte suffit à montrer laquelle est active.
       style={[
         styles.chip,
         {
@@ -87,9 +80,7 @@ function Chip({
 /**
  * Une rubrique de filtre : son étiquette, puis ses pastilles.
  *
- * Sans étiquette, trois rangées de pastilles identiques ne disent pas sur quoi
- * elles portent — et « Tout » y apparaissait deux fois, pour la période et
- * pour le type.
+ * Sans étiquette, trois rangées de pastilles identiques ne disent pas sur quoi elles portent — et « Tout » y apparaissait deux fois, pour la période et pour le type.
  */
 function Field({
   label,
@@ -117,8 +108,7 @@ function Field({
 /**
  * Trois rubriques empilées : période, type, catégorie.
  *
- * Ce sont des pastilles et non des `Button` : à 52 px de hauteur minimale
- * chacun, une rangée de boutons occuperait la moitié de l'écran.
+ * Ce sont des pastilles et non des `Button` : à 52 px de hauteur minimale chacun, une rangée de boutons occuperait la moitié de l'écran.
  */
 export function FilterBar({
   state,
@@ -133,8 +123,7 @@ export function FilterBar({
   onChange: (next: HistoryFilterState) => void;
 }) {
   const colors = useColors();
-  // Sert encore à afficher la liste des puces ; la correction d'une sélection
-  // devenue invalide est désormais fournie par l'écran via `effectiveCategoryId`.
+  // Sert encore à afficher la liste des puces ; la correction d'une sélection devenue invalide est désormais fournie par l'écran via `effectiveCategoryId`.
   const { categories } = useCategories(state.type);
 
   return (
@@ -142,8 +131,7 @@ export function FilterBar({
       <Field
         label="Période"
         action={
-          // Visible seulement quand il y a quelque chose à défaire : un
-          // contrôle qui ne ferait rien apprend au lecteur à l'ignorer.
+          // Visible seulement quand il y a quelque chose à défaire : un contrôle qui ne ferait rien apprend au lecteur à l'ignorer.
           isDefaultFilters(state) ? undefined : (
             <Pressable
               accessibilityRole="button"
@@ -181,10 +169,7 @@ export function FilterBar({
                 onChange({
                   ...state,
                   type: choice.value,
-                  // Une catégorie appartient à un seul type : passer à un type
-                  // concret ne peut conserver une sélection que par coïncidence,
-                  // donc on la vide. Repasser à « Tout » élargit l'offre sans
-                  // rien invalider, donc la sélection courante est conservée.
+                  // Une catégorie appartient à un seul type : passer à un type concret ne peut conserver une sélection que par coïncidence, donc on la vide. Repasser à « Tout » élargit l'offre sans rien invalider, donc la sélection courante est conservée.
                   categoryId: choice.value === null ? state.categoryId : null,
                 })
               }
@@ -194,8 +179,7 @@ export function FilterBar({
       </Field>
 
       <Field label="Catégorie">
-        {/* Défilement horizontal dans une liste verticale : l'avertissement de
-            React Native ne vise que l'imbrication sur le même axe. */}
+        {/* Défilement horizontal dans une liste verticale : l'avertissement de React Native ne vise que l'imbrication sur le même axe. */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}

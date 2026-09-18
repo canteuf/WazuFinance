@@ -9,17 +9,11 @@ import { queryKeys } from '@/lib/query-keys';
 const DEFAULT_START_DAY = 1;
 
 /**
- * Résumé de la période en cours pour le groupe actif, et celui de la
- * précédente pour la comparaison de la spec 2.6.
+ * Résumé de la période en cours pour le groupe actif, et celui de la précédente pour la comparaison de la spec 2.6.
  *
- * Le libellé est renvoyé avec les chiffres parce qu'il dépend des mêmes
- * bornes : les recalculer dans le composant ferait diverger l'en-tête et les
- * totaux à l'instant où la période bascule.
+ * Le libellé est renvoyé avec les chiffres parce qu'il dépend des mêmes bornes : les recalculer dans le composant ferait diverger l'en-tête et les totaux à l'instant où la période bascule.
  *
- * Les deux périodes sont deux requêtes distinctes sur la même fonction, chacune
- * avec sa propre clé de cache : la précédente ne bouge plus une fois close, et
- * la partager avec le filtre « Précédente » de l'historique évite de la
- * redemander.
+ * Les deux périodes sont deux requêtes distinctes sur la même fonction, chacune avec sa propre clé de cache : la précédente ne bouge plus une fois close, et la partager avec le filtre « Précédente » de l'historique évite de la redemander.
  */
 export function usePeriodSummary(): {
   summary: PeriodSummary | undefined;
@@ -34,14 +28,12 @@ export function usePeriodSummary(): {
   const today = todayIso();
 
   const { from, to } = periodBounds(today, startDay);
-  // Réutilise le préréglage plutôt que de refaire l'arithmétique des mois : la
-  // borne de la période précédente est déjà calculée et couverte par les tests.
+  // Réutilise le préréglage plutôt que de refaire l'arithmétique des mois : la borne de la période précédente est déjà calculée et couverte par les tests.
   const presets = periodPresets(today, startDay);
   const previousPreset = presets.find((preset) => preset.id === 'previous');
 
   const current = useQuery({
-    // `from` fait partie de la clé : changer le jour de démarrage, ou passer
-    // au mois suivant, produit une entrée neuve sans invalidation à écrire.
+    // `from` fait partie de la clé : changer le jour de démarrage, ou passer au mois suivant, produit une entrée neuve sans invalidation à écrire.
     queryKey: queryKeys.periodSummary(activeGroupId ?? '', from),
     queryFn: () => getPeriodSummary(activeGroupId as string, from, to),
     enabled: activeGroupId !== null,
@@ -62,8 +54,7 @@ export function usePeriodSummary(): {
     summary: current.data,
     previous: previous.data,
     label: formatPeriodLabel(from, to),
-    // Seule la période en cours conditionne l'affichage : la comparaison est un
-    // complément, et attendre sa réponse retarderait le solde sans raison.
+    // Seule la période en cours conditionne l'affichage : la comparaison est un complément, et attendre sa réponse retarderait le solde sans raison.
     isLoading: current.isLoading,
     error: current.error,
   };

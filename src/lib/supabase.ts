@@ -9,8 +9,7 @@ import type { Database } from '@/types/database';
 
 export const supabase = createClient<Database>(env.supabaseUrl, env.supabaseAnonKey, {
   auth: {
-    // Sur le web, supabase-js utilise déjà localStorage ; AsyncStorage ne sert
-    // qu'aux plateformes natives.
+    // Sur le web, supabase-js utilise déjà localStorage ; AsyncStorage ne sert qu'aux plateformes natives.
     ...(Platform.OS === 'web' ? {} : { storage: AsyncStorage }),
     autoRefreshToken: true,
     persistSession: true,
@@ -19,8 +18,7 @@ export const supabase = createClient<Database>(env.supabaseUrl, env.supabaseAnon
   },
 });
 
-// Rafraîchit le token tant que l'app est au premier plan, et arrête le timer en
-// arrière-plan. À n'enregistrer qu'une fois, d'où sa place au niveau module.
+// Rafraîchit le token tant que l'app est au premier plan, et arrête le timer en arrière-plan. À n'enregistrer qu'une fois, d'où sa place au niveau module.
 if (Platform.OS !== 'web') {
   AppState.addEventListener('change', (state) => {
     if (state === 'active') {

@@ -26,8 +26,7 @@ import { periodPresets, todayIso } from '@/lib/dates';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 import { goBackOr } from '@/lib/navigation';
 
-// Référence stable : une fonction inline recréée à chaque rendu ferait de
-// chaque séparateur un composant neuf, monté puis démonté à chaque frappe.
+// Référence stable : une fonction inline recréée à chaque rendu ferait de chaque séparateur un composant neuf, monté puis démonté à chaque frappe.
 function ItemSeparator() {
   return <View style={styles.separator} />;
 }
@@ -35,9 +34,7 @@ function ItemSeparator() {
 /**
  * Historique complet du groupe actif.
  *
- * N'utilise pas `Screen` : celui-ci enveloppe un `ScrollView`, et imbriquer une
- * `FlatList` dans un `ScrollView` désactive la virtualisation — une liste
- * paginée garderait alors toutes ses lignes montées.
+ * N'utilise pas `Screen` : celui-ci enveloppe un `ScrollView`, et imbriquer une `FlatList` dans un `ScrollView` désactive la virtualisation — une liste paginée garderait alors toutes ses lignes montées.
  */
 export default function HistoryScreen() {
   const colors = useColors();
@@ -46,8 +43,7 @@ export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
   const { activeGroup, isLoading: groupLoading } = useActiveGroup();
 
-  // État local à l'écran : aucun autre n'en dépend, et le sortir d'ici
-  // obligerait à décider quand le remettre à zéro entre deux visites.
+  // État local à l'écran : aucun autre n'en dépend, et le sortir d'ici obligerait à décider quand le remettre à zéro entre deux visites.
   const [filters, setFilters] = useState<HistoryFilterState>(DEFAULT_FILTERS);
 
   const presets = periodPresets(todayIso(), activeGroup?.periodStartDay ?? 1);
@@ -55,12 +51,7 @@ export default function HistoryScreen() {
 
   const { categories, isLoading: categoriesLoading } = useCategories(filters.type);
 
-  // La correction vit ici, pas dans `FilterBar` : c'est l'écran qui possède
-  // l'état à partir duquel la requête est construite, donc la sélection
-  // corrigée doit être calculée là où cet état est lu, pas seulement là où il
-  // est affiché — sinon les puces et la requête peuvent diverger (groupe actif
-  // changé, catégorie supprimée par un autre membre pendant que l'écran reste
-  // monté).
+  // La correction vit ici, pas dans `FilterBar` : c'est l'écran qui possède l'état à partir duquel la requête est construite, donc la sélection corrigée doit être calculée là où cet état est lu, pas seulement là où il est affiché — sinon les puces et la requête peuvent diverger (groupe actif changé, catégorie supprimée par un autre membre pendant que l'écran reste monté).
   const effectiveCategoryId =
     filters.categoryId !== null &&
     !categoriesLoading &&
@@ -76,8 +67,7 @@ export default function HistoryScreen() {
     isFetchingNextPage,
     loadMore,
     retry,
-    // `hasNextPage` n'est pas repris : `loadMore` s'en garde lui-même, et une
-    // variable déstructurée mais inutilisée fait échouer le lint.
+    // `hasNextPage` n'est pas repris : `loadMore` s'en garde lui-même, et une variable déstructurée mais inutilisée fait échouer le lint.
   } = useTransactionHistory({
     from: preset.from,
     to: preset.to,
@@ -88,15 +78,12 @@ export default function HistoryScreen() {
   const filtersTouched = !isDefaultFilters(filters);
 
   function renderEmpty() {
-    // Tant que le groupe actif n'est pas résolu, la requête d'historique est
-    // désactivée : `isLoading` reste à `false` et affichait un instant
-    // « Aucune opération » avant le premier vrai chargement.
+    // Tant que le groupe actif n'est pas résolu, la requête d'historique est désactivée : `isLoading` reste à `false` et affichait un instant « Aucune opération » avant le premier vrai chargement.
     if (isLoading || groupLoading) {
       return <ActivityIndicator color={colors.primary} style={styles.centered} />;
     }
 
-    // Deux messages distincts : un message unique ferait croire à une
-    // disparition des données là où il n'y a qu'un filtre trop étroit.
+    // Deux messages distincts : un message unique ferait croire à une disparition des données là où il n'y a qu'un filtre trop étroit.
     if (filtersTouched) {
       return (
         <View style={styles.centered}>
@@ -124,8 +111,7 @@ export default function HistoryScreen() {
       return <ActivityIndicator color={colors.primary} style={styles.footer} />;
     }
 
-    // Échec d'une page suivante : le message va en pied, les lignes déjà
-    // chargées restent affichées.
+    // Échec d'une page suivante : le message va en pied, les lignes déjà chargées restent affichées.
     if (error !== null && !isEmptyError) {
       return (
         <View style={styles.footer}>
@@ -152,15 +138,13 @@ export default function HistoryScreen() {
           <Text style={[styles.back, { color: colors.textMuted }]}>‹</Text>
         </Pressable>
         <Text style={[styles.title, { color: colors.text }]}>Opérations</Text>
-        {/* C'est ici qu'on vient vérifier ses opérations ; le tableau de bord
-            porte déjà assez d'éléments. */}
+        {/* C'est ici qu'on vient vérifier ses opérations ; le tableau de bord porte déjà assez d'éléments. */}
         <Link href="/activity" asChild>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Activité du groupe"
             hitSlop={spacing.sm}
-            // Aplati : <Link asChild> transmet le style par un Slot, qui lève
-            // une erreur de rendu en développement s'il reçoit un tableau.
+            // Aplati : <Link asChild> transmet le style par un Slot, qui lève une erreur de rendu en développement s'il reçoit un tableau.
             style={StyleSheet.flatten(styles.headerLink)}
           >
             <Text style={[styles.headerLinkLabel, { color: colors.primary }]}>Activité</Text>
@@ -168,10 +152,7 @@ export default function HistoryScreen() {
         </Link>
       </View>
 
-      {/* `isEmptyError` ne vaut vrai que pour l'échec du premier chargement
-          (voir use-transaction-history.ts) : un refetch en arrière-plan qui
-          échoue sur un filtre légitimement vide ne doit pas faire disparaître
-          la barre de filtres, seule issue pour l'élargir. */}
+      {/* `isEmptyError` ne vaut vrai que pour l'échec du premier chargement (voir use-transaction-history.ts) : un refetch en arrière-plan qui échoue sur un filtre légitimement vide ne doit pas faire disparaître la barre de filtres, seule issue pour l'élargir. */}
       {isEmptyError ? (
         <View style={styles.centered}>
           <Text style={[styles.error, { color: colors.danger }]}>{dataErrorMessage(error)}</Text>
@@ -202,9 +183,7 @@ export default function HistoryScreen() {
         />
       )}
 
-      {/* La spec 4.3 impose la saisie en trois taps depuis l'écran principal,
-          mais l'historique est l'endroit où l'on constate un oubli : obliger à
-          revenir en arrière irait contre la contrainte. */}
+      {/* La spec 4.3 impose la saisie en trois taps depuis l'écran principal, mais l'historique est l'endroit où l'on constate un oubli : obliger à revenir en arrière irait contre la contrainte. */}
       <Link href="/transaction" asChild>
         <Pressable
           accessibilityRole="button"

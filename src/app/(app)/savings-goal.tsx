@@ -23,8 +23,7 @@ import { font, spacing, useColors } from '@/theme/tokens';
 import { goBackOr } from '@/lib/navigation';
 
 /**
- * Une seule route pour les deux modes : création sans paramètre, édition
- * avec ?id=. Même parti que budget.tsx et transaction.tsx.
+ * Une seule route pour les deux modes : création sans paramètre, édition avec ?id=. Même parti que budget.tsx et transaction.tsx.
  */
 export default function SavingsGoalScreen() {
   const colors = useColors();
@@ -39,8 +38,7 @@ export default function SavingsGoalScreen() {
 
   const existing = typeof id === 'string' ? goals.find((goal) => goal.id === id) : undefined;
 
-  // Tous les hooks ci-dessus s'exécutent à chaque rendu ; les retours
-  // conditionnels qui suivent n'en court-circuitent aucun.
+  // Tous les hooks ci-dessus s'exécutent à chaque rendu ; les retours conditionnels qui suivent n'en court-circuitent aucun.
   if (isLoading) {
     return (
       <View style={styles.centered}>
@@ -49,9 +47,7 @@ export default function SavingsGoalScreen() {
     );
   }
 
-  // En pratique toujours vrai ici : les routes (app) ne sont atteignables
-  // qu'avec une session (garde Stack.Protected du layout racine). Ce garde
-  // évite une assertion non sûre plutôt que de documenter un cas impossible.
+  // En pratique toujours vrai ici : les routes (app) ne sont atteignables qu'avec une session (garde Stack.Protected du layout racine). Ce garde évite une assertion non sûre plutôt que de documenter un cas impossible.
   if (error || !userId) {
     return (
       <View style={styles.centered}>
@@ -63,9 +59,7 @@ export default function SavingsGoalScreen() {
     );
   }
 
-  // L'objectif visé n'est plus dans la liste : supprimé pendant que la
-  // feuille était ouverte (un autre appareil du même compte), ou identifiant
-  // périmé. Sans ce garde, le formulaire s'ouvrirait vide sous « Modifier ».
+  // L'objectif visé n'est plus dans la liste : supprimé pendant que la feuille était ouverte (un autre appareil du même compte), ou identifiant périmé. Sans ce garde, le formulaire s'ouvrirait vide sous « Modifier ».
   if (typeof id === 'string' && !existing) {
     return (
       <View style={styles.centered}>

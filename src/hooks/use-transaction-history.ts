@@ -31,8 +31,7 @@ export function useTransactionHistory(filters: TransactionFilters): {
       listPage(activeGroupId as string, filters, pageParam, HISTORY_PAGE_SIZE),
     initialPageParam: null as TransactionCursor | null,
     getNextPageParam: (lastPage): TransactionCursor | null => {
-      // Une page plus courte que demandée est forcément la dernière : inutile
-      // d'aller chercher une page vide pour s'en apercevoir.
+      // Une page plus courte que demandée est forcément la dernière : inutile d'aller chercher une page vide pour s'en apercevoir.
       if (lastPage.length < HISTORY_PAGE_SIZE) {
         return null;
       }
@@ -48,18 +47,12 @@ export function useTransactionHistory(filters: TransactionFilters): {
     transactions,
     isLoading: query.isLoading,
     error: query.error,
-    // `isError` seul ne distingue pas le premier chargement en échec
-    // d'un refetch en arrière-plan qui échoue après un filtre légitimement
-    // vide (zéro résultat n'est pas une erreur) : dans ce second cas,
-    // `transactions.length === 0` aussi vaudrait vrai et ferait passer
-    // l'écran en erreur plein cadre, emportant la barre de filtres avec elle.
-    // `isLoadingError` ne vaut vrai que si aucune page n'a jamais abouti.
+    // `isError` seul ne distingue pas le premier chargement en échec d'un refetch en arrière-plan qui échoue après un filtre légitimement vide (zéro résultat n'est pas une erreur) : dans ce second cas, `transactions.length === 0` aussi vaudrait vrai et ferait passer l'écran en erreur plein cadre, emportant la barre de filtres avec elle. `isLoadingError` ne vaut vrai que si aucune page n'a jamais abouti.
     isEmptyError: query.isLoadingError,
     hasNextPage: query.hasNextPage,
     isFetchingNextPage: query.isFetchingNextPage,
     loadMore: () => {
-      // Sans ce garde, chaque frôlement du bas relancerait une requête déjà
-      // en vol.
+      // Sans ce garde, chaque frôlement du bas relancerait une requête déjà en vol.
       if (query.hasNextPage && !query.isFetchingNextPage) {
         void query.fetchNextPage();
       }

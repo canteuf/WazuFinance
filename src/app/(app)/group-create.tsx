@@ -29,9 +29,7 @@ export default function GroupCreateScreen() {
     }
     createGroup.mutate(name.trim(), {
       onSuccess: (groupId) => {
-        // Le groupe qu'on vient de créer devient le groupe actif : sinon
-        // l'utilisateur resterait sur son compte personnel sans comprendre où
-        // est passé le groupe qu'il vient de créer.
+        // Le groupe qu'on vient de créer devient le groupe actif : sinon l'utilisateur resterait sur son compte personnel sans comprendre où est passé le groupe qu'il vient de créer.
         setActiveGroupId(groupId);
         goBackOr(router, '/groups');
       },

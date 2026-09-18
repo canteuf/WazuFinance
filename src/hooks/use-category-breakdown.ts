@@ -9,12 +9,9 @@ import { queryKeys } from '@/lib/query-keys';
 const DEFAULT_START_DAY = 1;
 
 /**
- * Répartition des dépenses de la période en cours, la plus grosse part
- * d'abord.
+ * Répartition des dépenses de la période en cours, la plus grosse part d'abord.
  *
- * Mêmes bornes que `usePeriodSummary` : les deux doivent parler de la même
- * période, sans quoi le total affiché et la somme des parts se contrediraient
- * à l'écran.
+ * Mêmes bornes que `usePeriodSummary` : les deux doivent parler de la même période, sans quoi le total affiché et la somme des parts se contrediraient à l'écran.
  */
 export function useCategoryBreakdown(): {
   slices: CategorySlice[];

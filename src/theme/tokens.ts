@@ -3,11 +3,7 @@ import { StyleSheet, useColorScheme } from 'react-native';
 /**
  * Jetons de design partagés.
  *
- * Deux palettes, une seule grammaire de formes. En clair, « Carnet » : fond
- * vert-gris pâle, cartes blanches, ombres basses. En sombre, « Nocturne » :
- * fond profond, surfaces en élévation, accent menthe. La typographie, les
- * rayons et les densités ne changent pas avec le thème — les faire varier
- * imposerait deux mises en page à tenir et rendrait la bascule visible.
+ * Deux palettes, une seule grammaire de formes. En clair, « Carnet » : fond vert-gris pâle, cartes blanches, ombres basses. En sombre, « Nocturne » : fond profond, surfaces en élévation, accent menthe. La typographie, les rayons et les densités ne changent pas avec le thème — les faire varier imposerait deux mises en page à tenir et rendrait la bascule visible.
  */
 
 export const spacing = {
@@ -29,10 +25,7 @@ export const radius = {
 /**
  * Bricolage Grotesque, chargée dans le layout racine.
  *
- * React Native n'a pas d'héritage de police : chaque `Text` doit porter sa
- * famille. D'où ces constantes, à utiliser partout plutôt que `fontWeight`,
- * qui ne sélectionne pas la bonne graisse d'une famille chargée fichier par
- * fichier.
+ * React Native n'a pas d'héritage de police : chaque `Text` doit porter sa famille. D'où ces constantes, à utiliser partout plutôt que `fontWeight`, qui ne sélectionne pas la bonne graisse d'une famille chargée fichier par fichier.
  */
 export const font = {
   regular: 'BricolageGrotesque_400Regular',
@@ -55,10 +48,7 @@ export type Colors = {
   /** Revenus. Distinct de `primary` : une couleur sémantique, pas l'accent. */
   positive: string;
   /**
-   * Avertissement : budget proche de son plafond. Sémantique, pas décoratif.
-   * Sert aussi de couleur de texte (pas seulement de barre) : la valeur
-   * claire est choisie pour tenir le contraste AA d'un texte, pas d'un simple
-   * aplat.
+   * Avertissement : budget proche de son plafond. Sémantique, pas décoratif. Sert aussi de couleur de texte (pas seulement de barre) : la valeur claire est choisie pour tenir le contraste AA d'un texte, pas d'un simple aplat.
    */
   warning: string;
   danger: string;
@@ -96,9 +86,7 @@ const palette: Record<'light' | 'dark', Colors> = {
 };
 
 /**
- * Élévation. En clair, une ombre basse détache la carte du fond ; en sombre,
- * une ombre portée ne se voit pas — c'est la surface plus claire qui fait
- * l'élévation, et l'ombre ne sert qu'à ancrer les éléments flottants.
+ * Élévation. En clair, une ombre basse détache la carte du fond ; en sombre, une ombre portée ne se voit pas — c'est la surface plus claire qui fait l'élévation, et l'ombre ne sert qu'à ancrer les éléments flottants.
  */
 export type Elevation = {
   card: {
@@ -107,9 +95,7 @@ export type Elevation = {
     shadowRadius: number;
     shadowOffset: { width: number; height: number };
     elevation: number;
-    // Une ombre noire sur fond sombre ne se voit pas : en Nocturne, la
-    // séparation d'une surface vient d'un liseré, pas d'une ombre. En Carnet
-    // l'ombre suffit et le liseré est à zéro.
+    // Une ombre noire sur fond sombre ne se voit pas : en Nocturne, la séparation d'une surface vient d'un liseré, pas d'une ombre. En Carnet l'ombre suffit et le liseré est à zéro.
     borderWidth: number;
     borderColor: string;
   };
@@ -179,13 +165,8 @@ export function useIsDark(): boolean {
 }
 
 /**
- * Échelle de police système au-delà de laquelle une rangée de deux colonnes
- * doit s'empiler.
+ * Échelle de police système au-delà de laquelle une rangée de deux colonnes doit s'empiler.
  *
- * En dessous, deux blocs tiennent côte à côte sur un téléphone. Au-delà, le
- * plus rigide des deux écrase l'autre, qui se fait tronquer — et un libellé
- * coupé rend deux lignes indiscernables. La règle du projet est d'élargir ou
- * de réagencer le conteneur, jamais de brider l'échelle : qui règle son
- * téléphone à 200 % en a besoin.
+ * En dessous, deux blocs tiennent côte à côte sur un téléphone. Au-delà, le plus rigide des deux écrase l'autre, qui se fait tronquer — et un libellé coupé rend deux lignes indiscernables. La règle du projet est d'élargir ou de réagencer le conteneur, jamais de brider l'échelle : qui règle son téléphone à 200 % en a besoin.
  */
 export const stackAtFontScale = 1.5;

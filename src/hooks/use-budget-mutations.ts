@@ -12,11 +12,7 @@ import { queryKeys } from '@/lib/query-keys';
 /**
  * Création, modification et suppression d'un budget.
  *
- * L'invalidation porte sur la racine `queryKeys.budgetsAll()` : chaque mutation
- * invalide la clé par groupe du groupe réellement muté, pas du groupe actif au
- * moment où la réponse arrive. Un utilisateur peut basculer de groupe entre le
- * déclenchement de la mutation et la réception de la réponse — l'invalidation
- * doit ignorer le groupe actif courant et invalider tous les budgets en cache.
+ * L'invalidation porte sur la racine `queryKeys.budgetsAll()` : chaque mutation invalide la clé par groupe du groupe réellement muté, pas du groupe actif au moment où la réponse arrive. Un utilisateur peut basculer de groupe entre le déclenchement de la mutation et la réception de la réponse — l'invalidation doit ignorer le groupe actif courant et invalider tous les budgets en cache.
  */
 export function useBudgetMutations() {
   const queryClient = useQueryClient();
@@ -46,8 +42,7 @@ export function useBudgetMutations() {
     createBudget,
     updateBudget,
     deleteBudget,
-    // Deux indicateurs distincts, comme pour les transactions : un seul
-    // agrégé faisait tourner le bouton Supprimer pendant l'enregistrement.
+    // Deux indicateurs distincts, comme pour les transactions : un seul agrégé faisait tourner le bouton Supprimer pendant l'enregistrement.
     isSaving: createBudget.isPending || updateBudget.isPending,
     isDeleting: deleteBudget.isPending,
   };

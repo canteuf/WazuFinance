@@ -12,11 +12,7 @@ import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 /**
  * Budgets par catégorie (spec 2.4, écran 5).
  *
- * La liste ne montre que les budgets définis : les quatorze catégories par
- * défaut afficheraient douze lignes vides pour deux utiles, et la progression
- * — le point de l'écran — se noierait. La découverte se fait dans le
- * formulaire de création, qui classe les catégories sans budget par dépense
- * réelle de la période.
+ * La liste ne montre que les budgets définis : les quatorze catégories par défaut afficheraient douze lignes vides pour deux utiles, et la progression — le point de l'écran — se noierait. La découverte se fait dans le formulaire de création, qui classe les catégories sans budget par dépense réelle de la période.
  */
 export default function BudgetsScreen() {
   const colors = useColors();
@@ -25,11 +21,7 @@ export default function BudgetsScreen() {
   const { isLoading: groupLoading, error: groupError, activeGroupId } = useActiveGroup();
   const { items, isLoading, error, isEmptyError } = useBudgetProgress();
 
-  // Seules bloquent les erreurs qui ne laissent rien de juste à montrer.
-  // TanStack garde les dernières données valides et ne remplit `error`
-  // qu'après l'échec d'un rafraîchissement en arrière-plan : revenir hors ligne
-  // au premier plan après plus de 30 s ne doit pas remplacer des budgets déjà
-  // affichés par un message d'erreur — même règle que activity.tsx.
+  // Seules bloquent les erreurs qui ne laissent rien de juste à montrer. TanStack garde les dernières données valides et ne remplit `error` qu'après l'échec d'un rafraîchissement en arrière-plan : revenir hors ligne au premier plan après plus de 30 s ne doit pas remplacer des budgets déjà affichés par un message d'erreur — même règle que activity.tsx.
   const blockingError: unknown =
     groupError !== null && activeGroupId === null ? groupError : isEmptyError ? error : null;
 
@@ -53,9 +45,7 @@ export default function BudgetsScreen() {
         </Link>
       }
     >
-      {/* Pas de bouton retour : l'écran est une destination d'onglet, pas une
-          page empilée. Le sous-titre annonce l'ordre de la liste, qui n'est ni
-          alphabétique ni chronologique et mérite d'être dit. */}
+      {/* Pas de bouton retour : l'écran est une destination d'onglet, pas une page empilée. Le sous-titre annonce l'ordre de la liste, qui n'est ni alphabétique ni chronologique et mérite d'être dit. */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Enveloppes</Text>
         {items.length > 0 ? (
@@ -67,18 +57,12 @@ export default function BudgetsScreen() {
       </View>
 
       {blockingError ? (
-        // Si le chargement des adhésions échoue, `activeGroupId` reste `null` :
-        // `useBudgetProgress()` reste alors désactivé (ni chargement ni
-        // erreur) et sans ce garde l'écran afficherait à tort « Aucun budget
-        // défini » au lieu du vrai message — même motif que budget.tsx.
+        // Si le chargement des adhésions échoue, `activeGroupId` reste `null` : `useBudgetProgress()` reste alors désactivé (ni chargement ni erreur) et sans ce garde l'écran afficherait à tort « Aucun budget défini » au lieu du vrai message — même motif que budget.tsx.
         <Text style={[styles.message, { color: colors.danger }]}>
           {dataErrorMessage(blockingError)}
         </Text>
       ) : isLoading || groupLoading ? (
-        // Tant que le groupe actif n'est pas résolu, `useBudgets` et
-        // `useCategoryBreakdown` sont désactivées : leur `isLoading` reste à
-        // `false` et affichait un instant « Aucun budget défini » avant le
-        // premier vrai chargement (même course que history.tsx).
+        // Tant que le groupe actif n'est pas résolu, `useBudgets` et `useCategoryBreakdown` sont désactivées : leur `isLoading` reste à `false` et affichait un instant « Aucun budget défini » avant le premier vrai chargement (même course que history.tsx).
         <ActivityIndicator color={colors.primary} />
       ) : items.length === 0 ? (
         <Text style={[styles.message, { color: colors.textMuted }]}>

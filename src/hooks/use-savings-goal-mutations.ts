@@ -37,8 +37,7 @@ export function useSavingsGoalMutations() {
     createGoal,
     updateGoal,
     deleteGoal,
-    // Deux indicateurs distincts, comme pour les transactions et les budgets :
-    // un seul agrégé faisait tourner le bouton Supprimer pendant l'enregistrement.
+    // Deux indicateurs distincts, comme pour les transactions et les budgets : un seul agrégé faisait tourner le bouton Supprimer pendant l'enregistrement.
     isSaving: createGoal.isPending || updateGoal.isPending,
     isDeleting: deleteGoal.isPending,
   };

@@ -47,13 +47,11 @@ export function BudgetForm({
     initialValues ? initialValues.amount.toFixed(2).replace('.', ',') : ''
   );
   const [touched, setTouched] = useState(false);
-  // Deuxième étape de confirmation avant suppression, voir le bloc de rendu
-  // plus bas pour la justification de ce choix.
+  // Deuxième étape de confirmation avant suppression, voir le bloc de rendu plus bas pour la justification de ce choix.
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const amount = parseAmount(amountText);
-  // `amount > 0` est une contrainte de la base : la refuser ici évite un
-  // aller-retour réseau pour apprendre ce qu'on sait déjà.
+  // `amount > 0` est une contrainte de la base : la refuser ici évite un aller-retour réseau pour apprendre ce qu'on sait déjà.
   const valid = categoryId !== null && amount !== null && amount > 0;
 
   function handleSubmit() {
@@ -72,9 +70,7 @@ export function BudgetForm({
         <View style={styles.block}>
           <Text style={[styles.label, { color: colors.textMuted }]}>Catégorie</Text>
           <Text style={[styles.locked, { color: colors.text }]}>{lockedCategory.name}</Text>
-          {/* Déplacer un budget d’une catégorie à l’autre reviendrait à en
-              supprimer un et à en créer un autre, et buterait sur l’unicité si
-              la cible en a déjà un. Supprimer puis recréer est explicite. */}
+          {/* Déplacer un budget d’une catégorie à l’autre reviendrait à en supprimer un et à en créer un autre, et buterait sur l’unicité si la cible en a déjà un. Supprimer puis recréer est explicite. */}
           <Text style={[styles.hint, { color: colors.textMuted }]}>
             Pour changer de catégorie, supprimez ce budget et créez-en un autre.
           </Text>
@@ -113,10 +109,7 @@ export function BudgetForm({
 
       {onDelete ? (
         confirmingDelete ? (
-          // Confirmation portée par l'état du composant, pas par Alert.alert :
-          // cette app est aussi testée dans un navigateur, où Alert.alert ne
-          // fait rien — une confirmation qui en dépendrait rendrait la
-          // suppression silencieusement impossible sur le web.
+          // Confirmation portée par l'état du composant, pas par Alert.alert : cette app est aussi testée dans un navigateur, où Alert.alert ne fait rien — une confirmation qui en dépendrait rendrait la suppression silencieusement impossible sur le web.
           <View style={styles.deleteRow}>
             <Button
               title="Confirmer la suppression"

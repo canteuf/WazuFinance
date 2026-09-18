@@ -12,9 +12,7 @@ import { goBackOr } from '@/lib/navigation';
 /**
  * Rejoindre un groupe par code d'invitation (spec section 1, écran 7).
  *
- * `join_group_with_code()` compare le code par égalité stricte, sans
- * normaliser la casse : la saisie passe en minuscules avant l'appel, puisque
- * la base génère toujours du hex minuscule (migration group_management).
+ * `join_group_with_code()` compare le code par égalité stricte, sans normaliser la casse : la saisie passe en minuscules avant l'appel, puisque la base génère toujours du hex minuscule (migration group_management).
  */
 export default function GroupJoinScreen() {
   const colors = useColors();

@@ -9,9 +9,7 @@ import { font, radius, spacing, useColors } from '@/theme/tokens';
 export type { DateFieldProps };
 
 /**
- * Variante native (iOS/Android) : un appui ouvre le sélecteur de date natif
- * dans une modale gérée par `@react-native-community/datetimepicker`, qui
- * n'a pas d'équivalent web — voir date-field.web.tsx pour ce cas.
+ * Variante native (iOS/Android) : un appui ouvre le sélecteur de date natif dans une modale gérée par `@react-native-community/datetimepicker`, qui n'a pas d'équivalent web — voir date-field.web.tsx pour ce cas.
  */
 export function DateField({ value, label, onChange, maximumDate, minimumDate }: DateFieldProps) {
   const colors = useColors();

@@ -46,15 +46,12 @@ export function SavingsGoalForm({
   const [hasTargetDate, setHasTargetDate] = useState(initialValues?.targetDate != null);
   const [targetDate, setTargetDate] = useState(initialValues?.targetDate ?? todayIso());
   const [touched, setTouched] = useState(false);
-  // Deuxième étape de confirmation avant suppression, même motif que
-  // budget-form.tsx : pas de dépendance à Alert.alert, qui ne fait rien sur web.
+  // Deuxième étape de confirmation avant suppression, même motif que budget-form.tsx : pas de dépendance à Alert.alert, qui ne fait rien sur web.
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const targetAmount = parseAmount(targetAmountText);
   const currentAmount = parseNonNegativeAmount(currentAmountText);
-  // target_amount > 0 et current_amount >= 0 sont des contraintes de la
-  // base : les refuser ici évite un aller-retour réseau pour apprendre ce
-  // qu'on sait déjà.
+  // target_amount > 0 et current_amount >= 0 sont des contraintes de la base : les refuser ici évite un aller-retour réseau pour apprendre ce qu'on sait déjà.
   const valid = name.trim() !== '' && targetAmount !== null && currentAmount !== null;
 
   function handleSubmit() {

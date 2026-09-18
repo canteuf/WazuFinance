@@ -13,10 +13,7 @@ import { queryKeys } from '@/lib/query-keys';
 /**
  * Création, modification et suppression d'une transaction.
  *
- * Chaque mutation invalide le préfixe ['transactions'] : ça touche à la fois
- * la liste récente et les détails en cache (queryKeys.transaction), et ça ne
- * dépend pas du groupe actif au moment où la réponse arrive — le mutate()
- * peut avoir été déclenché sous un autre groupe entre-temps.
+ * Chaque mutation invalide le préfixe ['transactions'] : ça touche à la fois la liste récente et les détails en cache (queryKeys.transaction), et ça ne dépend pas du groupe actif au moment où la réponse arrive — le mutate() peut avoir été déclenché sous un autre groupe entre-temps.
  */
 export function useTransactionMutations() {
   const queryClient = useQueryClient();
@@ -30,8 +27,7 @@ export function useTransactionMutations() {
   const createTransaction = useMutation({
     mutationFn: (input: CreateTransactionInput) => create(input),
     onSuccess: async (_data, input) => {
-      // La préférence n'est mémorisée qu'une fois la ligne acceptée par la
-      // base : une saisie refusée ne doit pas changer le défaut.
+      // La préférence n'est mémorisée qu'une fois la ligne acceptée par la base : une saisie refusée ne doit pas changer le défaut.
       await writeLastCategory(input.groupId, input.categoryId);
       invalidate();
     },
@@ -52,9 +48,7 @@ export function useTransactionMutations() {
     createTransaction,
     updateTransaction,
     deleteTransaction,
-    // Deux indicateurs distincts plutôt qu'un seul agrégé : un indicateur
-    // unique faisait tourner le bouton Supprimer pendant l'enregistrement, et
-    // inversement, chaque bouton reflétant l'état de l'autre.
+    // Deux indicateurs distincts plutôt qu'un seul agrégé : un indicateur unique faisait tourner le bouton Supprimer pendant l'enregistrement, et inversement, chaque bouton reflétant l'état de l'autre.
     isSaving: createTransaction.isPending || updateTransaction.isPending,
     isDeleting: deleteTransaction.isPending,
   };

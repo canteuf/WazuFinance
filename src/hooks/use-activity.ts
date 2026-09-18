@@ -10,10 +10,7 @@ export const ACTIVITY_PAGE_SIZE = 30;
 /**
  * Journal du groupe actif.
  *
- * Pas de temps réel : une liste qui bouge sous le doigt pendant qu'on la lit
- * est pire qu'une liste rechargée à l'ouverture. `refetchOnMount: 'always'`
- * passe outre le `staleTime` global de 30 s, pour que chaque ouverture de
- * l'écran montre l'état du moment.
+ * Pas de temps réel : une liste qui bouge sous le doigt pendant qu'on la lit est pire qu'une liste rechargée à l'ouverture. `refetchOnMount: 'always'` passe outre le `staleTime` global de 30 s, pour que chaque ouverture de l'écran montre l'état du moment.
  */
 export function useActivity(): {
   entries: ActivityEntry[];
@@ -49,8 +46,7 @@ export function useActivity(): {
     entries: query.data?.pages.flat() ?? [],
     isLoading: query.isLoading,
     error: query.error,
-    // Même raisonnement que use-transaction-history.ts : seul l'échec du
-    // premier chargement vide l'écran.
+    // Même raisonnement que use-transaction-history.ts : seul l'échec du premier chargement vide l'écran.
     isEmptyError: query.isLoadingError,
     isFetchingNextPage: query.isFetchingNextPage,
     loadMore: () => {
