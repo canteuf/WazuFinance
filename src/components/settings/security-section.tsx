@@ -1,8 +1,13 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { SettingsSection } from '@/components/settings/settings-section';
+import {
+  SettingsDivider,
+  SettingsRow,
+  SettingsSection,
+} from '@/components/settings/settings-section';
 import { Button } from '@/components/ui/button';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { TextField } from '@/components/ui/text-field';
 import { useAuth } from '@/hooks/use-auth';
 import { authErrorMessage, CurrentPasswordError } from '@/lib/auth-errors';
@@ -17,13 +22,15 @@ type Errors = {
 };
 
 /**
- * Changement de mot de passe, replié par défaut : c'est un geste rare, et trois champs ouverts en permanence alourdiraient l'écran pour rien.
+ * Mot de passe et déconnexion.
  *
- * Pas de `useMutation` : comme la connexion et l'inscription, l'action passe par `useAuth()` avec un état local de chargement et d'erreur.
+ * Le changement de mot de passe est absent de la maquette Stitch mais gardé : sans lui, l'app n'offre aucun moyen de le changer. Il prend la forme des autres rangées, et son formulaire se déplie dessous — un geste rare ne mérite pas trois champs ouverts en permanence.
+ *
+ * Pas de `useMutation` : comme la connexion et l'inscription, les deux actions passent par `useAuth()` avec un état local de chargement et d'erreur.
  */
-export function PasswordSection() {
+export function SecuritySection() {
   const colors = useColors();
-  const { changePassword } = useAuth();
+  const { changePassword, signOut } = useAuth();
 
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState('');
@@ -32,12 +39,14 @@ export function PasswordSection() {
   const [errors, setErrors] = useState<Errors>({});
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [signOutError, setSignOutError] = useState<string>();
 
-  function reset() {
+  function close() {
     setCurrent('');
     setNext('');
     setConfirm('');
     setErrors({});
+    setOpen(false);
   }
 
   async function handleSubmit() {
@@ -54,8 +63,7 @@ export function PasswordSection() {
     setSubmitting(true);
     try {
       await changePassword(current, next);
-      reset();
-      setOpen(false);
+      close();
       setDone(true);
     } catch (error) {
       setErrors(
@@ -69,9 +77,24 @@ export function PasswordSection() {
   }
 
   return (
-    <SettingsSection title="Mot de passe">
+    <SettingsSection title="Sécurité & session" flush>
+      <SettingsRow
+        icon="lock-reset"
+        label="Changer le mot de passe"
+        subtitle="Le mot de passe actuel sera redemandé"
+        trailing={done && !open ? <StatusBadge tone="ok" label="Modifié" /> : undefined}
+        onPress={() => {
+          setDone(false);
+          if (open) {
+            close();
+          } else {
+            setOpen(true);
+          }
+        }}
+      />
+
       {open ? (
-        <>
+        <View style={styles.editor}>
           <TextField
             label="Mot de passe actuel"
             value={current}
@@ -111,37 +134,38 @@ export function PasswordSection() {
               loading={submitting}
               onPress={() => void handleSubmit()}
             />
-            <Button
-              title="Annuler"
-              variant="ghost"
-              disabled={submitting}
-              onPress={() => {
-                reset();
-                setOpen(false);
-              }}
-            />
+            <Button title="Annuler" variant="ghost" disabled={submitting} onPress={close} />
           </View>
-        </>
-      ) : (
-        <>
-          {done ? (
-            <Text style={[styles.done, { color: colors.positive }]}>Mot de passe modifié.</Text>
-          ) : null}
-          <Button
-            title="Changer le mot de passe"
-            variant="ghost"
-            onPress={() => {
-              setDone(false);
-              setOpen(true);
-            }}
-          />
-        </>
-      )}
+        </View>
+      ) : null}
+
+      <SettingsDivider />
+
+      {/* Aucune navigation après la déconnexion : Stack.Protected bascule seul sur la connexion. */}
+      <SettingsRow
+        icon="logout"
+        label="Se déconnecter"
+        subtitle="Clôturer la session sur cet appareil"
+        onPress={() => {
+          setSignOutError(undefined);
+          signOut().catch((error: unknown) => setSignOutError(authErrorMessage(error)));
+        }}
+      />
+      {signOutError ? (
+        <Text style={[styles.error, styles.rowError, { color: colors.danger }]}>
+          {signOutError}
+        </Text>
+      ) : null}
     </SettingsSection>
   );
 }
 
 const styles = StyleSheet.create({
+  editor: {
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+  },
   actions: {
     gap: spacing.xs,
   },
@@ -149,8 +173,8 @@ const styles = StyleSheet.create({
     fontFamily: font.medium,
     fontSize: 13,
   },
-  done: {
-    fontFamily: font.semibold,
-    fontSize: 14,
+  rowError: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
   },
 });

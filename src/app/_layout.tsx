@@ -8,11 +8,12 @@ import {
 } from '@expo-google-fonts/bricolage-grotesque';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { useAuth } from '@/hooks/use-auth';
 import { useClearCacheOnUserChange } from '@/hooks/use-clear-cache-on-user-change';
+import { applyThemePreference, readThemePreference } from '@/lib/theme-preference';
 import { AuthProvider } from '@/providers/auth-provider';
 import { QueryProvider } from '@/providers/query-provider';
 
@@ -57,7 +58,17 @@ function RootNavigator() {
 
   // Un échec de chargement ne doit pas laisser l'app derrière son splash : mieux vaut la police système que rien.
   const fontsSettled = fontsLoaded || fontError !== null;
-  const ready = !isLoading && fontsSettled;
+
+  // Le thème choisi est appliqué avant que le splash ne se retire : sinon le premier écran s'afficherait dans le thème du téléphone, puis basculerait sous les yeux de l'utilisateur. readThemePreference() ne lève jamais.
+  const [themeSettled, setThemeSettled] = useState(false);
+  useEffect(() => {
+    void readThemePreference().then((preference) => {
+      applyThemePreference(preference);
+      setThemeSettled(true);
+    });
+  }, []);
+
+  const ready = !isLoading && fontsSettled && themeSettled;
 
   useEffect(() => {
     if (ready) {
