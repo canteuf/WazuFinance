@@ -6,30 +6,39 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { AvatarStack, MemberAvatar } from '@/components/ui/member-avatar';
 import { Screen } from '@/components/ui/screen';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useAuth } from '@/hooks/use-auth';
 import { useGroupInvitation } from '@/hooks/use-group-invitation';
 import { useGroupMembers } from '@/hooks/use-group-members';
 import { useGroupMutations } from '@/hooks/use-group-mutations';
 import { dataErrorMessage } from '@/lib/data-errors';
+import { daysUntilExpiry, formatInvitationCode } from '@/lib/invitation-code';
 import { goBackOr } from '@/lib/navigation';
-import { font, radius, spacing, useColors } from '@/theme/tokens';
+import { font, radius, spacing, useColors, useIsDark } from '@/theme/tokens';
+
+/** Nombre de pastilles dans l'en-tête ; le reste est dit par le « +N » et par la liste dessous. */
+const HEADER_AVATARS = 3;
 
 /**
- * Membres, invitation, exclusion et départ d'un groupe partagé (spec section 1, écran 7).
+ * Détail d'un groupe partagé (écran 7), d'après la maquette Stitch `coloc_gambetta_wazu_finance` : membres, invitation, exclusion et départ.
  *
  * Le nom du groupe vient de useActiveGroup().groups, déjà chargée : cet écran n'ouvre de requête que pour les membres et l'invitation.
+ *
+ * Écarts assumés avec la maquette : pas de menu « ⋮ », qui n'aurait rien à proposer ; pas de badge « Gérant » en plus de « Propriétaire », qui dirait deux fois la même chose ; et la phrase sous « Quitter le groupe » ne promet plus de transmission automatique — elle n'existe pas, un propriétaire doit d'abord exclure les autres membres.
  */
 export default function GroupScreen() {
   const colors = useColors();
+  const isDark = useIsDark();
   const router = useRouter();
   const { id: rawId } = useLocalSearchParams<{ id?: string }>();
   // Garde qui évite une assertion non sûre plutôt que de documenter un cas impossible : cette route n'est jamais ouverte sans id depuis groups.tsx.
   const id = typeof rawId === 'string' ? rawId : '';
   const { session } = useAuth();
   const userId = session?.user.id;
-  const { groups } = useActiveGroup();
+  const { groups, activeGroupId } = useActiveGroup();
   const group = groups.find((item) => item.groupId === id);
 
   const {
@@ -82,7 +91,8 @@ export default function GroupScreen() {
     if (!invitation) {
       return;
     }
-    await Clipboard.setStringAsync(invitation.code);
+    // La forme affichée, pas la forme stockée : c'est celle que l'invité verra dans le message, et l'écran « Rejoindre » la ramène de lui-même à la forme stockée.
+    await Clipboard.setStringAsync(formatInvitationCode(invitation.code));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -96,6 +106,8 @@ export default function GroupScreen() {
     );
   }
 
+  const memberCountLabel = members.length === 1 ? '1 membre' : `${members.length} membres`;
+
   return (
     <Screen align="top">
       <View style={styles.header}>
@@ -105,17 +117,11 @@ export default function GroupScreen() {
           hitSlop={spacing.sm}
           onPress={() => goBackOr(router, '/groups')}
         >
-          <MaterialCommunityIcons name="chevron-left" size={26} color={colors.textMuted} />
+          <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
         </Pressable>
         <View style={styles.headerText}>
-          <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
-            {group?.name ?? '…'}
-          </Text>
-          {members.length > 0 ? (
-            <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-              {members.length === 1 ? '1 membre' : `${members.length} membres`}
-            </Text>
-          ) : null}
+          <Text style={[styles.title, { color: colors.text }]}>Détail du groupe</Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>Gestion du groupe</Text>
         </View>
       </View>
 
@@ -127,126 +133,205 @@ export default function GroupScreen() {
         <ActivityIndicator color={colors.primary} />
       ) : (
         <>
+          <Card style={styles.summary}>
+            <View style={styles.summaryHead}>
+              <MaterialCommunityIcons name="account-group-outline" size={24} color={colors.primary} />
+              <Text style={[styles.groupName, { color: colors.text }]} numberOfLines={2}>
+                {group?.name ?? '…'}
+              </Text>
+              {id === activeGroupId ? <StatusBadge tone="ok" label="Actif" /> : null}
+            </View>
+            <View style={styles.summaryFoot}>
+              <View style={styles.summaryText}>
+                <Text style={[styles.caption, { color: colors.textMuted }]}>Statut & équipe</Text>
+                <Text style={[styles.summaryValue, { color: colors.text }]}>
+                  Budget partagé · {memberCountLabel}
+                </Text>
+              </View>
+              <AvatarStack
+                names={members.slice(0, HEADER_AVATARS).map((member) => member.displayName)}
+                total={members.length}
+              />
+            </View>
+          </Card>
+
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Membres</Text>
+            <View style={styles.sectionHead}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Membres du groupe</Text>
+              <Text style={[styles.caption, { color: colors.textMuted }]}>{memberCountLabel}</Text>
+            </View>
             <Card flush>
-              {members.map((member, index) => (
-                <Fragment key={member.userId}>
-                  {index > 0 ? (
-                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                  ) : null}
-                  <View style={styles.memberRow}>
-                    <View style={[styles.avatar, { backgroundColor: colors.surfaceMuted }]}>
-                      <MaterialCommunityIcons
-                        name="account-outline"
-                        size={18}
-                        color={colors.textMuted}
-                      />
-                    </View>
-                    <View style={styles.memberInfo}>
-                      <Text style={[styles.memberName, { color: colors.text }]} numberOfLines={1}>
-                        {member.displayName}
-                      </Text>
-                      <Text style={[styles.memberRole, { color: colors.textMuted }]}>
-                        {member.role === 'owner' ? 'Propriétaire' : 'Membre'}
-                      </Text>
-                    </View>
-                    {isOwner && member.userId !== userId ? (
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Exclure ${member.displayName}`}
-                        disabled={isRemoving}
-                        onPress={() => handleExclude(member.userId)}
-                      >
-                        <Text style={[styles.exclude, { color: colors.danger }]}>Exclure</Text>
-                      </Pressable>
+              {members.map((member, index) => {
+                const isMe = member.userId === userId;
+                const owner = member.role === 'owner';
+                return (
+                  <Fragment key={member.userId}>
+                    {index > 0 ? (
+                      <View style={[styles.divider, { backgroundColor: colors.border }]} />
                     ) : null}
-                  </View>
-                </Fragment>
-              ))}
+                    <View style={styles.memberRow}>
+                      <MemberAvatar name={member.displayName} size={44} />
+                      <View style={styles.memberInfo}>
+                        <Text style={[styles.memberName, { color: colors.text }]} numberOfLines={1}>
+                          {member.displayName}
+                          {isMe ? (
+                            <Text style={[styles.you, { color: colors.textMuted }]}> (vous)</Text>
+                          ) : null}
+                        </Text>
+                        <View
+                          style={[
+                            styles.roleTag,
+                            {
+                              backgroundColor:
+                                owner && !isDark ? `${colors.positive}33` : colors.surfaceMuted,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.roleLabel,
+                              { color: owner ? colors.positive : colors.text },
+                            ]}
+                          >
+                            {owner ? 'Propriétaire' : 'Membre'}
+                          </Text>
+                        </View>
+                      </View>
+                      {isOwner && !isMe ? (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Exclure ${member.displayName}`}
+                          disabled={isRemoving}
+                          hitSlop={spacing.sm}
+                          onPress={() => handleExclude(member.userId)}
+                        >
+                          <Text style={[styles.exclude, { color: colors.danger }]}>Exclure</Text>
+                        </Pressable>
+                      ) : null}
+                    </View>
+                  </Fragment>
+                );
+              })}
             </Card>
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Invitation</Text>
-            {invitationLoading ? (
-              <ActivityIndicator color={colors.primary} />
-            ) : invitation ? (
-              <>
-                {/* Cadre en pointillés : le code est à recopier ou à transmettre, pas à lire au fil du texte. Le pointillé le désigne comme une valeur détachable, là où un trait plein en aurait fait une carte de plus. */}
-                <View style={[styles.codeBox, { borderColor: colors.border, backgroundColor: colors.surfaceMuted }]}>
-                  <Text style={[styles.code, { color: colors.text }]} selectable>
-                    {invitation.code}
-                  </Text>
+            <View style={styles.sectionHead}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Invitation</Text>
+              <MaterialCommunityIcons name="account-plus-outline" size={20} color={colors.textMuted} />
+            </View>
+            <Card style={styles.invitation}>
+              <Text style={[styles.body, { color: colors.text }]}>
+                Partagez ce code pour inviter quelqu’un à rejoindre le budget commun. Il ne sert
+                qu’une fois.
+              </Text>
+
+              {invitationLoading ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : invitation ? (
+                <>
+                  <View style={[styles.codeBox, { backgroundColor: colors.surfaceMuted }]}>
+                    <Text style={[styles.codeLabel, { color: colors.textMuted }]}>
+                      Code d’invitation
+                    </Text>
+                    <Text style={[styles.code, { color: colors.text }]} selectable>
+                      {formatInvitationCode(invitation.code)}
+                    </Text>
+                    <Text style={[styles.caption, { color: colors.textMuted }]}>
+                      {expiryLabel(daysUntilExpiry(invitation.expiresAt))}
+                    </Text>
+                  </View>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Copier le code d’invitation"
                     onPress={() => void handleCopy()}
-                    style={[styles.copyButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                    style={({ pressed }) => [
+                      styles.copyButton,
+                      { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
+                    ]}
                   >
                     <MaterialCommunityIcons
                       name={copied ? 'check' : 'content-copy'}
-                      size={15}
-                      color={copied ? colors.positive : colors.text}
+                      size={18}
+                      color={colors.primaryText}
                     />
-                    <Text
-                      style={[styles.copyLabel, { color: copied ? colors.positive : colors.text }]}
-                    >
-                      {copied ? 'Copié' : 'Copier'}
+                    <Text style={[styles.copyLabel, { color: colors.primaryText }]}>
+                      {copied ? 'Code copié' : 'Copier le code'}
                     </Text>
                   </Pressable>
-                </View>
-                {isOwner ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    disabled={isGenerating}
-                    onPress={() => {
-                      setActionError(undefined);
-                      regenerate.mutate(invitation.id, {
-                        onError: (error) => setActionError(dataErrorMessage(error)),
-                      });
-                    }}
-                    style={styles.regenerateRow}
-                  >
-                    <Text style={[styles.link, { color: colors.primary }]}>Régénérer le code</Text>
-                  </Pressable>
-                ) : null}
-              </>
-            ) : isOwner ? (
-              <Button
-                title="Générer un code"
-                loading={isGenerating}
-                onPress={() => {
-                  setActionError(undefined);
-                  generate.mutate(undefined, {
-                    onError: (error) => setActionError(dataErrorMessage(error)),
-                  });
-                }}
-              />
-            ) : (
-              <Text style={[styles.message, { color: colors.textMuted }]}>
-                Aucune invitation active.
-              </Text>
-            )}
+                  {isOwner ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      disabled={isGenerating}
+                      onPress={() => {
+                        setActionError(undefined);
+                        regenerate.mutate(invitation.id, {
+                          onError: (error) => setActionError(dataErrorMessage(error)),
+                        });
+                      }}
+                      style={styles.regenerate}
+                    >
+                      <MaterialCommunityIcons name="refresh" size={16} color={colors.textMuted} />
+                      <Text style={[styles.regenerateLabel, { color: colors.textMuted }]}>
+                        Régénérer un nouveau code
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                </>
+              ) : isOwner ? (
+                <Button
+                  title="Générer un code"
+                  loading={isGenerating}
+                  onPress={() => {
+                    setActionError(undefined);
+                    generate.mutate(undefined, {
+                      onError: (error) => setActionError(dataErrorMessage(error)),
+                    });
+                  }}
+                />
+              ) : (
+                <Text style={[styles.caption, { color: colors.textMuted }]}>
+                  Aucune invitation active. Le propriétaire du groupe peut en générer une.
+                </Text>
+              )}
+            </Card>
           </View>
 
           {actionError ? (
             <Text style={[styles.message, { color: colors.danger }]}>{actionError}</Text>
           ) : null}
 
-          <View style={styles.section}>
-            {isOwner && hasOtherMembers ? (
-              <Text style={[styles.message, { color: colors.textMuted }]}>
-                Vous devez d’abord exclure les autres membres pour pouvoir quitter ce groupe.
-              </Text>
-            ) : null}
-            <Button
-              title="Quitter le groupe"
-              variant="ghost"
-              disabled={isOwner && hasOtherMembers}
-              loading={isRemoving}
+          <View style={styles.leave}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ disabled: (isOwner && hasOtherMembers) || isRemoving }}
+              disabled={(isOwner && hasOtherMembers) || isRemoving}
               onPress={handleLeave}
-            />
+              style={({ pressed }) => [
+                styles.leaveButton,
+                {
+                  backgroundColor: colors.surfaceMuted,
+                  opacity: isOwner && hasOtherMembers ? 0.5 : pressed ? 0.8 : 1,
+                },
+              ]}
+            >
+              {isRemoving ? (
+                <ActivityIndicator color={colors.danger} />
+              ) : (
+                <>
+                  <MaterialCommunityIcons name="logout" size={18} color={colors.danger} />
+                  <Text style={[styles.leaveLabel, { color: colors.danger }]}>
+                    Quitter le groupe
+                  </Text>
+                </>
+              )}
+            </Pressable>
+            {/* Une action impossible est expliquée, pas simplement désactivée — et la phrase dit la vraie règle : il n'existe aucune transmission automatique du groupe. */}
+            <Text style={[styles.leaveHint, { color: colors.textMuted }]}>
+              {isOwner && hasOtherMembers
+                ? 'En tant que propriétaire, excluez d’abord les autres membres pour pouvoir quitter ce groupe.'
+                : 'Vos opérations restent dans le groupe après votre départ.'}
+            </Text>
           </View>
         </>
       )}
@@ -254,124 +339,198 @@ export default function GroupScreen() {
   );
 }
 
+function expiryLabel(days: number): string {
+  if (days === 0) {
+    return 'Expire aujourd’hui';
+  }
+  return days === 1 ? 'Expire demain' : `Expire dans ${days} jours`;
+}
+
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.xs,
-  },
-  headerText: {
-    gap: 3,
-    flexShrink: 1,
-  },
-  title: {
-    fontFamily: font.bold,
-    fontSize: 24,
-    letterSpacing: -0.5,
-    flexShrink: 1,
-  },
-  subtitle: {
-    fontFamily: font.regular,
-    fontSize: 12.5,
-  },
-  section: {
-    gap: spacing.sm,
-  },
-  sectionTitle: {
-    fontFamily: font.semibold,
-    fontSize: 11,
-    letterSpacing: 0.95,
-    textTransform: 'uppercase',
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth * 2,
-  },
-  memberRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm + 4,
-    paddingHorizontal: spacing.md,
-  },
-  avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  memberInfo: {
-    gap: 1,
-    // Prend la place restante : « Exclure » garde la sienne.
-    flex: 1,
-  },
-  memberName: {
-    fontFamily: font.semibold,
-    fontSize: 15,
-  },
-  memberRole: {
-    fontFamily: font.regular,
-    fontSize: 12,
-  },
-  exclude: {
-    fontFamily: font.semibold,
-    fontSize: 13,
-    flexShrink: 0,
-  },
-  codeBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm + 4,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderStyle: 'dashed',
-  },
-  code: {
-    fontFamily: font.bold,
-    fontSize: 22,
-    letterSpacing: 3.5,
-    fontVariant: ['tabular-nums'],
-    flexShrink: 1,
-  },
-  copyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    height: 36,
-    paddingHorizontal: spacing.sm + 4,
-    borderRadius: radius.pill,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    flexShrink: 0,
-  },
-  copyLabel: {
-    fontFamily: font.semibold,
-    fontSize: 13,
-  },
-  regenerateRow: {
-    alignSelf: 'flex-start',
-  },
-  link: {
-    fontFamily: font.semibold,
-    fontSize: 13,
-  },
-  message: {
-    fontFamily: font.regular,
-    fontSize: 13,
-  },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
-    padding: spacing.xl,
+    gap: spacing.md,
   },
   errorTitle: {
+    fontFamily: font.semibold,
+    fontSize: 16,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  headerText: {
+    flexShrink: 1,
+  },
+  title: {
+    fontFamily: font.black,
+    fontSize: 24,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontFamily: font.regular,
+    fontSize: 13,
+  },
+  summary: {
+    gap: spacing.md,
+  },
+  summaryHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  groupName: {
+    flex: 1,
+    fontFamily: font.bold,
+    fontSize: 20,
+    letterSpacing: -0.3,
+  },
+  summaryFoot: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  summaryText: {
+    gap: 2,
+    flexShrink: 1,
+  },
+  summaryValue: {
+    fontFamily: font.bold,
+    fontSize: 16,
+  },
+  section: {
+    gap: spacing.sm + 2,
+  },
+  sectionHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  sectionTitle: {
+    fontFamily: font.bold,
+    fontSize: 18,
+    letterSpacing: -0.2,
+  },
+  caption: {
+    fontFamily: font.regular,
+    fontSize: 12.5,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth * 2,
+    marginHorizontal: spacing.md,
+  },
+  memberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  memberInfo: {
+    flex: 1,
+    gap: 4,
+    alignItems: 'flex-start',
+  },
+  memberName: {
+    fontFamily: font.bold,
+    fontSize: 16,
+  },
+  you: {
+    fontFamily: font.regular,
+    fontSize: 13,
+  },
+  roleTag: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.sm,
+  },
+  roleLabel: {
+    fontFamily: font.semibold,
+    fontSize: 11.5,
+  },
+  exclude: {
+    fontFamily: font.bold,
+    fontSize: 14,
+  },
+  invitation: {
+    gap: spacing.md,
+  },
+  body: {
+    fontFamily: font.regular,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  codeBox: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+  },
+  codeLabel: {
+    fontFamily: font.semibold,
+    fontSize: 11.5,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  code: {
+    fontFamily: font.black,
+    fontSize: 30,
+    letterSpacing: 3,
+    fontVariant: ['tabular-nums'],
+  },
+  copyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    minHeight: 52,
+    borderRadius: radius.md,
+  },
+  copyLabel: {
+    fontFamily: font.bold,
+    fontSize: 15,
+  },
+  regenerate: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs + 2,
+    alignSelf: 'center',
+    paddingVertical: spacing.xs,
+  },
+  regenerateLabel: {
     fontFamily: font.medium,
     fontSize: 14,
+  },
+  message: {
+    fontFamily: font.medium,
+    fontSize: 14,
+  },
+  leave: {
+    gap: spacing.sm,
+  },
+  leaveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    minHeight: 52,
+    borderRadius: radius.md,
+  },
+  leaveLabel: {
+    fontFamily: font.bold,
+    fontSize: 15,
+  },
+  leaveHint: {
+    fontFamily: font.regular,
+    fontSize: 12.5,
     textAlign: 'center',
+    lineHeight: 18,
   },
 });

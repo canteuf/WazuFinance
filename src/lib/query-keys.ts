@@ -8,6 +8,8 @@ import type { TransactionFilters } from '@/data/transactions';
  */
 export const queryKeys = {
   memberships: () => ['memberships'] as const,
+  // Sous ['memberships'] : une adhésion créée, rejointe ou retirée change le nombre de membres, et les mutations de groupe invalident déjà ce préfixe. Un plafond modifié, lui, ne l'atteint pas ; l'écran recharge donc l'aperçu à chaque ouverture plutôt que d'apprendre aux mutations de budget qu'il existe.
+  groupOverviews: () => ['memberships', 'overviews'] as const,
   categories: (groupId: string) => ['categories', groupId] as const,
   transactions: () => ['transactions'] as const,
   // Hors de ['transactions'] à dessein, contrairement à periodSummary et categoryBreakdown : un budget n'est pas dérivé des transactions. L'y nicher ferait recharger les plafonds à chaque saisie de dépense.

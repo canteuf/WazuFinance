@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useGroupMutations } from '@/hooks/use-group-mutations';
 import { dataErrorMessage } from '@/lib/data-errors';
+import { normalizeInvitationCode } from '@/lib/invitation-code';
 import { goBackOr } from '@/lib/navigation';
 import { font, radius, spacing, useColors } from '@/theme/tokens';
 
@@ -32,7 +33,8 @@ export default function GroupJoinScreen() {
     if (!valid) {
       return;
     }
-    joinGroup.mutate(code.trim().toLowerCase(), {
+    // Minuscules et sans tiret : le code s'affiche « A3F0-9B12 » chez le propriétaire, mais la base stocke « a3f09b12 » et compare le texte exact.
+    joinGroup.mutate(normalizeInvitationCode(code), {
       onSuccess: (groupId) => {
         setActiveGroupId(groupId);
         goBackOr(router, '/groups');

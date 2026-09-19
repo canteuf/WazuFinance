@@ -471,6 +471,16 @@ export type Database = {
       }
       create_shared_group: { Args: { name: string }; Returns: string }
       delete_own_account: { Args: never; Returns: undefined }
+      group_overviews: {
+        Args: never
+        Returns: {
+          group_id: string
+          member_count: number
+          member_names: string[]
+          monthly_budget: number
+          shared_monthly_total: number
+        }[]
+      }
       is_group_member: { Args: { gid: string }; Returns: boolean }
       is_group_owner: { Args: { gid: string }; Returns: boolean }
       join_group_with_code: {

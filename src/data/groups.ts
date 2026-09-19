@@ -45,6 +45,48 @@ export async function listMemberships(userId: string): Promise<MembershipSummary
     .sort((a, b) => Number(b.isPersonal) - Number(a.isPersonal));
 }
 
+export type GroupOverview = {
+  memberCount: number;
+  /** Total des plafonds mensuels du groupe, sommé par Postgres. */
+  monthlyBudget: number;
+  /** Les trois premiers membres arrivés ; `memberCount` dit s'il y en a d'autres. */
+  memberNames: string[];
+};
+
+export type GroupOverviews = {
+  byGroup: Map<string, GroupOverview>;
+  /** Total des plafonds mensuels des groupes partagés, compte personnel exclu. */
+  sharedMonthlyTotal: number;
+};
+
+/**
+ * Chiffres de l'écran « Mes groupes », en un appel pour tous les groupes.
+ *
+ * Toutes les sommes sont faites par `group_overviews()` sur du numeric : `Number()` n'est appliqué qu'une fois par total, jamais dans une boucle d'addition.
+ */
+export async function getGroupOverviews(): Promise<GroupOverviews> {
+  const { data, error } = await supabase.rpc('group_overviews');
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    byGroup: new Map(
+      data.map((row) => [
+        row.group_id,
+        {
+          memberCount: row.member_count,
+          monthlyBudget: Number(row.monthly_budget),
+          memberNames: row.member_names,
+        },
+      ])
+    ),
+    // Répété sur chaque ligne par la fonction de fenêtre ; zéro quand l'appelant n'a aucune ligne, ce qui n'arrive pas en pratique puisque tout utilisateur a son compte personnel.
+    sharedMonthlyTotal: data.length > 0 ? Number(data[0].shared_monthly_total) : 0,
+  };
+}
+
 export type GroupMember = {
   userId: string;
   displayName: string;
