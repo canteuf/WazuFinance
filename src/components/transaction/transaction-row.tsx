@@ -23,10 +23,15 @@ import {
 export function TransactionRow({
   transaction,
   inGroup = false,
+  ledger = false,
 }: {
   transaction: TransactionWithCategory;
   /** Vrai quand la ligne vit dans une carte partagée avec ses voisines : elle n'a alors ni fond, ni relief, ni rayon propres, c'est la carte qui les porte. */
   inGroup?: boolean;
+  /**
+   * Disposition « livre de comptes » de l'historique : le montant passe sous le titre, avec « Débit » ou « Crédit » en regard, et la date disparaît de la ligne puisque l'en-tête de jour la porte déjà.
+   */
+  ledger?: boolean;
 }) {
   const colors = useColors();
   const elevation = useElevation();
@@ -49,16 +54,18 @@ export function TransactionRow({
   const showCategoryBadge = title !== categoryName;
 
   // « aujourd'hui · modifié ». « modifié » en toutes lettres, jamais une icône seule. Le détail — qui, quoi, avant, après — est dans l'écran Activité.
-  const meta = [formatOccurredOn(transaction.occurred_on), edited ? 'modifié' : null]
+  const meta = [ledger ? null : formatOccurredOn(transaction.occurred_on), edited ? 'modifié' : null]
     .filter((part): part is string => Boolean(part))
     .join(' · ');
+  const income = transaction.type === 'income';
 
   // Même nœud dans les deux dispositions : sous le nom quand on empile, en bout de ligne sinon.
   const amount = (
     <Text
       style={[
         styles.amount,
-        stacked && styles.amountStacked,
+        stacked && !ledger && styles.amountStacked,
+        ledger && styles.amountLedger,
         { color: transaction.type === 'income' ? colors.positive : colors.text },
       ]}
     >
@@ -75,12 +82,12 @@ export function TransactionRow({
         // Aplati : <Link asChild> transmet le style à son enfant et avertit s'il reçoit un tableau.
         style={StyleSheet.flatten([
           styles.row,
-          stacked && styles.rowStacked,
+          (stacked || ledger) && styles.rowStacked,
           inGroup ? null : elevation.card,
           inGroup ? null : { backgroundColor: colors.surface },
         ])}
       >
-        <View style={[styles.glyph, { backgroundColor: tone.surface }]}>
+        <View style={[styles.glyph, ledger && styles.glyphLedger, { backgroundColor: tone.surface }]}>
           <MaterialCommunityIcons
             // Le nom vient de la base ; @expo/vector-icons le type de façon stricte, d'où la conversion explicite.
             name={icon as React.ComponentProps<typeof MaterialCommunityIcons>['name']}
@@ -101,14 +108,26 @@ export function TransactionRow({
                 </Text>
               </View>
             ) : null}
-            <Text numberOfLines={1} style={[styles.note, { color: colors.textMuted }]}>
-              {meta}
-            </Text>
+            {meta ? (
+              <Text numberOfLines={1} style={[styles.note, { color: colors.textMuted }]}>
+                {meta}
+              </Text>
+            ) : null}
           </View>
-          {stacked ? amount : null}
+          {ledger ? (
+            <View style={styles.ledgerAmountRow}>
+              {amount}
+              {/* Le mot double la couleur du montant : un lecteur daltonien ou d'écran distingue un crédit d'un débit sans comparer deux verts. */}
+              <Text style={[styles.direction, { color: income ? colors.positive : colors.textMuted }]}>
+                {income ? 'Crédit' : 'Débit'}
+              </Text>
+            </View>
+          ) : stacked ? (
+            amount
+          ) : null}
         </View>
 
-        {stacked ? null : amount}
+        {stacked || ledger ? null : amount}
       </Pressable>
     </Link>
   );
@@ -181,5 +200,26 @@ const styles = StyleSheet.create({
   },
   amountStacked: {
     marginTop: 2,
+  },
+  amountLedger: {
+    fontFamily: font.bold,
+    fontSize: 19,
+    letterSpacing: -0.3,
+  },
+  glyphLedger: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.md,
+  },
+  ledgerAmountRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    marginTop: spacing.xs + 2,
+  },
+  direction: {
+    fontFamily: font.regular,
+    fontSize: 13,
   },
 });

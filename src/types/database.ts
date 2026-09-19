@@ -470,7 +470,32 @@ export type Database = {
         }[]
       }
       create_shared_group: { Args: { name: string }; Returns: string }
+      daily_totals: {
+        Args: {
+          p_category_id?: string
+          p_from?: string
+          p_group_id: string
+          p_search?: string
+          p_to?: string
+          p_type?: Database["public"]["Enums"]["transaction_type"]
+        }
+        Returns: {
+          occurred_on: string
+          total: number
+          tx_count: number
+        }[]
+      }
       delete_own_account: { Args: never; Returns: undefined }
+      frequent_amounts: {
+        Args: {
+          p_group_id: string
+          p_limit?: number
+          p_type: Database["public"]["Enums"]["transaction_type"]
+        }
+        Returns: {
+          amount: number
+        }[]
+      }
       group_overviews: {
         Args: never
         Returns: {

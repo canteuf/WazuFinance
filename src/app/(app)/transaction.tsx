@@ -33,7 +33,12 @@ export default function TransactionScreen() {
   const { height: windowHeight } = useWindowDimensions();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { session } = useAuth();
-  const { activeGroupId, isLoading: groupLoading, error: groupError } = useActiveGroup();
+  const {
+    activeGroupId,
+    activeGroup,
+    isLoading: groupLoading,
+    error: groupError,
+  } = useActiveGroup();
   const { createTransaction, updateTransaction, deleteTransaction, isSaving, isDeleting } =
     useTransactionMutations();
   const [errorText, setErrorText] = useState<string>();
@@ -131,18 +136,23 @@ export default function TransactionScreen() {
     <View style={[styles.sheet, { backgroundColor: colors.background, maxHeight: windowHeight * 0.92 }]}>
       {/* Une formSheet n'accepte pas de header natif : le titre et la fermeture sont du contenu ordinaire (spec, contrainte Android). Sur le web, la présentation retombe sur un écran plein sans navigation native : ce bouton est la seule sortie hors du retour navigateur. */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>
-          {typeof id === 'string' ? 'Modifier l’opération' : 'Nouvelle opération'}
-        </Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Fermer"
+          accessibilityLabel="Annuler"
           hitSlop={spacing.sm}
           onPress={() => goBackOr(router, '/')}
-          style={styles.closeButton}
+          style={styles.cancel}
         >
-          <MaterialCommunityIcons name="close" size={20} color={colors.textMuted} />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={colors.text} />
+          <Text style={[styles.cancelLabel, { color: colors.text }]}>Annuler</Text>
         </Pressable>
+      </View>
+
+      <View style={styles.titleBlock}>
+        <Text style={[styles.eyebrow, { color: colors.textMuted }]}>Carnet de comptes</Text>
+        <Text style={[styles.title, { color: colors.text }]}>
+          {typeof id === 'string' ? 'Modifier l’écriture' : 'Nouvelle écriture'}
+        </Text>
       </View>
 
       <ScrollView
@@ -152,8 +162,9 @@ export default function TransactionScreen() {
       >
         <TransactionForm
           groupId={activeGroupId}
+          groupName={activeGroup?.name ?? ''}
           initialValues={initialValues}
-          submitLabel={typeof id === 'string' ? 'Enregistrer' : 'Ajouter'}
+          submitLabel="Enregistrer l’écriture"
           submitting={isSaving}
           deleting={isDeleting}
           errorText={errorText}
@@ -170,12 +181,29 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingTop: spacing.lg,
     paddingHorizontal: spacing.lg,
   },
-  closeButton: {
-    padding: spacing.xs,
+  cancel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  cancelLabel: {
+    fontFamily: font.semibold,
+    fontSize: 16,
+  },
+  titleBlock: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  eyebrow: {
+    fontFamily: font.semibold,
+    fontSize: 12,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
   scrollContent: {
     flexGrow: 1,
@@ -188,10 +216,10 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   title: {
-    flexShrink: 1,
-    fontFamily: font.bold,
-    fontSize: 18,
-    letterSpacing: -0.2,
+    fontFamily: font.black,
+    fontSize: 28,
+    letterSpacing: -0.7,
+    textAlign: 'center',
   },
   errorTitle: {
     fontFamily: font.medium,

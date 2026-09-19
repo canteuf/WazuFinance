@@ -1,3 +1,4 @@
+import { containsPattern } from '@/lib/search';
 import { supabase } from '@/lib/supabase';
 import type { Tables } from '@/types/database';
 
@@ -132,6 +133,8 @@ export type TransactionFilters = {
   to: string | null;
   categoryId: string | null;
   type: Tables<'transactions'>['type'] | null;
+  /** Déjà passé par `normalizeSearch` : `null` quand il n'y a rien à chercher. */
+  search: string | null;
 };
 
 /** Dernière ligne rendue par la page précédente. */
@@ -171,6 +174,10 @@ export async function listPage(
   if (filters.type !== null) {
     query = query.eq('type', filters.type);
   }
+  if (filters.search !== null) {
+    // Jokers échappés : même sens que le `strpos` de daily_totals(), pour que la liste et les totaux par jour décrivent les mêmes lignes.
+    query = query.ilike('note', containsPattern(filters.search));
+  }
 
   if (cursor !== null) {
     // PostgREST n'exprime pas la comparaison de couples `(a, b) < (c, d)` : ce `or` produit le même prédicat. Les deux valeurs viennent d'une ligne déjà renvoyée par le serveur, jamais d'une saisie.
@@ -190,4 +197,55 @@ export async function listPage(
   }
 
   return data;
+}
+
+export type DailyTotal = {
+  /** Solde signé du jour : entrées positives, sorties négatives. Sommé par Postgres. */
+  total: number;
+  count: number;
+};
+
+/**
+ * Totaux par jour pour les filtres affichés, sur toutes les opérations du jour — chargées dans la liste ou non : un jour à cheval sur deux pages garde un total juste.
+ *
+ * Indexés par date ISO, comme `occurred_on` : l'écran les rapproche des en-têtes de jour sans rien recalculer.
+ */
+export async function getDailyTotals(
+  groupId: string,
+  filters: TransactionFilters
+): Promise<Map<string, DailyTotal>> {
+  const { data, error } = await supabase.rpc('daily_totals', {
+    p_group_id: groupId,
+    // `undefined` et non `null` : l'argument est alors omis, et la valeur par défaut de la fonction — pas de filtre — s'applique.
+    p_from: filters.from ?? undefined,
+    p_to: filters.to ?? undefined,
+    p_type: filters.type ?? undefined,
+    p_category_id: filters.categoryId ?? undefined,
+    p_search: filters.search ?? undefined,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return new Map(
+    data.map((row) => [row.occurred_on, { total: Number(row.total), count: row.tx_count }])
+  );
+}
+
+/** Montants que l'utilisateur saisit le plus souvent dans ce groupe pour ce type, du plus fréquent au moins fréquent. */
+export async function getFrequentAmounts(
+  groupId: string,
+  type: Tables<'transactions'>['type']
+): Promise<number[]> {
+  const { data, error } = await supabase.rpc('frequent_amounts', {
+    p_group_id: groupId,
+    p_type: type,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data.map((row) => Number(row.amount));
 }

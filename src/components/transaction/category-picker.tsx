@@ -24,9 +24,9 @@ export function CategoryPicker({ categories, selectedId, onSelect }: CategoryPic
   // useWindowDimensions() re-rend quand le réglage système change, à la différence de PixelRatio.getFontScale(), lu une fois pour toutes.
   const { fontScale } = useWindowDimensions();
 
-  const itemWidth = 84 * fontScale;
-  const iconSize = 22 * fontScale;
-  const badgeSize = 15 * fontScale;
+  // Pastilles horizontales à largeur de contenu, d'après la maquette : l'icône à gauche du nom plutôt qu'au-dessus. Plus de largeur fixe à dériver de l'échelle de police — la pastille s'élargit avec son libellé, et la grille passe à la ligne d'elle-même.
+  const iconSize = 18 * Math.min(fontScale, 1.5);
+  const badgeSize = 14 * Math.min(fontScale, 1.5);
 
   return (
     <View style={styles.grid}>
@@ -44,34 +44,25 @@ export function CategoryPicker({ categories, selectedId, onSelect }: CategoryPic
             style={[
               styles.item,
               {
-                width: itemWidth,
                 backgroundColor: selected ? tone.tint : tone.surface,
                 borderColor: selected ? tone.tint : 'transparent',
               },
             ]}
           >
-            {selected ? (
-              // La sélection ne doit pas reposer sur la seule couleur : ce badge donne un repère de forme, indépendant du sens de la couleur.
-              <MaterialCommunityIcons
-                name="check-circle"
-                size={badgeSize}
-                color={colors.surface}
-                style={styles.badge}
-                accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants"
-              />
-            ) : null}
-
             <MaterialCommunityIcons
-              // Le nom vient de la base ; @expo/vector-icons le type de façon stricte, d'où la conversion explicite.
-              name={category.icon as React.ComponentProps<typeof MaterialCommunityIcons>['name']}
-              size={iconSize}
+              // Sélectionnée, l'icône de la catégorie cède la place à une coche : la sélection ne repose pas sur la seule couleur, et la coche donne un repère de forme.
+              name={
+                selected
+                  ? 'check-circle'
+                  : // Le nom vient de la base ; @expo/vector-icons le type de façon stricte, d'où la conversion explicite.
+                    (category.icon as React.ComponentProps<typeof MaterialCommunityIcons>['name'])
+              }
+              size={selected ? badgeSize + 4 : iconSize}
               color={selected ? colors.surface : tone.tint}
             />
             <Text
-              // Deux lignes plutôt qu'une : filet de sécurité pour les libellés les plus longs du seed (« Remboursement », « Autres revenus ») aux échelles où même une tuile élargie ne suffit plus.
-              numberOfLines={2}
-              style={[styles.label, { color: selected ? colors.surface : colors.textMuted }]}
+              numberOfLines={1}
+              style={[styles.label, { color: selected ? colors.surface : colors.text }]}
             >
               {category.name}
             </Text>
@@ -89,23 +80,19 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   item: {
-    paddingVertical: spacing.sm + 2,
-    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md - 2,
     borderWidth: StyleSheet.hairlineWidth * 2,
     // Le rayon des petites puces du système, comme les badges de catégorie de l'historique.
-    borderRadius: radius.sm,
+    borderRadius: radius.sm + 2,
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    position: 'relative',
-  },
-  badge: {
-    position: 'absolute',
-    top: 3,
-    right: 3,
+    gap: spacing.sm,
+    minHeight: 44,
   },
   label: {
     fontFamily: font.semibold,
-    fontSize: 11,
-    textAlign: 'center',
+    fontSize: 14,
+    flexShrink: 1,
   },
 });

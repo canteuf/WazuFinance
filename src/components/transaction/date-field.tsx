@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
@@ -21,10 +22,11 @@ export function DateField({ value, label, onChange, maximumDate, minimumDate }: 
         accessibilityRole="button"
         accessibilityLabel={`Date : ${label}`}
         onPress={() => setOpen(true)}
-        style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        style={[styles.row, { backgroundColor: colors.surfaceMuted, borderColor: colors.border }]}
       >
+        <MaterialCommunityIcons name="calendar-month-outline" size={20} color={colors.primary} />
         <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
-        <Text style={[styles.chevron, { color: colors.textMuted }]}>›</Text>
+        <Text style={[styles.action, { color: colors.textMuted }]}>Modifier</Text>
       </Pressable>
 
       {open ? (
@@ -49,17 +51,19 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: spacing.sm + 2,
     borderWidth: StyleSheet.hairlineWidth * 2,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
+    minHeight: 54,
   },
   label: {
-    fontFamily: font.semibold,
+    flex: 1,
+    fontFamily: font.bold,
     fontSize: 15,
   },
-  chevron: {
-    fontSize: 20,
+  action: {
+    fontFamily: font.semibold,
+    fontSize: 13,
   },
 });
