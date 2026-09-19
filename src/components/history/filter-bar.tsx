@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontFamily: font.regular,
-    fontSize: 15,
+    fontSize: 17,
     paddingVertical: spacing.sm,
   },
   row: {
@@ -278,6 +278,6 @@ const styles = StyleSheet.create({
   },
   chipLabel: {
     fontFamily: font.semibold,
-    fontSize: 14,
+    fontSize: 16,
   },
 });

@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     fontFamily: font.semibold,
-    fontSize: 16,
+    fontSize: 18,
   },
   header: {
     flexDirection: 'row',
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: font.regular,
-    fontSize: 13,
+    fontSize: 15,
   },
   summary: {
     gap: spacing.md,
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
   groupName: {
     flex: 1,
     fontFamily: font.bold,
-    fontSize: 20,
+    fontSize: 22,
     letterSpacing: -0.3,
   },
   summaryFoot: {
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
   },
   summaryValue: {
     fontFamily: font.bold,
-    fontSize: 16,
+    fontSize: 18,
   },
   section: {
     gap: spacing.sm + 2,
@@ -414,12 +414,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: font.bold,
-    fontSize: 18,
+    fontSize: 20,
     letterSpacing: -0.2,
   },
   caption: {
     fontFamily: font.regular,
-    fontSize: 12.5,
+    fontSize: 14.5,
   },
   divider: {
     height: StyleSheet.hairlineWidth * 2,
@@ -438,11 +438,11 @@ const styles = StyleSheet.create({
   },
   memberName: {
     fontFamily: font.bold,
-    fontSize: 16,
+    fontSize: 18,
   },
   you: {
     fontFamily: font.regular,
-    fontSize: 13,
+    fontSize: 15,
   },
   roleTag: {
     paddingHorizontal: spacing.sm,
@@ -451,19 +451,19 @@ const styles = StyleSheet.create({
   },
   roleLabel: {
     fontFamily: font.semibold,
-    fontSize: 11.5,
+    fontSize: 13.5,
   },
   exclude: {
     fontFamily: font.bold,
-    fontSize: 14,
+    fontSize: 16,
   },
   invitation: {
     gap: spacing.md,
   },
   body: {
     fontFamily: font.regular,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 16,
+    lineHeight: 22,
   },
   codeBox: {
     alignItems: 'center',
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
   },
   codeLabel: {
     fontFamily: font.semibold,
-    fontSize: 11.5,
+    fontSize: 13.5,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
   },
   copyLabel: {
     fontFamily: font.bold,
-    fontSize: 15,
+    fontSize: 17,
   },
   regenerate: {
     flexDirection: 'row',
@@ -506,11 +506,11 @@ const styles = StyleSheet.create({
   },
   regenerateLabel: {
     fontFamily: font.medium,
-    fontSize: 14,
+    fontSize: 16,
   },
   message: {
     fontFamily: font.medium,
-    fontSize: 14,
+    fontSize: 16,
   },
   leave: {
     gap: spacing.sm,
@@ -525,12 +525,12 @@ const styles = StyleSheet.create({
   },
   leaveLabel: {
     fontFamily: font.bold,
-    fontSize: 15,
+    fontSize: 17,
   },
   leaveHint: {
     fontFamily: font.regular,
-    fontSize: 12.5,
+    fontSize: 14.5,
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 20,
   },
 });

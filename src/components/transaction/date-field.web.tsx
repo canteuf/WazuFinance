@@ -73,10 +73,10 @@ const styles = StyleSheet.create({
   label: {
     flex: 1,
     fontFamily: font.bold,
-    fontSize: 15,
+    fontSize: 17,
   },
   action: {
     fontFamily: font.semibold,
-    fontSize: 13,
+    fontSize: 15,
   },
 });

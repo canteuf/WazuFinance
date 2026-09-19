@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   },
   amountLabel: {
     fontFamily: font.medium,
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
   },
   field: {
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     fontFamily: font.semibold,
-    fontSize: 12,
+    fontSize: 14,
     letterSpacing: 1.1,
     textTransform: 'uppercase',
   },
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     minHeight: 54,
-    fontSize: 16,
+    fontSize: 18,
   },
   icons: {
     flexDirection: 'row',
@@ -266,12 +266,12 @@ const styles = StyleSheet.create({
   inlineInput: {
     flex: 1,
     fontFamily: font.bold,
-    fontSize: 18,
+    fontSize: 20,
     fontVariant: ['tabular-nums'],
   },
   currency: {
     fontFamily: font.bold,
-    fontSize: 18,
+    fontSize: 20,
   },
   toggleRow: {
     flexDirection: 'row',
@@ -289,10 +289,10 @@ const styles = StyleSheet.create({
   },
   toggleLabel: {
     fontFamily: font.medium,
-    fontSize: 15,
+    fontSize: 17,
   },
   error: {
     fontFamily: font.medium,
-    fontSize: 13,
+    fontSize: 15,
   },
 });

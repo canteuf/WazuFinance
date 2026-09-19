@@ -59,8 +59,8 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: font.semibold,
-    fontSize: 11,
-    lineHeight: 14,
+    fontSize: 13,
+    lineHeight: 16,
     flexShrink: 1,
   },
 });

@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   },
   error: {
     fontFamily: font.medium,
-    fontSize: 13,
+    fontSize: 15,
   },
   rowError: {
     paddingHorizontal: spacing.md,

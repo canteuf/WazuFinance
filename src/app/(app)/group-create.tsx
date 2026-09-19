@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: font.bold,
-    fontSize: 17,
+    fontSize: 19,
     letterSpacing: -0.2,
   },
   closeButton: {
@@ -105,10 +105,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,
-    fontSize: 16,
+    fontSize: 18,
   },
   error: {
     fontFamily: font.medium,
-    fontSize: 13,
+    fontSize: 15,
   },
 });

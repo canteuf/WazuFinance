@@ -222,13 +222,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: font.bold,
-    fontSize: 18,
+    fontSize: 20,
     letterSpacing: -0.2,
   },
   body: {
     fontFamily: font.regular,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 16,
+    lineHeight: 22,
   },
   link: {
     fontFamily: font.semibold,
@@ -246,10 +246,10 @@ const styles = StyleSheet.create({
   },
   dangerLabel: {
     fontFamily: font.bold,
-    fontSize: 15,
+    fontSize: 17,
   },
   error: {
     fontFamily: font.medium,
-    fontSize: 13,
+    fontSize: 15,
   },
 });

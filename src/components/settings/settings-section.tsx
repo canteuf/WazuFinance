@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: font.semibold,
-    fontSize: 12,
+    fontSize: 14,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
@@ -158,11 +158,11 @@ const styles = StyleSheet.create({
   },
   caption: {
     fontFamily: font.regular,
-    fontSize: 13,
+    fontSize: 15,
   },
   value: {
     fontFamily: font.bold,
-    fontSize: 16,
+    fontSize: 18,
     letterSpacing: -0.2,
   },
   plain: {

@@ -178,11 +178,11 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: font.regular,
-    fontSize: 15,
+    fontSize: 17,
     textAlign: 'center',
   },
   message: {
     fontFamily: font.medium,
-    fontSize: 14,
+    fontSize: 16,
   },
 });

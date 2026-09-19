@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   },
   backLabel: {
     fontFamily: font.semibold,
-    fontSize: 16,
+    fontSize: 18,
   },
   header: {
     gap: spacing.xs,
@@ -80,11 +80,11 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: font.regular,
-    fontSize: 14,
+    fontSize: 16,
   },
   footer: {
     fontFamily: font.regular,
-    fontSize: 12,
+    fontSize: 14,
     textAlign: 'center',
   },
 });

@@ -173,13 +173,13 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontFamily: font.semibold,
-    fontSize: 17,
+    fontSize: 19,
     letterSpacing: -0.2,
     flexShrink: 1,
   },
   total: {
     fontFamily: font.medium,
-    fontSize: 12,
+    fontSize: 14,
     fontVariant: ['tabular-nums'],
     flexShrink: 0,
   },
@@ -221,14 +221,14 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: font.regular,
-    fontSize: 14,
+    fontSize: 16,
     letterSpacing: -0.07,
     // Cède au montant plutôt que de le pousser hors de l'écran à fort grossissement de police.
     flexShrink: 1,
   },
   amount: {
     fontFamily: font.bold,
-    fontSize: 13,
+    fontSize: 15,
     letterSpacing: -0.13,
     fontVariant: ['tabular-nums'],
     flexShrink: 0,
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   },
   error: {
     fontFamily: font.medium,
-    fontSize: 14,
+    fontSize: 16,
   },
   loader: {
     alignSelf: 'flex-start',

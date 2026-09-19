@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: font.bold,
-    fontSize: 15.5,
+    fontSize: 17.5,
     letterSpacing: -0.1,
     // Centre le texte quand le libellé se replie sur deux lignes.
     textAlign: 'center',

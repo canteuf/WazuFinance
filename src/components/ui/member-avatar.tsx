@@ -130,6 +130,6 @@ const styles = StyleSheet.create({
   },
   moreLabel: {
     fontFamily: font.semibold,
-    fontSize: 11,
+    fontSize: 13,
   },
 });

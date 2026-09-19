@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   },
   closeLabel: {
     fontFamily: font.semibold,
-    fontSize: 16,
+    fontSize: 18,
   },
   titleBlock: {
     alignItems: 'center',
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     fontFamily: font.semibold,
-    fontSize: 12,
+    fontSize: 14,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
@@ -297,17 +297,17 @@ const styles = StyleSheet.create({
   },
   statusCurrent: {
     fontFamily: font.bold,
-    fontSize: 22,
+    fontSize: 24,
     fontVariant: ['tabular-nums'],
   },
   statusTarget: {
     fontFamily: font.regular,
-    fontSize: 15,
+    fontSize: 17,
     fontVariant: ['tabular-nums'],
   },
   section: {
     fontFamily: font.bold,
-    fontSize: 13,
+    fontSize: 15,
     letterSpacing: 1,
     textTransform: 'uppercase',
     marginTop: spacing.sm,
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     fontFamily: font.medium,
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
   },
 });

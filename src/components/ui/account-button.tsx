@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
   },
   initial: {
     fontFamily: font.bold,
-    fontSize: 15,
-    lineHeight: 19,
+    fontSize: 17,
+    lineHeight: 21,
   },
 });

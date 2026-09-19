@@ -129,13 +129,13 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontFamily: font.semibold,
-    fontSize: 17,
+    fontSize: 19,
     letterSpacing: -0.2,
     flexShrink: 1,
   },
   link: {
     fontFamily: font.semibold,
-    fontSize: 13,
+    fontSize: 15,
     flexShrink: 0,
   },
   rows: {
@@ -157,23 +157,23 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: font.semibold,
-    fontSize: 14,
+    fontSize: 16,
     flexShrink: 1,
   },
   amounts: {
     fontFamily: font.semibold,
-    fontSize: 13,
+    fontSize: 15,
     fontVariant: ['tabular-nums'],
     flexShrink: 0,
   },
   percent: {
     fontFamily: font.medium,
-    fontSize: 11.5,
+    fontSize: 13.5,
     fontVariant: ['tabular-nums'],
   },
   detail: {
     fontFamily: font.medium,
-    fontSize: 13,
+    fontSize: 15,
     flexShrink: 1,
   },
 });

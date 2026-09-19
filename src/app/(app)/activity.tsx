@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: font.regular,
-    fontSize: 12.5,
+    fontSize: 14.5,
   },
   content: {
     paddingHorizontal: spacing.lg,
@@ -252,12 +252,12 @@ const styles = StyleSheet.create({
   },
   sentence: {
     fontFamily: font.medium,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 16,
+    lineHeight: 22,
   },
   time: {
     fontFamily: font.regular,
-    fontSize: 12,
+    fontSize: 14,
   },
   centered: {
     alignItems: 'center',
@@ -267,12 +267,12 @@ const styles = StyleSheet.create({
   },
   empty: {
     fontFamily: font.regular,
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
   },
   error: {
     fontFamily: font.medium,
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
   },
   footer: {

@@ -330,11 +330,11 @@ const styles = StyleSheet.create({
   },
   segmentLabel: {
     fontFamily: font.bold,
-    fontSize: 15,
+    fontSize: 17,
   },
   amountLabel: {
     fontFamily: font.medium,
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
   },
   quickRow: {
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   },
   quickLabel: {
     fontFamily: font.semibold,
-    fontSize: 14,
+    fontSize: 16,
     fontVariant: ['tabular-nums'],
   },
   field: {
@@ -366,13 +366,13 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     fontFamily: font.semibold,
-    fontSize: 12,
+    fontSize: 14,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
   hint: {
     fontFamily: font.regular,
-    fontSize: 12.5,
+    fontSize: 14.5,
   },
   deleteRow: {
     flexDirection: 'row',
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
   },
   error: {
     fontFamily: font.medium,
-    fontSize: 13,
+    fontSize: 15,
   },
   centered: {
     textAlign: 'center',
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
   noteInput: {
     flex: 1,
     fontFamily: font.medium,
-    fontSize: 15,
+    fontSize: 17,
     paddingVertical: spacing.sm,
   },
   submit: {
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
   },
   submitLabel: {
     fontFamily: font.bold,
-    fontSize: 18,
+    fontSize: 20,
   },
   deleteLink: {
     flexDirection: 'row',
@@ -422,6 +422,6 @@ const styles = StyleSheet.create({
   },
   deleteLabel: {
     fontFamily: font.bold,
-    fontSize: 15,
+    fontSize: 17,
   },
 });

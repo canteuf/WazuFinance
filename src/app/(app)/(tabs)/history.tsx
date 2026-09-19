@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
   },
   headerLinkLabel: {
     fontFamily: font.semibold,
-    fontSize: 14,
+    fontSize: 16,
   },
   content: {
     paddingHorizontal: spacing.lg,
@@ -344,11 +344,11 @@ const styles = StyleSheet.create({
   },
   filterCount: {
     fontFamily: font.medium,
-    fontSize: 13,
+    fontSize: 15,
   },
   reset: {
     fontFamily: font.semibold,
-    fontSize: 13,
+    fontSize: 15,
   },
   ledgerHead: {
     flexDirection: 'row',
@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
   ledgerTitle: {
     flex: 1,
     fontFamily: font.semibold,
-    fontSize: 12.5,
+    fontSize: 14.5,
     letterSpacing: 0.9,
     textTransform: 'uppercase',
   },
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
   },
   countLabel: {
     fontFamily: font.semibold,
-    fontSize: 12,
+    fontSize: 14,
   },
   dayHead: {
     flexDirection: 'row',
@@ -383,13 +383,13 @@ const styles = StyleSheet.create({
   },
   dayTitle: {
     fontFamily: font.bold,
-    fontSize: 18,
+    fontSize: 20,
     letterSpacing: -0.3,
     flexShrink: 1,
   },
   dayTotal: {
     fontFamily: font.bold,
-    fontSize: 14,
+    fontSize: 16,
     fontVariant: ['tabular-nums'],
   },
   dayCard: {
@@ -415,12 +415,12 @@ const styles = StyleSheet.create({
   },
   empty: {
     fontFamily: font.regular,
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
   },
   error: {
     fontFamily: font.medium,
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
   },
   footer: {
@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
   },
   endLabel: {
     fontFamily: font.regular,
-    fontSize: 13,
+    fontSize: 15,
   },
   fab: {
     position: 'absolute',
@@ -450,6 +450,6 @@ const styles = StyleSheet.create({
   },
   fabLabel: {
     fontFamily: font.bold,
-    fontSize: 16,
+    fontSize: 18,
   },
 });

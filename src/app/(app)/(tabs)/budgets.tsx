@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: font.regular,
-    fontSize: 13.5,
+    fontSize: 15.5,
   },
   chips: {
     flexDirection: 'row',
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
   },
   chipLabel: {
     fontFamily: font.semibold,
-    fontSize: 14,
+    fontSize: 16,
   },
   summary: {
     gap: spacing.sm + 4,
@@ -365,13 +365,13 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     fontFamily: font.semibold,
-    fontSize: 12,
+    fontSize: 14,
     letterSpacing: 1.1,
     textTransform: 'uppercase',
   },
   summaryTitle: {
     fontFamily: font.bold,
-    fontSize: 20,
+    fontSize: 22,
     letterSpacing: -0.4,
   },
   daysPill: {
@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
   },
   daysLabel: {
     fontFamily: font.semibold,
-    fontSize: 12,
+    fontSize: 14,
   },
   summaryFigures: {
     flexDirection: 'row',
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
   },
   summaryCaption: {
     fontFamily: font.regular,
-    fontSize: 13,
+    fontSize: 15,
   },
   summaryAmountRow: {
     flexDirection: 'row',
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
   },
   summaryPercent: {
     fontFamily: font.bold,
-    fontSize: 14,
+    fontSize: 16,
     fontVariant: ['tabular-nums'],
   },
   summarySide: {
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
   },
   summaryCeiling: {
     fontFamily: font.bold,
-    fontSize: 18,
+    fontSize: 20,
     fontVariant: ['tabular-nums'],
   },
   summaryFoot: {
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
   },
   summaryFootText: {
     fontFamily: font.regular,
-    fontSize: 13,
+    fontSize: 15,
     fontVariant: ['tabular-nums'],
   },
   sectionHead: {
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
   },
   section: {
     fontFamily: font.bold,
-    fontSize: 13,
+    fontSize: 15,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
@@ -455,11 +455,11 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontFamily: font.bold,
-    fontSize: 17,
+    fontSize: 19,
   },
   message: {
     fontFamily: font.regular,
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
   },
   newButton: {
@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
   },
   newLabel: {
     fontFamily: font.bold,
-    fontSize: 16,
+    fontSize: 18,
   },
   fab: {
     flexDirection: 'row',
@@ -485,6 +485,6 @@ const styles = StyleSheet.create({
   },
   fabLabel: {
     fontFamily: font.bold,
-    fontSize: 16,
+    fontSize: 18,
   },
 });

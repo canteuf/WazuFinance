@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   },
   cancelLabel: {
     fontFamily: font.semibold,
-    fontSize: 16,
+    fontSize: 18,
   },
   titleBlock: {
     alignItems: 'center',
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     fontFamily: font.semibold,
-    fontSize: 12,
+    fontSize: 14,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     fontFamily: font.medium,
-    fontSize: 15,
+    fontSize: 17,
     textAlign: 'center',
   },
 });

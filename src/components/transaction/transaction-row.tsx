@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: font.semibold,
-    fontSize: 15,
+    fontSize: 17,
     letterSpacing: -0.1,
   },
   metaRow: {
@@ -183,17 +183,17 @@ const styles = StyleSheet.create({
   },
   categoryTagLabel: {
     fontFamily: font.semibold,
-    fontSize: 11,
-    lineHeight: 15,
+    fontSize: 13,
+    lineHeight: 17,
   },
   note: {
     fontFamily: font.regular,
-    fontSize: 12,
+    fontSize: 14,
     flexShrink: 1,
   },
   amount: {
     fontFamily: font.semibold,
-    fontSize: 15,
+    fontSize: 17,
     letterSpacing: -0.13,
     // Les montants s'alignent en colonne : sans chiffres tabulaires, la virgule danse d'une ligne à l'autre.
     fontVariant: ['tabular-nums'],
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   },
   amountLedger: {
     fontFamily: font.bold,
-    fontSize: 19,
+    fontSize: 21,
     letterSpacing: -0.3,
   },
   glyphLedger: {
@@ -220,6 +220,6 @@ const styles = StyleSheet.create({
   },
   direction: {
     fontFamily: font.regular,
-    fontSize: 13,
+    fontSize: 15,
   },
 });

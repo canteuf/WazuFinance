@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   },
   amountLabel: {
     fontFamily: font.medium,
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
     marginTop: spacing.sm,
   },
@@ -131,23 +131,23 @@ const styles = StyleSheet.create({
   },
   previewLabel: {
     fontFamily: font.semibold,
-    fontSize: 11,
+    fontSize: 13,
     letterSpacing: 0.9,
     textTransform: 'uppercase',
   },
   previewValue: {
     fontFamily: font.bold,
-    fontSize: 18,
+    fontSize: 20,
     fontVariant: ['tabular-nums'],
   },
   previewDetail: {
     fontFamily: font.regular,
-    fontSize: 12.5,
+    fontSize: 14.5,
     textAlign: 'center',
   },
   message: {
     fontFamily: font.medium,
-    fontSize: 13,
+    fontSize: 15,
     textAlign: 'center',
   },
 });

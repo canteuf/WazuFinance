@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   },
   primaryLabel: {
     fontFamily: font.bold,
-    fontSize: 17,
+    fontSize: 19,
   },
   confirmRow: {
     flexDirection: 'row',
@@ -133,6 +133,6 @@ const styles = StyleSheet.create({
   },
   linkLabel: {
     fontFamily: font.semibold,
-    fontSize: 15,
+    fontSize: 17,
   },
 });

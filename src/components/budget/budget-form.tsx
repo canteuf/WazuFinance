@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     fontFamily: font.semibold,
-    fontSize: 12,
+    fontSize: 14,
     letterSpacing: 1.1,
     textTransform: 'uppercase',
   },
@@ -109,10 +109,10 @@ const styles = StyleSheet.create({
   },
   hint: {
     fontFamily: font.regular,
-    fontSize: 13,
+    fontSize: 15,
   },
   error: {
     fontFamily: font.medium,
-    fontSize: 13,
+    fontSize: 15,
   },
 });

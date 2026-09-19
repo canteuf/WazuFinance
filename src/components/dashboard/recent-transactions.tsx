@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
   },
   empty: {
     fontFamily: font.regular,
-    fontSize: 14,
+    fontSize: 16,
     paddingVertical: spacing.lg,
   },
 });

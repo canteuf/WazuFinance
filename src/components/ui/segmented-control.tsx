@@ -66,6 +66,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: font.bold,
-    fontSize: 15,
+    fontSize: 17,
   },
 });

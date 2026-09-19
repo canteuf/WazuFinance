@@ -153,12 +153,12 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: font.bold,
-    fontSize: 18,
+    fontSize: 20,
     letterSpacing: -0.3,
   },
   meta: {
     fontFamily: font.regular,
-    fontSize: 13,
+    fontSize: 15,
   },
   reached: {
     flexDirection: 'row',
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   },
   reachedLabel: {
     fontFamily: font.medium,
-    fontSize: 13,
+    fontSize: 15,
   },
   figures: {
     flexDirection: 'row',
@@ -188,18 +188,18 @@ const styles = StyleSheet.create({
   },
   current: {
     fontFamily: font.bold,
-    fontSize: 22,
+    fontSize: 24,
     letterSpacing: -0.4,
     fontVariant: ['tabular-nums'],
   },
   target: {
     fontFamily: font.regular,
-    fontSize: 15,
+    fontSize: 17,
     fontVariant: ['tabular-nums'],
   },
   percent: {
     fontFamily: font.bold,
-    fontSize: 15,
+    fontSize: 17,
     fontVariant: ['tabular-nums'],
   },
   foot: {
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   },
   footText: {
     fontFamily: font.regular,
-    fontSize: 13,
+    fontSize: 15,
     fontVariant: ['tabular-nums'],
   },
 });

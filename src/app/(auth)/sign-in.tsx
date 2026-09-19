@@ -132,11 +132,11 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: font.regular,
-    fontSize: 15,
+    fontSize: 17,
   },
   formError: {
     fontFamily: font.medium,
-    fontSize: 14,
+    fontSize: 16,
   },
   footer: {
     flexDirection: 'row',
@@ -146,10 +146,10 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontFamily: font.regular,
-    fontSize: 14,
+    fontSize: 16,
   },
   footerLink: {
     fontFamily: font.bold,
-    fontSize: 14,
+    fontSize: 16,
   },
 });

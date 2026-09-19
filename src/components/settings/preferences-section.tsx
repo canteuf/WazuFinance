@@ -251,13 +251,13 @@ const styles = StyleSheet.create({
   },
   blockTitleText: {
     fontFamily: font.bold,
-    fontSize: 17,
+    fontSize: 19,
     letterSpacing: -0.2,
   },
   hint: {
     fontFamily: font.regular,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 15,
+    lineHeight: 21,
   },
   centered: {
     textAlign: 'center',
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   },
   segmentLabel: {
     fontFamily: font.semibold,
-    fontSize: 14,
+    fontSize: 16,
   },
   cycleHead: {
     flexDirection: 'row',
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   },
   pillLabel: {
     fontFamily: font.semibold,
-    fontSize: 14,
+    fontSize: 16,
   },
   editor: {
     gap: spacing.sm + 2,
@@ -327,6 +327,6 @@ const styles = StyleSheet.create({
   },
   error: {
     fontFamily: font.medium,
-    fontSize: 13,
+    fontSize: 15,
   },
 });

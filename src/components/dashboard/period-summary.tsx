@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: font.semibold,
-    fontSize: 11,
+    fontSize: 13,
     letterSpacing: 0.77,
     textTransform: 'uppercase',
   },
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
   },
   currency: {
     fontFamily: font.medium,
-    fontSize: 22,
+    fontSize: 24,
   },
   delta: {
     flexDirection: 'row',
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   },
   deltaText: {
     fontFamily: font.semibold,
-    fontSize: 11.5,
+    fontSize: 13.5,
     fontVariant: ['tabular-nums'],
   },
   split: {
@@ -251,19 +251,19 @@ const styles = StyleSheet.create({
   },
   statKey: {
     fontFamily: font.semibold,
-    fontSize: 10.5,
+    fontSize: 12.5,
     letterSpacing: 0.4,
     flexShrink: 1,
   },
   statValue: {
     fontFamily: font.semibold,
-    fontSize: 18,
+    fontSize: 20,
     letterSpacing: -0.25,
     fontVariant: ['tabular-nums'],
   },
   statCaption: {
     fontFamily: font.regular,
-    fontSize: 11.5,
+    fontSize: 13.5,
     marginTop: 1,
   },
   pace: {
@@ -277,17 +277,17 @@ const styles = StyleSheet.create({
   },
   paceLabel: {
     fontFamily: font.semibold,
-    fontSize: 11.5,
+    fontSize: 13.5,
     fontVariant: ['tabular-nums'],
   },
   paceAllowance: {
     fontFamily: font.regular,
-    fontSize: 12,
+    fontSize: 14,
     fontVariant: ['tabular-nums'],
   },
   error: {
     fontFamily: font.medium,
-    fontSize: 14,
+    fontSize: 16,
   },
   loader: {
     alignSelf: 'flex-start',

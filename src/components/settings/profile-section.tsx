@@ -130,6 +130,6 @@ const styles = StyleSheet.create({
   },
   error: {
     fontFamily: font.medium,
-    fontSize: 14,
+    fontSize: 16,
   },
 });

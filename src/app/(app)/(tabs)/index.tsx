@@ -124,12 +124,12 @@ const styles = StyleSheet.create({
   },
   groupName: {
     fontFamily: font.medium,
-    fontSize: 13.5,
+    fontSize: 15.5,
     flexShrink: 1,
   },
   section: {
     fontFamily: font.semibold,
-    fontSize: 17,
+    fontSize: 19,
     letterSpacing: -0.2,
     // Peut rétrécir jusqu'à tronquer plutôt que pousser « Tout voir » hors de l'écran à fort grossissement de police (RN met flexShrink à 0 par défaut).
     flexShrink: 1,
@@ -142,13 +142,13 @@ const styles = StyleSheet.create({
   },
   sectionLink: {
     fontFamily: font.semibold,
-    fontSize: 12,
+    fontSize: 14,
     // Garde sa largeur : c'est le seul accès à l'historique, il ne doit jamais céder de place au libellé qui le précède.
     flexShrink: 0,
   },
   error: {
     fontFamily: font.medium,
-    fontSize: 14,
+    fontSize: 16,
   },
   fab: {
     width: 56,

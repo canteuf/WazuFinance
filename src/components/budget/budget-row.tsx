@@ -183,13 +183,13 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: font.bold,
-    fontSize: 17,
+    fontSize: 19,
     letterSpacing: -0.3,
     flexShrink: 1,
   },
   sub: {
     fontFamily: font.regular,
-    fontSize: 13,
+    fontSize: 15,
   },
   figures: {
     flexDirection: 'row',
@@ -200,13 +200,13 @@ const styles = StyleSheet.create({
   },
   spent: {
     fontFamily: font.bold,
-    fontSize: 22,
+    fontSize: 24,
     letterSpacing: -0.4,
     fontVariant: ['tabular-nums'],
   },
   ceiling: {
     fontFamily: font.regular,
-    fontSize: 14,
+    fontSize: 16,
     fontVariant: ['tabular-nums'],
   },
 });

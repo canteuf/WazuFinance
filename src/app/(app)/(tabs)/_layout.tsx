@@ -37,7 +37,7 @@ export default function TabsLayout() {
         },
         tabBarLabelStyle: {
           fontFamily: font.semibold,
-          fontSize: 11,
+          fontSize: 13,
         },
         tabBarItemStyle: {
           paddingVertical: 2,
