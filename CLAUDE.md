@@ -88,7 +88,9 @@ RPC already defines "spend for the period", and a second definition alongside
 it would be one more thing to keep in agreement. The client only matches by
 `category_id` and divides — the summation stays in Postgres. `budget-progress.ts`
 holds the thresholds and the sort order, so they are covered by Jest rather
-than buried in JSX.
+than buried in JSX. The one exception is the summary card's grand total: `budget_totals()` sums ceilings and budgeted-category spend in Postgres, with the same spend definition as `category_breakdown`. Its key `budgetTotals` nests under `['transactions']` (spend comes from there), and budget mutations and the budgets Realtime hook invalidate `budgetTotalsAll()` as well.
+
+**Budget ceilings and savings amounts are never rewritten, only adjusted.** `adjust_budget_amount()` and `add_to_savings_goal()` add a signed delta in a single `update … set x = x + delta`, so two members adjusting the same envelope (or two devices depositing on the same goal) both count. There is deliberately no data function that writes `budgets.amount` or `savings_goals.current_amount` directly after creation; `UpdateSavingsGoalInput` has no amount field for that reason. The form preview uses `previewSum()` (integer cents) for display only.
 
 `queryKeys.budgets(groupId)` sits outside `['transactions']`, unlike
 `periodSummary` and `categoryBreakdown`. Those derive from transactions and must

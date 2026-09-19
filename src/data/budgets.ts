@@ -35,10 +35,6 @@ export type CreateBudgetInput = {
   amount: number;
 };
 
-export type UpdateBudgetInput = {
-  amount: number;
-};
-
 /**
  * `period` est écrit en dur à 'monthly'.
  *
@@ -63,15 +59,14 @@ export async function create(input: CreateBudgetInput): Promise<Tables<'budgets'
   return data;
 }
 
-export async function update(
-  id: string,
-  patch: UpdateBudgetInput
-): Promise<Tables<'budgets'>> {
+/**
+ * Augmente (`delta` positif) ou réduit (`delta` négatif) le plafond d'une enveloppe.
+ *
+ * Il n'y a pas de fonction pour réécrire le plafond : dans un budget partagé, deux membres qui ajustent la même enveloppe verraient le second écraser le premier. L'addition se fait en base, dans un seul update, et passe par le journal comme toute modification.
+ */
+export async function adjust(id: string, delta: number): Promise<Tables<'budgets'>> {
   const { data, error } = await supabase
-    .from('budgets')
-    .update({ amount: patch.amount })
-    .eq('id', id)
-    .select()
+    .rpc('adjust_budget_amount', { p_budget_id: id, p_delta: delta })
     .single();
 
   if (error) {
@@ -81,8 +76,37 @@ export async function update(
   return data;
 }
 
+export type BudgetTotals = {
+  /** Dépense de la période dans les seules catégories qui ont une enveloppe. */
+  spent: number;
+  ceiling: number;
+  /** Signé : négatif en dépassement. */
+  remaining: number;
+};
+
+/**
+ * Totaux de toutes les enveloppes du groupe sur la période, sommés par Postgres.
+ *
+ * La dépense suit la définition de category_breakdown(), que les cartes lisent déjà : le total en tête est la somme exacte des montants affichés dessous.
+ */
+export async function getTotals(groupId: string, from: string, to: string): Promise<BudgetTotals> {
+  const { data, error } = await supabase
+    .rpc('budget_totals', { p_group_id: groupId, p_from: from, p_to: to })
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    spent: Number(data.spent),
+    ceiling: Number(data.ceiling),
+    remaining: Number(data.remaining),
+  };
+}
+
 export async function remove(id: string): Promise<void> {
-  // .select().single() force une erreur si RLS a filtré la ligne cible (id erroné, appartenance périmée) : sans lui, zéro ligne supprimée serait encore un succès silencieux, contrairement à update().
+  // .select().single() force une erreur si RLS a filtré la ligne cible (id erroné, appartenance périmée) : sans lui, zéro ligne supprimée serait encore un succès silencieux.
   const { error } = await supabase
     .from('budgets')
     .delete()

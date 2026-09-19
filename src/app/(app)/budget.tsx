@@ -12,21 +12,29 @@ import {
 } from 'react-native';
 
 import { BudgetForm, type BudgetFormValues } from '@/components/budget/budget-form';
+import { AmountAdjuster } from '@/components/ui/amount-adjuster';
 import { Button } from '@/components/ui/button';
+import { DeleteAction } from '@/components/ui/form-actions';
+import { ProgressBar } from '@/components/ui/progress-bar';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useBudgetMutations } from '@/hooks/use-budget-mutations';
 import { useBudgets } from '@/hooks/use-budgets';
 import { useCategories } from '@/hooks/use-categories';
 import { useCategoryBreakdown } from '@/hooks/use-category-breakdown';
+import { budgetProgress, WARNING_RATIO } from '@/lib/budget-progress';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { font, spacing, useColors } from '@/theme/tokens';
+import { formatAmount } from '@/lib/money';
+import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 import { goBackOr } from '@/lib/navigation';
 
 /**
- * Une seule route pour les deux modes : création sans paramètre, édition avec ?id=. Même parti que pour les transactions — le formulaire est écrit et corrigé une seule fois.
+ * Une seule route pour les deux modes : création sans paramètre, ajustement avec ?id=.
+ *
+ * Le plafond d'une enveloppe existante ne se réécrit pas : il s'augmente ou se réduit d'un montant, et adjust_budget_amount() fait l'addition en base. Dans un budget partagé, deux membres qui ajustent la même enveloppe voient ainsi leurs deux ajustements comptés, là où la réécriture faisait gagner le dernier.
  */
 export default function BudgetScreen() {
   const colors = useColors();
+  const elevation = useElevation();
   const router = useRouter();
   const { height: windowHeight } = useWindowDimensions();
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -38,10 +46,15 @@ export default function BudgetScreen() {
     error: categoriesError,
   } = useCategories('expense');
   const { slices, isLoading: slicesLoading, error: slicesError } = useCategoryBreakdown();
-  const { createBudget, updateBudget, deleteBudget, isSaving, isDeleting } = useBudgetMutations();
+  const { createBudget, adjustBudget, deleteBudget, isDeleting } = useBudgetMutations();
   const [errorText, setErrorText] = useState<string>();
 
   const existing = typeof id === 'string' ? budgets.find((budget) => budget.id === id) : undefined;
+  // La dépense de l'enveloppe, par la même fonction que la liste : la feuille et la carte touchée affichent les mêmes chiffres.
+  const progress = useMemo(
+    () => (existing ? budgetProgress([existing], slices)[0] : undefined),
+    [existing, slices]
+  );
 
   /**
    * Catégories de dépense sans budget, les plus dépensées d'abord.
@@ -61,7 +74,7 @@ export default function BudgetScreen() {
       });
   }, [budgets, categories, slices]);
 
-  // Les quatre requêtes se chargent en parallèle ; tant qu'une seule d'entre elles n'est pas arrivée, `categories`/`slices` valent [] par défaut de leur hook, ce qui rendrait à tort « Toutes les catégories de dépense ont déjà un budget. » si on ne couvrait pas aussi ces deux chargements.
+  // Les quatre requêtes se chargent en parallèle ; tant qu'une seule d'entre elles n'est pas arrivée, `categories`/`slices` valent [] par défaut de leur hook, ce qui rendrait à tort « Toutes les catégories de dépense ont déjà une enveloppe. » si on ne couvrait pas aussi ces deux chargements.
   if (groupLoading || budgetsLoading || categoriesLoading || slicesLoading) {
     return (
       <View style={styles.centered}>
@@ -81,7 +94,7 @@ export default function BudgetScreen() {
     );
   }
 
-  // Une panne réseau ou un refus RLS sur l'une de ces trois requêtes laisse sa donnée à vide ([] pour budgets/categories/slices) : sans ce garde, l'édition afficherait à tort « Ce budget n'existe plus », et la création afficherait à tort « Toutes les catégories de dépense ont déjà un budget. » — le même faux message que la correction précédente visait à supprimer côté chargement, ici atteint par la voie erreur.
+  // Une panne réseau ou un refus RLS sur l'une de ces trois requêtes laisse sa donnée à vide : sans ce garde, l'ajustement afficherait à tort « Cette enveloppe n'existe plus », et la création « Toutes les catégories de dépense ont déjà une enveloppe. ».
   if (budgetsError || categoriesError || slicesError) {
     return (
       <View style={styles.centered}>
@@ -93,34 +106,36 @@ export default function BudgetScreen() {
     );
   }
 
-  // Le budget visé n'est plus dans la liste : supprimé par un autre membre pendant que la feuille était ouverte, ou identifiant périmé. Sans ce garde, le formulaire s'ouvrirait vide sous le titre « Modifier » et l'enregistrer créerait un doublon.
-  if (typeof id === 'string' && !existing) {
+  // Le budget visé n'est plus dans la liste : supprimé par un autre membre pendant que la feuille était ouverte, ou identifiant périmé.
+  if (typeof id === 'string' && (!existing || !progress)) {
     return (
       <View style={styles.centered}>
         <Text style={[styles.errorTitle, { color: colors.danger }]}>
-          Ce budget n’existe plus.
+          Cette enveloppe n’existe plus.
         </Text>
         <Button title="Retour" variant="ghost" onPress={() => goBackOr(router, '/budgets')} />
       </View>
     );
   }
 
-  function handleSubmit(values: BudgetFormValues) {
+  function handleCreate(values: BudgetFormValues) {
     setErrorText(undefined);
-
-    if (existing) {
-      updateBudget.mutate(
-        { id: existing.id, patch: { amount: values.amount } },
-        {
-          onSuccess: () => goBackOr(router, '/budgets'),
-          onError: (error) => setErrorText(dataErrorMessage(error)),
-        }
-      );
-      return;
-    }
-
     createBudget.mutate(
       { groupId: activeGroupId as string, categoryId: values.categoryId, amount: values.amount },
+      {
+        onSuccess: () => goBackOr(router, '/budgets'),
+        onError: (error) => setErrorText(dataErrorMessage(error)),
+      }
+    );
+  }
+
+  function handleAdjust(delta: number) {
+    if (!existing) {
+      return;
+    }
+    setErrorText(undefined);
+    adjustBudget.mutate(
+      { id: existing.id, delta },
       {
         onSuccess: () => goBackOr(router, '/budgets'),
         onError: (error) => setErrorText(dataErrorMessage(error)),
@@ -138,6 +153,11 @@ export default function BudgetScreen() {
     });
   }
 
+  const title = existing
+    ? // `existing.category` peut être `null` : RLS masque la ligne jointe quand le budget pointe une catégorie hors de portée du groupe.
+      (existing.category?.name ?? 'Catégorie inconnue')
+    : 'Nouvelle enveloppe';
+
   return (
     <View
       style={[
@@ -145,19 +165,27 @@ export default function BudgetScreen() {
         { backgroundColor: colors.background, maxHeight: windowHeight * 0.92 },
       ]}
     >
+      {/* Une formSheet n'accepte pas de header natif : le titre et la fermeture sont du contenu ordinaire, comme sur la saisie. */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>
-          {existing ? 'Modifier le budget' : 'Nouveau budget'}
-        </Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Fermer"
           hitSlop={spacing.sm}
           onPress={() => goBackOr(router, '/budgets')}
-          style={styles.closeButton}
+          style={styles.close}
         >
-          <MaterialCommunityIcons name="close" size={20} color={colors.textMuted} />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={colors.text} />
+          <Text style={[styles.closeLabel, { color: colors.text }]}>Fermer</Text>
         </Pressable>
+      </View>
+
+      <View style={styles.titleBlock}>
+        <Text style={[styles.eyebrow, { color: colors.textMuted }]}>
+          {existing ? 'Ajuster l’enveloppe' : 'Définir un plafond'}
+        </Text>
+        <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
+          {title}
+        </Text>
       </View>
 
       <ScrollView
@@ -165,29 +193,64 @@ export default function BudgetScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
-        <BudgetForm
-          availableCategories={availableCategories}
-          initialValues={
-            existing
-              ? { categoryId: existing.category_id, amount: existing.amount }
-              : undefined
-          }
-          lockedCategory={
-            existing
-              ? {
-                  // `existing.category` peut être `null` : RLS masque la ligne jointe quand le budget pointe une catégorie hors de portée du groupe. `category_id` reste toujours connu, lui.
-                  id: existing.category?.id ?? existing.category_id,
-                  name: existing.category?.name ?? 'Catégorie inconnue',
-                }
-              : undefined
-          }
-          submitLabel={existing ? 'Enregistrer' : 'Ajouter'}
-          submitting={isSaving}
-          deleting={isDeleting}
-          errorText={errorText}
-          onSubmit={handleSubmit}
-          onDelete={existing ? handleDelete : undefined}
-        />
+        {existing && progress ? (
+          <>
+            <View style={[styles.status, { backgroundColor: colors.surface }, elevation.card]}>
+              <View style={styles.statusRow}>
+                <Text style={[styles.statusSpent, { color: colors.text }]}>
+                  {formatAmount(progress.spent)} €
+                </Text>
+                <Text style={[styles.statusCeiling, { color: colors.textMuted }]}>
+                  dépensés sur {formatAmount(existing.amount)} €
+                </Text>
+              </View>
+              <ProgressBar
+                ratio={progress.spent === 0 ? 0 : progress.ratio}
+                tone={progress.status}
+                size="lg"
+              />
+            </View>
+
+            <AmountAdjuster
+              options={{
+                add: { label: 'Augmenter', icon: 'arrow-up' },
+                remove: { label: 'Réduire', icon: 'arrow-down' },
+              }}
+              current={existing.amount}
+              minimumAfter={0.01}
+              amountLabel={(mode) =>
+                mode === 'add' ? 'Ajouter au plafond' : 'Retirer du plafond'
+              }
+              previewLabel="Nouveau plafond"
+              previewDetail={(next) =>
+                `Alerte à ${formatAmount(Math.round(next * WARNING_RATIO * 100) / 100)} € · ${Math.round((progress.spent / next) * 100)} % déjà dépensés`
+              }
+              submitLabel={(mode) =>
+                mode === 'add' ? 'Augmenter le plafond' : 'Réduire le plafond'
+              }
+              tooLowMessage="Le plafond doit rester supérieur à zéro. Pour ne plus suivre cette catégorie, supprimez l’enveloppe."
+              submitting={adjustBudget.isPending}
+              errorText={errorText}
+              onSubmit={handleAdjust}
+            />
+
+            {/* Déplacer une enveloppe d'une catégorie à l'autre reviendrait à en supprimer une et à en créer une autre, et buterait sur l'unicité si la cible en a déjà une. Supprimer puis recréer est explicite. */}
+            <DeleteAction
+              label="Supprimer cette enveloppe"
+              confirmAccessibilityLabel="Confirmer la suppression définitive de cette enveloppe"
+              deleting={isDeleting}
+              disabled={adjustBudget.isPending}
+              onConfirm={handleDelete}
+            />
+          </>
+        ) : (
+          <BudgetForm
+            availableCategories={availableCategories}
+            submitting={createBudget.isPending}
+            errorText={errorText}
+            onSubmit={handleCreate}
+          />
+        )}
       </ScrollView>
     </View>
   );
@@ -198,20 +261,61 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingTop: spacing.lg,
     paddingHorizontal: spacing.lg,
   },
-  title: {
-    fontFamily: font.bold,
-    fontSize: 17,
-    letterSpacing: -0.2,
+  close: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
-  closeButton: {
-    padding: spacing.xs,
+  closeLabel: {
+    fontFamily: font.semibold,
+    fontSize: 16,
+  },
+  titleBlock: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  eyebrow: {
+    fontFamily: font.semibold,
+    fontSize: 12,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  title: {
+    fontFamily: font.black,
+    fontSize: 28,
+    letterSpacing: -0.7,
+    textAlign: 'center',
   },
   scrollContent: {
     flexGrow: 1,
+    gap: spacing.lg,
+    padding: spacing.lg,
+  },
+  status: {
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    gap: spacing.xs + 2,
+  },
+  statusSpent: {
+    fontFamily: font.bold,
+    fontSize: 22,
+    fontVariant: ['tabular-nums'],
+  },
+  statusCeiling: {
+    fontFamily: font.regular,
+    fontSize: 15,
+    fontVariant: ['tabular-nums'],
   },
   centered: {
     alignItems: 'center',

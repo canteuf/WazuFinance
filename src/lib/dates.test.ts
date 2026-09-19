@@ -1,5 +1,6 @@
 import {
   dateToIso,
+  formatMonthYear,
   formatOccurredOn,
   formatPeriodLabel,
   isoToDate,
@@ -140,5 +141,11 @@ describe('periodStartDayLabel', () => {
   it('écrit les autres jours en chiffres seuls', () => {
     expect(periodStartDayLabel(2)).toBe('le 2');
     expect(periodStartDayLabel(28)).toBe('le 28');
+  });
+});
+
+describe('formatMonthYear', () => {
+  it('donne le mois en toutes lettres, capitalisé, avec l’année', () => {
+    expect(formatMonthYear('2026-12-31')).toBe('Décembre 2026');
   });
 });

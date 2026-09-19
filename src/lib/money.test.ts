@@ -5,6 +5,7 @@ import {
   formatSigned,
   parseAmount,
   parseNonNegativeAmount,
+  previewSum,
 } from '@/lib/money';
 
 describe('parseAmount', () => {
@@ -123,5 +124,16 @@ describe('parseNonNegativeAmount', () => {
 
   it('refuse un montant hors bornes', () => {
     expect(parseNonNegativeAmount('12345678901')).toBeNull();
+  });
+});
+
+describe('previewSum', () => {
+  it('additionne au centime, sans erreur de flottant', () => {
+    expect(previewSum(0.1, 0.2)).toBe(0.3);
+    expect(previewSum(1850, 150.1)).toBe(2000.1);
+  });
+
+  it('retranche un delta négatif', () => {
+    expect(previewSum(200, -50.55)).toBe(149.45);
   });
 });

@@ -83,3 +83,12 @@ export function formatDelta(value: number): string {
   const sign = value < 0 ? MINUS : '+';
   return `${sign}${formatAmount(Math.abs(value))}`;
 }
+
+/**
+ * Montant après un versement ou un ajustement, pour l'aperçu du formulaire seulement.
+ *
+ * Le calcul qui fait foi a lieu en base (add_to_savings_goal, adjust_budget_amount). Celui-ci ne sert qu'à afficher « Nouveau total » avant d'enregistrer, et passe par des centimes entiers : additionner les deux nombres tels quels donnerait 0,1 + 0,2 = 0,30000000000000004.
+ */
+export function previewSum(current: number, delta: number): number {
+  return (Math.round(current * 100) + Math.round(delta * 100)) / 100;
+}

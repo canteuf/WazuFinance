@@ -51,6 +51,14 @@ const shortDateFormatter = new Intl.DateTimeFormat('fr-FR', {
   month: 'short',
 });
 
+const monthYearFormatter = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' });
+
+/** « Décembre 2026 » : l'échéance d'un objectif se lit au mois, le jour n'apprend rien. */
+export function formatMonthYear(iso: string): string {
+  const label = monthYearFormatter.format(isoToDate(iso));
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 /**
  * Bornes de la période budgétaire en cours, intervalle semi-ouvert [from, to).
  *

@@ -15,27 +15,35 @@ import {
   SavingsGoalForm,
   type SavingsGoalFormValues,
 } from '@/components/savings/savings-goal-form';
+import { AmountAdjuster } from '@/components/ui/amount-adjuster';
 import { Button } from '@/components/ui/button';
+import { ProgressBar } from '@/components/ui/progress-bar';
 import { useAuth } from '@/hooks/use-auth';
 import { useSavingsGoalMutations } from '@/hooks/use-savings-goal-mutations';
 import { useSavingsGoals } from '@/hooks/use-savings-goals';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { font, spacing, useColors } from '@/theme/tokens';
+import { formatAmount } from '@/lib/money';
+import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 import { goBackOr } from '@/lib/navigation';
 
 /**
  * Une seule route pour les deux modes : création sans paramètre, édition avec ?id=. Même parti que budget.tsx et transaction.tsx.
+ *
+ * En édition, l'écran s'ouvre sur le versement : c'est ce qu'on vient faire neuf fois sur dix. Le montant épargné ne se réécrit pas, il s'augmente ou se diminue — add_to_savings_goal() fait l'addition en base, sans perdre un versement fait entre-temps depuis un autre appareil. Nom, icône, cible et échéance se modifient en dessous.
  */
 export default function SavingsGoalScreen() {
   const colors = useColors();
+  const elevation = useElevation();
   const router = useRouter();
   const { height: windowHeight } = useWindowDimensions();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { session } = useAuth();
   const userId = session?.user.id;
   const { goals, isLoading, error } = useSavingsGoals();
-  const { createGoal, updateGoal, deleteGoal, isSaving, isDeleting } = useSavingsGoalMutations();
+  const { createGoal, updateGoal, addToGoal, deleteGoal, isSaving, isDeleting } =
+    useSavingsGoalMutations();
   const [errorText, setErrorText] = useState<string>();
+  const [adjustError, setAdjustError] = useState<string>();
 
   const existing = typeof id === 'string' ? goals.find((goal) => goal.id === id) : undefined;
 
@@ -76,8 +84,17 @@ export default function SavingsGoalScreen() {
     setErrorText(undefined);
 
     if (existing) {
+      // Sans le montant épargné : modifier l'objectif ne le réécrit jamais (voir UpdateSavingsGoalInput).
       updateGoal.mutate(
-        { id: existing.id, patch: values },
+        {
+          id: existing.id,
+          patch: {
+            name: values.name,
+            icon: values.icon,
+            targetAmount: values.targetAmount,
+            targetDate: values.targetDate,
+          },
+        },
         {
           onSuccess: () => goBackOr(router, '/savings-goals'),
           onError: (mutationError) => setErrorText(dataErrorMessage(mutationError)),
@@ -87,10 +104,31 @@ export default function SavingsGoalScreen() {
     }
 
     createGoal.mutate(
-      { ...values, userId: userId as string },
+      {
+        userId: userId as string,
+        name: values.name,
+        icon: values.icon,
+        targetAmount: values.targetAmount,
+        currentAmount: values.initialAmount,
+        targetDate: values.targetDate,
+      },
       {
         onSuccess: () => goBackOr(router, '/savings-goals'),
         onError: (mutationError) => setErrorText(dataErrorMessage(mutationError)),
+      }
+    );
+  }
+
+  function handleAdjust(delta: number) {
+    if (!existing) {
+      return;
+    }
+    setAdjustError(undefined);
+    addToGoal.mutate(
+      { id: existing.id, delta },
+      {
+        onSuccess: () => goBackOr(router, '/savings-goals'),
+        onError: (mutationError) => setAdjustError(dataErrorMessage(mutationError)),
       }
     );
   }
@@ -112,19 +150,25 @@ export default function SavingsGoalScreen() {
         { backgroundColor: colors.background, maxHeight: windowHeight * 0.92 },
       ]}
     >
+      {/* Une formSheet n'accepte pas de header natif : le titre et la fermeture sont du contenu ordinaire, comme sur la saisie. */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>
-          {existing ? 'Modifier l’objectif' : 'Nouvel objectif'}
-        </Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Fermer"
           hitSlop={spacing.sm}
           onPress={() => goBackOr(router, '/savings-goals')}
-          style={styles.closeButton}
+          style={styles.close}
         >
-          <MaterialCommunityIcons name="close" size={20} color={colors.textMuted} />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={colors.text} />
+          <Text style={[styles.closeLabel, { color: colors.text }]}>Fermer</Text>
         </Pressable>
+      </View>
+
+      <View style={styles.titleBlock}>
+        <Text style={[styles.eyebrow, { color: colors.textMuted }]}>Objectif d’épargne</Text>
+        <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
+          {existing ? existing.name : 'Nouvel objectif'}
+        </Text>
       </View>
 
       <ScrollView
@@ -132,18 +176,63 @@ export default function SavingsGoalScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
+        {existing ? (
+          <>
+            <View style={[styles.status, { backgroundColor: colors.surface }, elevation.card]}>
+              <View style={styles.statusRow}>
+                <Text style={[styles.statusCurrent, { color: colors.text }]}>
+                  {formatAmount(existing.current_amount)} €
+                </Text>
+                <Text style={[styles.statusTarget, { color: colors.textMuted }]}>
+                  / {formatAmount(existing.target_amount)} €
+                </Text>
+              </View>
+              <ProgressBar
+                ratio={existing.current_amount / existing.target_amount}
+                tone={existing.current_amount >= existing.target_amount ? 'muted' : 'accent'}
+                size="lg"
+              />
+            </View>
+
+            <AmountAdjuster
+              options={{
+                add: { label: 'Verser', icon: 'plus-circle-outline' },
+                remove: { label: 'Retirer', icon: 'minus-circle-outline' },
+              }}
+              current={existing.current_amount}
+              minimumAfter={0}
+              amountLabel={(mode) => (mode === 'add' ? 'Montant à verser' : 'Montant à retirer')}
+              previewLabel="Nouveau total épargné"
+              previewDetail={(next) =>
+                next >= existing.target_amount
+                  ? 'Objectif atteint'
+                  : `sur ${formatAmount(existing.target_amount)} € · ${Math.round((next / existing.target_amount) * 100)} %`
+              }
+              submitLabel={(mode) =>
+                mode === 'add' ? 'Enregistrer le versement' : 'Enregistrer le retrait'
+              }
+              tooLowMessage="Le retrait dépasse le montant épargné."
+              submitting={addToGoal.isPending}
+              errorText={adjustError}
+              onSubmit={handleAdjust}
+            />
+
+            <Text style={[styles.section, { color: colors.text }]}>Paramètres de l’objectif</Text>
+          </>
+        ) : null}
+
         <SavingsGoalForm
           initialValues={
             existing
               ? {
                   name: existing.name,
+                  icon: existing.icon,
                   targetAmount: existing.target_amount,
-                  currentAmount: existing.current_amount,
                   targetDate: existing.target_date,
                 }
               : undefined
           }
-          submitLabel={existing ? 'Enregistrer' : 'Ajouter'}
+          submitLabel={existing ? 'Enregistrer les modifications' : 'Créer l’objectif'}
           submitting={isSaving}
           deleting={isDeleting}
           errorText={errorText}
@@ -160,20 +249,68 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingTop: spacing.lg,
     paddingHorizontal: spacing.lg,
   },
-  title: {
-    fontFamily: font.bold,
-    fontSize: 17,
-    letterSpacing: -0.2,
+  close: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
-  closeButton: {
-    padding: spacing.xs,
+  closeLabel: {
+    fontFamily: font.semibold,
+    fontSize: 16,
+  },
+  titleBlock: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  eyebrow: {
+    fontFamily: font.semibold,
+    fontSize: 12,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  title: {
+    fontFamily: font.black,
+    fontSize: 28,
+    letterSpacing: -0.7,
+    textAlign: 'center',
   },
   scrollContent: {
     flexGrow: 1,
+    gap: spacing.lg,
+    padding: spacing.lg,
+  },
+  status: {
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    gap: spacing.xs + 2,
+  },
+  statusCurrent: {
+    fontFamily: font.bold,
+    fontSize: 22,
+    fontVariant: ['tabular-nums'],
+  },
+  statusTarget: {
+    fontFamily: font.regular,
+    fontSize: 15,
+    fontVariant: ['tabular-nums'],
+  },
+  section: {
+    fontFamily: font.bold,
+    fontSize: 13,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginTop: spacing.sm,
   },
   centered: {
     alignItems: 'center',

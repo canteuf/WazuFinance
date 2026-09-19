@@ -9,6 +9,7 @@ function goal(overrides: Partial<SavingsGoal> = {}): SavingsGoal {
     target_amount: 1000,
     current_amount: 250,
     target_date: null,
+    icon: 'piggy-bank-outline',
     created_at: '2026-09-01T00:00:00Z',
     updated_at: '2026-09-01T00:00:00Z',
     ...overrides,

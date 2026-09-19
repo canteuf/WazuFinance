@@ -27,7 +27,8 @@ const STATUS_RANK: Record<BudgetStatus, number> = {
   ok: 2,
 };
 
-function statusFor(ratio: number): BudgetStatus {
+/** Exporté pour la carte de synthèse, qui applique aux totaux les mêmes seuils qu'aux enveloppes. */
+export function statusFor(ratio: number): BudgetStatus {
   if (ratio >= 1) {
     return 'over';
   }

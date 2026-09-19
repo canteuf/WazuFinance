@@ -34,10 +34,16 @@ export const queryKeys = {
     ['transactions', 'daily', groupId, filters] as const,
   frequentAmounts: (groupId: string, type: string) =>
     ['transactions', 'frequent', groupId, type] as const,
+  // Sous ['transactions'] parce que la dépense en vient, comme categoryBreakdown. Les plafonds, eux, n'y sont pas : les mutations et le Realtime des budgets invalident en plus la racine budgetTotalsAll(), qui n'existe que pour ça — invalider ['transactions'] rechargerait tout l'historique pour un plafond.
+  budgetTotalsAll: () => ['transactions', 'budgetTotals'] as const,
+  budgetTotals: (groupId: string, from: string) =>
+    ['transactions', 'budgetTotals', groupId, from] as const,
   // Hors de ['transactions'] à dessein : le fil se consulte délibérément, se recharge à chaque ouverture et au geste « tirer pour rafraîchir ». Aucune invalidation n'a besoin de l'atteindre, et le nicher le ferait recharger à chaque saisie pour rien.
   activity: (groupId: string) => ['activity', groupId] as const,
   // Portée personnelle, pas de groupe : une seule clé, sans le couple racine/groupe des budgets. La policy ne renvoie déjà que les objectifs de l'appelant, et useClearCacheOnUserChange() vide tout le cache au changement de compte — il n'existe pas d'équivalent « objectif actif » dont une invalidation devrait se méfier.
   savingsGoals: () => ['savingsGoals'] as const,
+  // Sous ['savingsGoals'] : un versement, une création ou une suppression invalident déjà ce préfixe, et les totaux suivent sans qu'aucune mutation les connaisse. `today` dans la clé : le rythme change avec le mois.
+  savingsOverview: (today: string) => ['savingsGoals', 'overview', today] as const,
   // Un groupe à la fois, comme `activity` : rien de ce qui invalide `['transactions']`/`['budgets']` ne concerne les membres ou les invitations, pas de nichage sous ces préfixes.
   groupMembers: (groupId: string) => ['groupMembers', groupId] as const,
   groupInvitation: (groupId: string) => ['groupInvitation', groupId] as const,

@@ -16,6 +16,7 @@ export function Screen({
   floatingAction,
   align = 'center',
   inTabs = false,
+  floatingAlign = 'end',
 }: {
   children: ReactNode;
   floatingAction?: ReactNode;
@@ -24,6 +25,8 @@ export function Screen({
    * Vrai pour les quatre écrans d'onglet. La barre d'onglets occupe déjà le bas de l'écran et gère sa propre zone sûre : lui ajouter celle du Screen creuserait une bande vide au-dessus d'elle, et un bouton flottant calé sur le bas passerait derrière.
    */
   inTabs?: boolean;
+  /** « center » pour la pilule « + Saisie » des maquettes, « end » pour le bouton rond calé à droite. */
+  floatingAlign?: 'end' | 'center';
 }) {
   const colors = useColors();
 
@@ -48,7 +51,15 @@ export function Screen({
           <View style={styles.inner}>{children}</View>
         </ScrollView>
         {floatingAction ? (
-          <View style={[styles.floating, inTabs ? styles.floatingInTabs : null]}>
+          <View
+            style={[
+              styles.floating,
+              inTabs ? styles.floatingInTabs : null,
+              floatingAlign === 'center' ? styles.floatingCenter : null,
+            ]}
+            // Centré, le conteneur couvre toute la largeur : sans ceci, il intercepterait les touchers destinés au contenu de part et d'autre de la pilule.
+            pointerEvents="box-none"
+          >
             {floatingAction}
           </View>
         ) : null}
@@ -87,6 +98,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: spacing.lg,
     bottom: spacing.lg,
+  },
+  floatingCenter: {
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
   floatingInTabs: {
     // Dégage la barre d'onglets, qui couvre le bas de l'écran.

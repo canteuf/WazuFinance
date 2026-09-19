@@ -25,6 +25,7 @@ export function useBudgetsRealtime(): void {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.budgetsAll(),
       });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.budgetTotalsAll() });
     }
 
     const channel = supabase

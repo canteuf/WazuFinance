@@ -1,16 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import {
-  create,
-  remove,
-  update,
-  type CreateBudgetInput,
-  type UpdateBudgetInput,
-} from '@/data/budgets';
+import { adjust, create, remove, type CreateBudgetInput } from '@/data/budgets';
 import { queryKeys } from '@/lib/query-keys';
 
 /**
- * Création, modification et suppression d'un budget.
+ * Création, ajustement du plafond et suppression d'un budget.
  *
  * L'invalidation porte sur la racine `queryKeys.budgetsAll()` : chaque mutation invalide la clé par groupe du groupe réellement muté, pas du groupe actif au moment où la réponse arrive. Un utilisateur peut basculer de groupe entre le déclenchement de la mutation et la réception de la réponse — l'invalidation doit ignorer le groupe actif courant et invalider tous les budgets en cache.
  */
@@ -21,6 +15,8 @@ export function useBudgetMutations() {
     void queryClient.invalidateQueries({
       queryKey: queryKeys.budgetsAll(),
     });
+    // Les totaux d'en-tête vivent sous ['transactions'] (voir query-keys.ts) : la racine des budgets ne les atteint pas.
+    void queryClient.invalidateQueries({ queryKey: queryKeys.budgetTotalsAll() });
   }
 
   const createBudget = useMutation({
@@ -28,8 +24,8 @@ export function useBudgetMutations() {
     onSuccess: invalidate,
   });
 
-  const updateBudget = useMutation({
-    mutationFn: ({ id, patch }: { id: string; patch: UpdateBudgetInput }) => update(id, patch),
+  const adjustBudget = useMutation({
+    mutationFn: ({ id, delta }: { id: string; delta: number }) => adjust(id, delta),
     onSuccess: invalidate,
   });
 
@@ -40,10 +36,10 @@ export function useBudgetMutations() {
 
   return {
     createBudget,
-    updateBudget,
+    adjustBudget,
     deleteBudget,
     // Deux indicateurs distincts, comme pour les transactions : un seul agrégé faisait tourner le bouton Supprimer pendant l'enregistrement.
-    isSaving: createBudget.isPending || updateBudget.isPending,
+    isSaving: createBudget.isPending || adjustBudget.isPending,
     isDeleting: deleteBudget.isPending,
   };
 }

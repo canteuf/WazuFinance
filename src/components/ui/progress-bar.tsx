@@ -4,14 +4,14 @@ import type { BudgetStatus } from '@/lib/budget-progress';
 import { radius, useColors } from '@/theme/tokens';
 
 /** Ce que la barre représente, quand ce n'est pas un statut de budget. */
-export type ProgressTone = BudgetStatus | 'accent' | 'positive';
+export type ProgressTone = BudgetStatus | 'accent' | 'positive' | 'muted';
 
 /**
  * Piste et remplissage d'une progression.
  *
  * La couleur suit le statut déjà calculé par `budgetProgress()` — accent sous le seuil, ocre à partir de 80 %, rouge brique au dépassement — plutôt que de comparer à nouveau le ratio ici : deux définitions du même seuil finiraient par diverger, et celle qui fait foi est couverte par Jest.
  *
- * Un objectif d'épargne n'a pas de statut de budget : il passe « accent » ou « positive », parce qu'atteindre une cible d'épargne est une réussite, pas un dépassement.
+ * Un objectif d'épargne n'a pas de statut de budget : il passe « accent », et « muted » une fois atteint, rangé sous les objectifs en cours — atteindre une cible d'épargne est une réussite, pas un dépassement, et la barre pleine le dit déjà.
  *
  * Trois fichiers portaient la même piste, le même remplissage et la même formule de largeur recopiée mot pour mot ; ils partagent désormais celle-ci.
  */
@@ -34,7 +34,9 @@ export function ProgressBar({
         ? colors.warning
         : tone === 'positive'
           ? colors.positive
-          : colors.primary;
+          : tone === 'muted'
+            ? colors.textMuted
+            : colors.primary;
 
   // Un remplissage nul à 0 % est juste ; au-delà, un filet de 2 % garde la barre lisible quand la part est minuscule. Elle sature à 100 % : le dépassement se lit dans le chiffre et la couleur, pas dans une barre qui déborderait de sa piste.
   const width: DimensionValue =
