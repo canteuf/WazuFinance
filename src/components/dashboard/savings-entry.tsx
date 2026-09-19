@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-na
 
 import { Card } from '@/components/ui/card';
 import { ProgressBar } from '@/components/ui/progress-bar';
+import { useActiveGroup } from '@/hooks/use-active-group';
 import { useSavingsGoals } from '@/hooks/use-savings-goals';
 import { formatAmount } from '@/lib/money';
 import { savingsProgress } from '@/lib/savings-progress';
@@ -32,6 +33,8 @@ export function SavingsEntry() {
   const colors = useColors();
   const { fontScale } = useWindowDimensions();
   const { goals, isLoading, error } = useSavingsGoals();
+  const { activeGroup } = useActiveGroup();
+  const sharedGroupName = activeGroup && !activeGroup.isPersonal ? activeGroup.name : null;
 
   const items = goals.map(savingsProgress);
   const reached = items.filter((item) => item.status === 'reached').length;
@@ -49,19 +52,30 @@ export function SavingsEntry() {
 
   return (
     <Card>
-      <View style={styles.cardHead}>
-        <View style={styles.cardTitle}>
-          <MaterialCommunityIcons name="piggy-bank-outline" size={18} color={colors.primary} />
-          <Text style={[styles.heading, { color: colors.text }]}>Épargne</Text>
+      <View style={styles.header}>
+        <View style={styles.cardHead}>
+          <View style={styles.cardTitle}>
+            <MaterialCommunityIcons name="piggy-bank-outline" size={18} color={colors.primary} />
+            <Text style={[styles.heading, { color: colors.text }]}>Épargne</Text>
+          </View>
+          <Link href="/savings-goals" asChild>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Objectifs d’épargne. ${detail}`}
+            >
+              <Text style={[styles.link, { color: colors.primary }]}>Tout voir</Text>
+            </Pressable>
+          </Link>
         </View>
-        <Link href="/savings-goals" asChild>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Objectifs d’épargne. ${detail}`}
-          >
-            <Text style={[styles.link, { color: colors.primary }]}>Tout voir</Text>
-          </Pressable>
-        </Link>
+        {/* Seulement sous un groupe partagé : c'est là que voir ses objectifs au milieu des chiffres communs laisse croire qu'ils sont partagés. Sur le compte personnel la mention n'apprendrait rien. */}
+        {sharedGroupName ? (
+          <View style={styles.scope}>
+            <MaterialCommunityIcons name="lock-outline" size={13} color={colors.textMuted} />
+            <Text style={[styles.scopeLabel, { color: colors.textMuted }]}>
+              Personnel · non partagé avec « {sharedGroupName} »
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       {preview.length === 0 ? (
@@ -109,12 +123,25 @@ export function SavingsEntry() {
 }
 
 const styles = StyleSheet.create({
+  header: {
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+  },
   cardHead: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
-    marginBottom: spacing.md,
+  },
+  scope: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  scopeLabel: {
+    flexShrink: 1,
+    fontFamily: font.medium,
+    fontSize: 14,
   },
   cardTitle: {
     flexDirection: 'row',
@@ -124,13 +151,13 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontFamily: font.semibold,
-    fontSize: 17,
+    fontSize: 19,
     letterSpacing: -0.2,
     flexShrink: 1,
   },
   link: {
     fontFamily: font.semibold,
-    fontSize: 13,
+    fontSize: 15,
     flexShrink: 0,
   },
   rows: {
@@ -151,23 +178,23 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: font.semibold,
-    fontSize: 14,
+    fontSize: 16,
     flexShrink: 1,
   },
   amounts: {
     fontFamily: font.semibold,
-    fontSize: 13,
+    fontSize: 15,
     fontVariant: ['tabular-nums'],
     flexShrink: 0,
   },
   meta: {
     fontFamily: font.medium,
-    fontSize: 11.5,
+    fontSize: 13.5,
     fontVariant: ['tabular-nums'],
   },
   detail: {
     fontFamily: font.medium,
-    fontSize: 13,
+    fontSize: 15,
     flexShrink: 1,
   },
 });

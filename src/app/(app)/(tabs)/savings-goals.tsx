@@ -6,6 +6,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { SavingsGoalRow } from '@/components/savings/savings-goal-row';
 import { AccountButton } from '@/components/ui/account-button';
 import { Screen } from '@/components/ui/screen';
+import { useActiveGroup } from '@/hooks/use-active-group';
 import { useSavingsGoals } from '@/hooks/use-savings-goals';
 import { useSavingsOverview } from '@/hooks/use-savings-overview';
 import { dataErrorMessage } from '@/lib/data-errors';
@@ -28,6 +29,7 @@ export default function SavingsGoalsScreen() {
   const router = useRouter();
   const { goals, isLoading, error, isLoadingError } = useSavingsGoals();
   const { overview } = useSavingsOverview();
+  const { activeGroup } = useActiveGroup();
 
   const items = useMemo(() => goals.map(savingsProgress), [goals]);
   const active = items.filter((item) => item.status === 'in_progress');
@@ -82,6 +84,15 @@ export default function SavingsGoalsScreen() {
           {items.length > 0 ? (
             <Text style={[styles.subtitle, { color: colors.textMuted }]}>{counts}</Text>
           ) : null}
+          {/* Le groupe actif ne s'applique pas ici : sans cette mention, sélectionner un groupe partagé et y retrouver ses objectifs laisse croire qu'ils y sont partagés. */}
+          <View style={styles.scope}>
+            <MaterialCommunityIcons name="lock-outline" size={14} color={colors.textMuted} />
+            <Text style={[styles.scopeLabel, { color: colors.textMuted }]}>
+              {activeGroup && !activeGroup.isPersonal
+                ? `Personnel · non partagé avec « ${activeGroup.name} »`
+                : 'Personnel · visible par vous seul'}
+            </Text>
+          </View>
         </View>
         <Link href="/savings-goal" asChild>
           <Pressable
@@ -173,7 +184,7 @@ const styles = StyleSheet.create({
   },
   brand: {
     fontFamily: font.semibold,
-    fontSize: 13,
+    fontSize: 15,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
@@ -196,7 +207,17 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: font.regular,
-    fontSize: 14,
+    fontSize: 16,
+  },
+  scope: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  scopeLabel: {
+    flexShrink: 1,
+    fontFamily: font.medium,
+    fontSize: 15,
   },
   newButton: {
     flexDirection: 'row',
@@ -208,7 +229,7 @@ const styles = StyleSheet.create({
   },
   newLabel: {
     fontFamily: font.bold,
-    fontSize: 15,
+    fontSize: 17,
   },
   summary: {
     flexDirection: 'row',
@@ -225,7 +246,7 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     fontFamily: font.semibold,
-    fontSize: 12,
+    fontSize: 14,
     letterSpacing: 1.1,
     textTransform: 'uppercase',
   },
@@ -241,11 +262,11 @@ const styles = StyleSheet.create({
   },
   sideLabel: {
     fontFamily: font.regular,
-    fontSize: 13,
+    fontSize: 15,
   },
   sideValue: {
     fontFamily: font.bold,
-    fontSize: 17,
+    fontSize: 19,
     fontVariant: ['tabular-nums'],
   },
   list: {
@@ -253,7 +274,7 @@ const styles = StyleSheet.create({
   },
   section: {
     fontFamily: font.bold,
-    fontSize: 13,
+    fontSize: 15,
     letterSpacing: 1,
     textTransform: 'uppercase',
     marginTop: spacing.sm,
@@ -266,11 +287,11 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontFamily: font.bold,
-    fontSize: 17,
+    fontSize: 19,
   },
   message: {
     fontFamily: font.regular,
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
   },
   fab: {
@@ -283,6 +304,6 @@ const styles = StyleSheet.create({
   },
   fabLabel: {
     fontFamily: font.bold,
-    fontSize: 16,
+    fontSize: 18,
   },
 });

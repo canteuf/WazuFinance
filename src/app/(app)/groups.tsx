@@ -249,16 +249,8 @@ function GroupCard({
               <Text style={[styles.groupMeta, { color: colors.textMuted }]}>{meta}</Text>
             ) : null}
           </View>
-          {group.isPersonal ? null : (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Gérer ${group.name}`}
-              hitSlop={spacing.md}
-              onPress={onManage}
-            >
-              <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textMuted} />
-            </Pressable>
-          )}
+          {/* Emplacement réservé au chevron « Gérer », rendu hors de ce Pressable : un bouton dans un bouton est du HTML invalide sur le web. */}
+          {group.isPersonal ? null : <View style={styles.manageSlot} />}
         </View>
 
         <View style={styles.groupFoot}>
@@ -275,6 +267,17 @@ function GroupCard({
           </View>
         </View>
       </Pressable>
+      {group.isPersonal ? null : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Gérer ${group.name}`}
+          hitSlop={spacing.md}
+          onPress={onManage}
+          style={styles.manage}
+        >
+          <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textMuted} />
+        </Pressable>
+      )}
     </Card>
   );
 }
@@ -330,11 +333,11 @@ const styles = StyleSheet.create({
   },
   countLabel: {
     fontFamily: font.medium,
-    fontSize: 13,
+    fontSize: 15,
   },
   subtitle: {
     fontFamily: font.regular,
-    fontSize: 15,
+    fontSize: 17,
     marginTop: -spacing.sm,
   },
   actions: {
@@ -359,12 +362,12 @@ const styles = StyleSheet.create({
   },
   actionTitle: {
     fontFamily: font.bold,
-    fontSize: 18,
+    fontSize: 20,
     letterSpacing: -0.2,
   },
   actionCaption: {
     fontFamily: font.regular,
-    fontSize: 13,
+    fontSize: 15,
   },
   total: {
     flexDirection: 'row',
@@ -386,7 +389,7 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontFamily: font.semibold,
-    fontSize: 11.5,
+    fontSize: 13.5,
     letterSpacing: 0.9,
     textTransform: 'uppercase',
   },
@@ -398,7 +401,7 @@ const styles = StyleSheet.create({
   },
   totalHint: {
     fontFamily: font.regular,
-    fontSize: 12,
+    fontSize: 14,
   },
   loader: {
     alignSelf: 'flex-start',
@@ -406,7 +409,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: font.bold,
-    fontSize: 20,
+    fontSize: 22,
     letterSpacing: -0.3,
   },
   list: {
@@ -420,6 +423,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.md,
+  },
+  manageSlot: {
+    width: 24,
+    height: 24,
+  },
+  manage: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
   },
   groupIcon: {
     width: 52,
@@ -440,13 +452,13 @@ const styles = StyleSheet.create({
   },
   groupName: {
     fontFamily: font.bold,
-    fontSize: 18,
+    fontSize: 20,
     letterSpacing: -0.3,
     flexShrink: 1,
   },
   groupMeta: {
     fontFamily: font.regular,
-    fontSize: 13.5,
+    fontSize: 15.5,
   },
   groupFoot: {
     flexDirection: 'row',
@@ -462,7 +474,7 @@ const styles = StyleSheet.create({
   },
   groupSide: {
     fontFamily: font.regular,
-    fontSize: 13,
+    fontSize: 15,
   },
   roleTag: {
     paddingHorizontal: spacing.sm + 2,
@@ -471,7 +483,7 @@ const styles = StyleSheet.create({
   },
   roleLabel: {
     fontFamily: font.semibold,
-    fontSize: 12.5,
+    fontSize: 14.5,
   },
   note: {
     flexDirection: 'row',
@@ -482,11 +494,11 @@ const styles = StyleSheet.create({
   noteText: {
     flex: 1,
     fontFamily: font.regular,
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 16,
+    lineHeight: 23,
   },
   error: {
     fontFamily: font.medium,
-    fontSize: 13,
+    fontSize: 15,
   },
 });
