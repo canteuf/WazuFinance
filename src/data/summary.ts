@@ -1,3 +1,4 @@
+import type { TransactionFilters } from '@/data/transactions';
 import { supabase } from '@/lib/supabase';
 
 export type PeriodSummary = {
@@ -74,4 +75,38 @@ export async function getCategoryBreakdown(
     icon: row.icon,
     total: Number(row.total),
   }));
+}
+
+/**
+ * Totaux des opérations sous les filtres de l'historique, pour l'en-tête du relevé exporté.
+ *
+ * Distinct de getPeriodSummary() : celui-ci exige des bornes et ignore catégorie, type et recherche. La fonction `filtered_totals` partage sa clause where avec `daily_totals`, donc le relevé et l'historique décrivent les mêmes lignes.
+ */
+export async function getFilteredTotals(
+  groupId: string,
+  filters: TransactionFilters
+): Promise<PeriodSummary> {
+  const { data, error } = await supabase
+    .rpc('filtered_totals', {
+      p_group_id: groupId,
+      // `undefined` et non `null` : l'argument est alors omis, et la valeur par défaut — pas de filtre — s'applique.
+      p_from: filters.from ?? undefined,
+      p_to: filters.to ?? undefined,
+      p_type: filters.type ?? undefined,
+      p_category_id: filters.categoryId ?? undefined,
+      p_search: filters.search ?? undefined,
+    })
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  // Même raison que getPeriodSummary : un numeric traverse PostgREST sans garantie d'arriver en nombre JSON, et la somme exacte a déjà été faite en base.
+  return {
+    income: Number(data.income),
+    expense: Number(data.expense),
+    balance: Number(data.balance),
+    txCount: Number(data.tx_count),
+  };
 }

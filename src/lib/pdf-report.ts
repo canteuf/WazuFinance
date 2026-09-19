@@ -1,0 +1,119 @@
+/**
+ * Relevé PDF des opérations, sous forme de document HTML que expo-print convertit en PDF (et que le navigateur imprime sur le web).
+ *
+ * Pur et sans React : le contenu et l'échappement sont couverts par Jest. Les totaux arrivent déjà sommés par Postgres (filtered_totals) — ce module ne fait aucune addition de montants.
+ *
+ * Mise en page A4 en CSS d'impression, polices système : expo-print rend dans une WebView qui n'a pas accès aux polices chargées par l'app, et embarquer Bricolage Grotesque en base64 alourdirait chaque export pour un document qu'on lit surtout imprimé ou archivé.
+ */
+
+import type { ExportRow } from '@/lib/csv';
+import { formatBalance, formatSigned } from '@/lib/money';
+
+export type ReportTotals = {
+  income: number;
+  expense: number;
+  balance: number;
+  txCount: number;
+};
+
+export type ReportInput = {
+  groupName: string;
+  /** « Septembre 2026 », « du 5 sept. au 4 oct. », « Depuis le début ». */
+  periodLabel: string;
+  /** Filtres actifs en plus de la période, déjà rédigés : « Dépenses · Alimentation · "marché" ». Vide s'il n'y en a pas. */
+  filtersLabel: string;
+  /** « 19 septembre 2026 à 21:40 ». */
+  generatedAt: string;
+  totals: ReportTotals;
+  rows: ExportRow[];
+};
+
+const escapes: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+
+/** Tout texte saisi par un membre (note, nom de catégorie, nom de groupe) passe par ici : sans échappement, une note « <img src=x onerror=…> » s'exécuterait dans la WebView d'impression. */
+export function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (char) => escapes[char]);
+}
+
+const dateFormatter = new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+function formatRowDate(iso: string): string {
+  const [year, month, day] = iso.split('-').map(Number);
+  return dateFormatter.format(new Date(year, month - 1, day));
+}
+
+function row(item: ExportRow): string {
+  const sign = item.type === 'expense' ? 'expense' : 'income';
+  return `<tr>
+  <td class="date">${formatRowDate(item.occurredOn)}</td>
+  <td>${escapeHtml(item.categoryName ?? 'Sans catégorie')}</td>
+  <td class="note">${escapeHtml(item.note ?? '')}</td>
+  <td class="author">${escapeHtml(item.authorName ?? '')}</td>
+  <td class="amount ${sign}">${formatSigned(item.amount, item.type)}</td>
+</tr>`;
+}
+
+export function buildTransactionsReportHtml(input: ReportInput): string {
+  const { totals } = input;
+  const countLabel = totals.txCount === 1 ? '1 écriture' : `${totals.txCount} écritures`;
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relevé ${escapeHtml(input.groupName)}</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #12201C; font-size: 11pt; }
+  header { border-bottom: 2px solid #0EA47A; padding-bottom: 10px; margin-bottom: 16px; }
+  .brand { color: #0EA47A; font-weight: 800; letter-spacing: 1.5px; font-size: 9pt; text-transform: uppercase; }
+  h1 { font-size: 20pt; margin: 4px 0 2px; }
+  .meta { color: #5E6E69; font-size: 10pt; }
+  .totals { display: flex; gap: 10px; margin-bottom: 18px; }
+  .total { flex: 1; background: #F1F5F3; border-radius: 8px; padding: 10px 12px; }
+  .total .label { color: #5E6E69; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 1px; }
+  .total .value { font-size: 14pt; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  table { width: 100%; border-collapse: collapse; }
+  thead { display: table-header-group; }
+  th { text-align: left; color: #5E6E69; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid #DDE5E2; padding: 6px 6px; }
+  td { border-bottom: 1px solid #EEF2F0; padding: 6px 6px; vertical-align: top; }
+  tr { page-break-inside: avoid; }
+  .date { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .note { color: #3A4A45; }
+  .author { color: #5E6E69; white-space: nowrap; }
+  .amount { text-align: right; white-space: nowrap; font-weight: 600; font-variant-numeric: tabular-nums; }
+  th.amount { font-weight: normal; }
+  .income { color: #0B7A5B; }
+  .empty { color: #5E6E69; text-align: center; padding: 24px; }
+  footer { margin-top: 14px; color: #5E6E69; font-size: 8.5pt; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Wazu Finance · Relevé</div>
+  <h1>${escapeHtml(input.groupName)}</h1>
+  <div class="meta">${escapeHtml(input.periodLabel)}${input.filtersLabel ? ` · ${escapeHtml(input.filtersLabel)}` : ''} · ${countLabel}</div>
+</header>
+<section class="totals">
+  <div class="total"><div class="label">Entrées</div><div class="value income">${formatSigned(totals.income, 'income')}</div></div>
+  <div class="total"><div class="label">Sorties</div><div class="value">${formatSigned(totals.expense, 'expense')}</div></div>
+  <div class="total"><div class="label">Solde</div><div class="value">${formatBalance(totals.balance)} €</div></div>
+</section>
+<table>
+  <thead><tr><th>Date</th><th>Catégorie</th><th>Note</th><th>Saisie par</th><th class="amount">Montant</th></tr></thead>
+  <tbody>
+${input.rows.length > 0 ? input.rows.map(row).join('\n') : '<tr><td class="empty" colspan="5">Aucune opération.</td></tr>'}
+  </tbody>
+</table>
+<footer>Édité le ${escapeHtml(input.generatedAt)}.</footer>
+</body>
+</html>`;
+}

@@ -18,6 +18,7 @@ import type { TransactionFilters } from '@/data/transactions';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useCategories } from '@/hooks/use-categories';
 import { useDailyTotals } from '@/hooks/use-daily-totals';
+import { useExportTransactions, type ExportFormat } from '@/hooks/use-export-transactions';
 import { useTransactionHistory } from '@/hooks/use-transaction-history';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { formatPeriodLabel, periodPresets, todayIso } from '@/lib/dates';
@@ -28,6 +29,43 @@ import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 
 /** Délai entre la dernière frappe et la requête : taper « biocoop » ne doit pas en lancer sept. */
 const SEARCH_DELAY_MS = 300;
+
+const FORMATS: {
+  id: ExportFormat;
+  label: string;
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+}[] = [
+  { id: 'csv', label: 'Tableur (CSV)', icon: 'table-large' },
+  { id: 'pdf', label: 'Relevé (PDF)', icon: 'file-document-outline' },
+];
+
+/** Les filtres actifs en plus de la période, rédigés pour l'en-tête du relevé : « Dépenses · Alimentation · "marché" ». Vide quand seule la période filtre. */
+function exportFiltersLabel(
+  filters: HistoryFilterState,
+  categories: { id: string; name: string }[]
+): string {
+  const parts: string[] = [];
+  if (filters.type !== null) {
+    parts.push(filters.type === 'expense' ? 'Dépenses' : 'Revenus');
+  }
+  const category = categories.find((item) => item.id === filters.categoryId);
+  if (category) {
+    parts.push(category.name);
+  }
+  const search = normalizeSearch(filters.search);
+  if (search !== null) {
+    parts.push(`« ${search} »`);
+  }
+  return parts.join(' · ');
+}
+
+/** Une erreur Supabase porte un `code` que dataErrorMessage() sait traduire ; une erreur d'écriture ou de partage du fichier n'en a pas, et son message est déjà en français (voir save-file.ts). */
+function exportErrorMessage(error: unknown): string {
+  if (error instanceof Error && !('code' in error)) {
+    return `Export impossible : ${error.message}`;
+  }
+  return dataErrorMessage(error);
+}
 
 /**
  * Historique du groupe actif, en livre de comptes, d'après la maquette Stitch `historique_des_op_rations_wazu_finance` : les opérations groupées par jour, chaque jour avec son total.
@@ -88,6 +126,24 @@ export default function HistoryScreen() {
     retry,
   } = useTransactionHistory(queryFilters);
   const { totals } = useDailyTotals(queryFilters);
+  const exportMutation = useExportTransactions();
+  const exporting = exportMutation.isPending;
+  // Les totaux par jour comptent toutes les lignes des filtres, pas seulement la page chargée : c'est le bon critère pour « rien à exporter ».
+  const canExport = !exporting && totals !== undefined && totals.size > 0;
+
+  // Le menu de format n'est ouvert que le temps du choix : refermé dès l'export lancé, il ne reste pas à traîner sous l'en-tête.
+  const [formatMenuOpen, setFormatMenuOpen] = useState(false);
+
+  function handleExport(format: ExportFormat) {
+    setFormatMenuOpen(false);
+    exportMutation.mutate({
+      format,
+      filters: queryFilters,
+      // Les libellés viennent d'ici : c'est l'écran qui possède les filtres affichés, et le relevé doit porter les mêmes mots que la barre de filtres.
+      periodLabel: ledgerTitle.replace(/^Livre de comptes,? /, ''),
+      filtersLabel: exportFiltersLabel(filters, categories),
+    });
+  }
 
   const sections = useMemo(() => groupByDay(transactions), [transactions]);
 
@@ -168,19 +224,61 @@ export default function HistoryScreen() {
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Opérations</Text>
         {/* C'est ici qu'on vient vérifier ses opérations ; le tableau de bord porte déjà assez d'éléments. */}
+        {/* Exporte exactement ce que la liste montre : mêmes filtres, même groupe. Désactivé quand il n'y a rien à exporter, plutôt que de produire un fichier réduit à son en-tête. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Exporter ces opérations"
+          accessibilityState={{ disabled: !canExport, busy: exporting, expanded: formatMenuOpen }}
+          disabled={!canExport}
+          hitSlop={spacing.sm}
+          onPress={() => setFormatMenuOpen((open) => !open)}
+          style={[styles.headerLink, styles.exportButton, { opacity: canExport ? 1 : 0.4 }]}
+        >
+          {exporting ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <MaterialCommunityIcons name="tray-arrow-down" size={18} color={colors.primary} />
+          )}
+          <Text style={[styles.headerLinkLabel, { color: colors.primary }]}>Exporter</Text>
+        </Pressable>
         <Link href="/activity" asChild>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Journal du groupe"
             hitSlop={spacing.sm}
             // Aplati : <Link asChild> transmet le style par un Slot, qui lève une erreur de rendu en développement s'il reçoit un tableau.
-            style={StyleSheet.flatten(styles.headerLink)}
+            style={StyleSheet.flatten(styles.journalLink)}
           >
             <Text style={[styles.headerLinkLabel, { color: colors.primary }]}>Journal</Text>
           </Pressable>
         </Link>
         <AccountButton />
       </View>
+      {formatMenuOpen && !exporting ? (
+        <View style={styles.formatMenu}>
+          {FORMATS.map((format) => (
+            <Pressable
+              key={format.id}
+              accessibilityRole="button"
+              accessibilityLabel={format.label}
+              onPress={() => handleExport(format.id)}
+              style={({ pressed }) => [
+                styles.formatChip,
+                { backgroundColor: colors.surfaceMuted, opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              <MaterialCommunityIcons name={format.icon} size={16} color={colors.primary} />
+              <Text style={[styles.formatLabel, { color: colors.text }]}>{format.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+
+      {exportMutation.error ? (
+        <Text style={[styles.exportError, { color: colors.danger }]}>
+          {exportErrorMessage(exportMutation.error)}
+        </Text>
+      ) : null}
 
       {/* `isEmptyError` ne vaut vrai que pour l'échec du premier chargement (voir use-transaction-history.ts) : un refetch en arrière-plan qui échoue sur un filtre légitimement vide ne doit pas faire disparaître la barre de filtres, seule issue pour l'élargir. */}
       {isEmptyError ? (
@@ -320,8 +418,41 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   headerLink: {
-    // Pousse le lien au bord droit de l'en-tête.
+    // Pousse les liens au bord droit de l'en-tête.
     marginLeft: 'auto',
+  },
+  exportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  journalLink: {
+    marginLeft: spacing.sm,
+  },
+  formatMenu: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
+  formatChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs + 2,
+    paddingHorizontal: spacing.md,
+    minHeight: 40,
+    borderRadius: radius.pill,
+  },
+  formatLabel: {
+    fontFamily: font.semibold,
+    fontSize: 15,
+  },
+  exportError: {
+    fontFamily: font.medium,
+    fontSize: 15,
+    paddingHorizontal: spacing.lg,
   },
   headerLinkLabel: {
     fontFamily: font.semibold,

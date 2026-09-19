@@ -199,6 +199,30 @@ export async function listPage(
   return data;
 }
 
+/** 1000 : le plafond de lignes par requête de PostgREST sur Supabase. Une page plus grande serait tronquée en silence et la boucle s'arrêterait trop tôt. */
+const EXPORT_PAGE_SIZE = 1000;
+
+/**
+ * Toutes les opérations des filtres, pour l'export : la même requête que l'historique, parcourue page par page avec le même curseur, jusqu'à épuisement. Aucun second endroit où les filtres seraient traduits en SQL — le fichier contient exactement les lignes que l'écran liste.
+ */
+export async function listAllForExport(
+  groupId: string,
+  filters: TransactionFilters
+): Promise<TransactionWithCategory[]> {
+  const rows: TransactionWithCategory[] = [];
+  let cursor: TransactionCursor | null = null;
+
+  for (;;) {
+    const page = await listPage(groupId, filters, cursor, EXPORT_PAGE_SIZE);
+    rows.push(...page);
+    if (page.length < EXPORT_PAGE_SIZE) {
+      return rows;
+    }
+    const last = page[page.length - 1];
+    cursor = { occurredOn: last.occurred_on, id: last.id };
+  }
+}
+
 export type DailyTotal = {
   /** Solde signé du jour : entrées positives, sorties négatives. Sommé par Postgres. */
   total: number;
