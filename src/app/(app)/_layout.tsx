@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 
 import { useBudgetsRealtime } from '@/hooks/use-budgets-realtime';
+import { useMembershipsRealtime } from '@/hooks/use-memberships-realtime';
 import { useSavingsGoalsRealtime } from '@/hooks/use-savings-goals-realtime';
 import { useTransactionsRealtime } from '@/hooks/use-transactions-realtime';
 import { ActiveGroupProvider } from '@/providers/active-group-provider';
@@ -18,6 +19,7 @@ function AppStack() {
   useTransactionsRealtime();
   useBudgetsRealtime();
   useSavingsGoalsRealtime();
+  useMembershipsRealtime();
 
   return (
     <Stack screenOptions={{ headerShown: false }}>

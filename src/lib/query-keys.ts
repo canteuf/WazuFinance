@@ -45,6 +45,8 @@ export const queryKeys = {
   // Sous ['savingsGoals'] : un versement, une création ou une suppression invalident déjà ce préfixe, et les totaux suivent sans qu'aucune mutation les connaisse. `today` dans la clé : le rythme change avec le mois.
   savingsOverview: (today: string) => ['savingsGoals', 'overview', today] as const,
   // Un groupe à la fois, comme `activity` : rien de ce qui invalide `['transactions']`/`['budgets']` ne concerne les membres ou les invitations, pas de nichage sous ces préfixes.
+  // Racine réservée aux invalidations, comme budgetsAll : un événement Realtime sur les adhésions ne dit pas de quel groupe il s'agit (un DELETE ne porte que l'id).
+  groupMembersAll: () => ['groupMembers'] as const,
   groupMembers: (groupId: string) => ['groupMembers', groupId] as const,
   groupInvitation: (groupId: string) => ['groupInvitation', groupId] as const,
   // Clés plates, sans groupe, comme savingsGoals : le profil et les blocages de suppression appartiennent à l'utilisateur, et useClearCacheOnUserChange() est la seule frontière qui compte.
