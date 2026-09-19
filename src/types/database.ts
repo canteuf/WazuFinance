@@ -535,6 +535,22 @@ export type Database = {
         }[]
       }
       delete_own_account: { Args: never; Returns: undefined }
+      filtered_totals: {
+        Args: {
+          p_category_id?: string
+          p_from?: string
+          p_group_id: string
+          p_search?: string
+          p_to?: string
+          p_type?: Database["public"]["Enums"]["transaction_type"]
+        }
+        Returns: {
+          balance: number
+          expense: number
+          income: number
+          tx_count: number
+        }[]
+      }
       frequent_amounts: {
         Args: {
           p_group_id: string
