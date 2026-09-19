@@ -35,12 +35,12 @@ export function DateField({ value, label, onChange, maximumDate, minimumDate }: 
           mode="date"
           maximumDate={maximumDate}
           minimumDate={minimumDate}
-          onChange={(_event, date) => {
+          // onChange est déprécié depuis la v9 : onValueChange ne reçoit que la date choisie, onDismiss l'annulation — plus besoin de tester si date est défini.
+          onValueChange={(_event, date) => {
             setOpen(false);
-            if (date) {
-              onChange(dateToIso(date));
-            }
+            onChange(dateToIso(date));
           }}
+          onDismiss={() => setOpen(false)}
         />
       ) : null}
     </>
