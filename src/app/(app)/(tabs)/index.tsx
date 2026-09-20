@@ -80,7 +80,9 @@ export default function DashboardScreen() {
           <AccountButton />
         </ScreenHeader>
       }
+      floatingAlign="center"
       floatingAction={
+        // La saisie en trois taps reste à portée depuis chaque onglet, comme sur la maquette.
         <Link href="/transaction" asChild>
           <Pressable
             accessibilityRole="button"
@@ -92,11 +94,8 @@ export default function DashboardScreen() {
               { backgroundColor: colors.primary },
             ])}
           >
-            <MaterialCommunityIcons
-              name="plus"
-              size={28}
-              color={colors.primaryText}
-            />
+            <MaterialCommunityIcons name="plus" size={22} color={colors.primaryText} />
+            <Text style={[styles.fabLabel, { color: colors.primaryText }]}>Saisie</Text>
           </Pressable>
         </Link>
       }
@@ -182,10 +181,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   fab: {
-    width: 60,
-    height: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs + 2,
+    paddingHorizontal: spacing.lg,
+    height: 52,
     borderRadius: radius.pill,
-    alignItems: "center",
-    justifyContent: "center",
+  },
+  fabLabel: {
+    fontFamily: font.bold,
+    fontSize: 18,
   },
 });

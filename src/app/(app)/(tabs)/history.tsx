@@ -562,7 +562,8 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    // Mêmes mesures que la pilule des autres onglets, rendue par `floatingAction` dans `Screen` : celle-ci est posée à la main faute de pouvoir passer par `Screen`, elle doit lui rester identique à l'œil.
+    gap: spacing.xs + 2,
     height: 52,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.pill,
