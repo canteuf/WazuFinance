@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   scopeLabel: {
     flexShrink: 1,
     fontFamily: font.medium,
-    fontSize: 14,
+    fontSize: 15,
   },
   cardTitle: {
     flexDirection: 'row',
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   },
   meta: {
     fontFamily: font.medium,
-    fontSize: 13.5,
+    fontSize: 15,
     fontVariant: ['tabular-nums'],
   },
   detail: {

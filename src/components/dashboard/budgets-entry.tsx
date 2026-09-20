@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   },
   percent: {
     fontFamily: font.medium,
-    fontSize: 13.5,
+    fontSize: 15,
     fontVariant: ['tabular-nums'],
   },
   detail: {

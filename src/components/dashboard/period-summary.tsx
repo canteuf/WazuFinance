@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: font.semibold,
-    fontSize: 13,
+    fontSize: 14,
     letterSpacing: 0.77,
     textTransform: 'uppercase',
   },
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   },
   deltaText: {
     fontFamily: font.semibold,
-    fontSize: 13.5,
+    fontSize: 15,
     fontVariant: ['tabular-nums'],
   },
   split: {
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   },
   statKey: {
     fontFamily: font.semibold,
-    fontSize: 12.5,
+    fontSize: 14,
     letterSpacing: 0.4,
     flexShrink: 1,
   },
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
   },
   statCaption: {
     fontFamily: font.regular,
-    fontSize: 13.5,
+    fontSize: 15,
     marginTop: 1,
   },
   pace: {
@@ -277,12 +277,12 @@ const styles = StyleSheet.create({
   },
   paceLabel: {
     fontFamily: font.semibold,
-    fontSize: 13.5,
+    fontSize: 15,
     fontVariant: ['tabular-nums'],
   },
   paceAllowance: {
     fontFamily: font.regular,
-    fontSize: 14,
+    fontSize: 15,
     fontVariant: ['tabular-nums'],
   },
   error: {

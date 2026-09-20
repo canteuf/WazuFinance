@@ -229,6 +229,8 @@ const styles = StyleSheet.create({
     fontFamily: font.regular,
     fontSize: 16,
     lineHeight: 22,
+    // Justifié : le paragraphe fait quatre à cinq lignes pleines, et un bord droit en dents de scie donnait un air brouillon à la seule carte de l'app qu'on veut voir lue jusqu'au bout. Android n'applique `justify` qu'à partir d'API 26 ; en dessous le texte reste aligné à gauche, ce qui est le rendu actuel.
+    textAlign: 'justify',
   },
   link: {
     fontFamily: font.semibold,

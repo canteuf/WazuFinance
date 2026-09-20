@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   },
   total: {
     fontFamily: font.medium,
-    fontSize: 14,
+    fontSize: 15,
     fontVariant: ['tabular-nums'],
     flexShrink: 0,
   },

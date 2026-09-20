@@ -1,6 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useCategories } from '@/hooks/use-categories';
 import type { PeriodPreset, PeriodPresetId } from '@/lib/dates';
@@ -49,10 +49,12 @@ export function activeFilterCount(state: HistoryFilterState): number {
   ].filter(Boolean).length;
 }
 
-type Panel = 'period' | 'category' | null;
+type PanelId = 'period' | 'category' | null;
 
 /**
- * Recherche, puis une seule rangée de pastilles, d'après la maquette : période, dépenses, revenus, catégorie.
+ * Recherche, puis les pastilles de filtre, d'après la maquette : période, dépenses, revenus, catégorie.
+ *
+ * La maquette les tient sur une seule rangée ; à la largeur réelle d'un téléphone elles n'y tiennent pas, et le défilement horizontal coupait la dernière en deux au bord de l'écran. Elles passent donc à la ligne : deux rangées pleines valent mieux qu'une rangée tronquée.
  *
  * La période et la catégorie ont trop de valeurs pour tenir dans la rangée ; leur pastille déplie un panneau dessous plutôt qu'une modale, qui masquerait la liste que le choix est en train de filtrer.
  */
@@ -70,7 +72,7 @@ export function FilterBar({
 }) {
   const colors = useColors();
   const { categories } = useCategories(state.type);
-  const [panel, setPanel] = useState<Panel>(null);
+  const [panel, setPanel] = useState<PanelId>(null);
 
   const preset = presets.find((item) => item.id === state.presetId) ?? presets[0];
   const category = categories.find((item) => item.id === effectiveCategoryId);
@@ -111,8 +113,8 @@ export function FilterBar({
         ) : null}
       </View>
 
-      {/* Défilement horizontal dans une liste verticale : l'avertissement de React Native ne vise que l'imbrication sur le même axe. */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+      {/* Les quatre pastilles passent à la ligne plutôt que de défiler horizontalement : à la largeur d'un téléphone, la dernière (« Par catégorie ») était coupée au bord de l'écran, ce qui se lit comme un défaut d'affichage et non comme une invitation à faire défiler. */}
+      <View style={styles.row}>
         <Chip
           label={preset.label}
           icon="calendar-month-outline"
@@ -142,15 +144,16 @@ export function FilterBar({
           expanded={panel === 'category'}
           onPress={() => setPanel(panel === 'category' ? null : 'category')}
         />
-      </ScrollView>
+      </View>
 
       {panel === 'period' ? (
-        <View style={styles.panel}>
+        <Panel title="Période">
           {presets.map((item) => (
             <Chip
               key={item.id}
               label={item.label}
               group="Période"
+              block
               selected={state.presetId === item.id}
               onPress={() => {
                 onChange({ ...state, presetId: item.id });
@@ -158,14 +161,15 @@ export function FilterBar({
               }}
             />
           ))}
-        </View>
+        </Panel>
       ) : null}
 
       {panel === 'category' ? (
-        <View style={styles.panel}>
+        <Panel title="Catégorie">
           <Chip
             label="Toutes"
             group="Catégorie"
+            block
             selected={effectiveCategoryId === null}
             onPress={() => {
               onChange({ ...state, categoryId: null });
@@ -177,6 +181,7 @@ export function FilterBar({
               key={item.id}
               label={item.name}
               group="Catégorie"
+              block
               selected={effectiveCategoryId === item.id}
               onPress={() => {
                 onChange({ ...state, categoryId: item.id });
@@ -184,8 +189,24 @@ export function FilterBar({
               }}
             />
           ))}
-        </View>
+        </Panel>
       ) : null}
+    </View>
+  );
+}
+
+/**
+ * Le dépliant d'un filtre : un intertitre, puis ses valeurs en grille de deux colonnes égales, sur une surface qui le détache de la liste qu'il filtre.
+ *
+ * Les valeurs s'alignaient jusqu'ici au fil du texte, chacune à la largeur de son libellé : quatorze catégories produisaient sept lignes de longueurs différentes, sans colonne à suivre du regard. La grille les range, au prix d'un peu de place perdue sur les libellés courts.
+ */
+function Panel({ title, children }: { title: string; children: ReactNode }) {
+  const colors = useColors();
+
+  return (
+    <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <Text style={[styles.panelTitle, { color: colors.textMuted }]}>{title}</Text>
+      <View style={styles.grid}>{children}</View>
     </View>
   );
 }
@@ -198,6 +219,7 @@ function Chip({
   icon,
   trailingIcon,
   expanded,
+  block = false,
 }: {
   label: string;
   /** Nom du filtre, repris dans l'énoncé vocal : « Type : Dépenses ». */
@@ -208,6 +230,8 @@ function Chip({
   trailingIcon?: IconName;
   /** Pour une pastille qui déplie un panneau : annoncé au lecteur d'écran. */
   expanded?: boolean;
+  /** Dans un panneau : la pastille occupe une colonne entière de la grille, au lieu de s'ajuster à son libellé. */
+  block?: boolean;
 }) {
   const colors = useColors();
   // Sélectionnée, la pastille prend la couleur du texte, pas l'accent : l'accent désigne ce sur quoi on agit, et une rangée de pastilles vertes le banaliserait.
@@ -222,6 +246,7 @@ function Chip({
       onPress={onPress}
       style={[
         styles.chip,
+        block ? styles.chipBlock : null,
         {
           backgroundColor: selected ? colors.text : colors.surface,
           borderColor: selected ? colors.text : colors.border,
@@ -229,7 +254,10 @@ function Chip({
       ]}
     >
       {icon ? <MaterialCommunityIcons name={icon} size={16} color={foreground} /> : null}
-      <Text style={[styles.chipLabel, { color: foreground }]}>{label}</Text>
+      {/* Tronqué plutôt que replié : en grille, un libellé sur deux lignes ferait une pastille plus haute que ses voisines et romprait l'alignement des rangées. */}
+      <Text style={[styles.chipLabel, { color: foreground }]} numberOfLines={1}>
+        {label}
+      </Text>
       {trailingIcon ? (
         <MaterialCommunityIcons name={trailingIcon} size={16} color={foreground} />
       ) : null}
@@ -259,10 +287,22 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
-    paddingRight: spacing.lg,
   },
   panel: {
+    gap: spacing.sm + 2,
+    padding: spacing.md - 2,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+  },
+  panelTitle: {
+    fontFamily: font.semibold,
+    fontSize: 14,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
@@ -271,13 +311,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    // Même hauteur pour toutes, libellé long ou court : c'est ce qui fait tenir les rangées de la grille.
+    minHeight: 44,
     borderRadius: radius.sm,
     borderWidth: StyleSheet.hairlineWidth * 2,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md - 2,
   },
+  chipBlock: {
+    // Deux colonnes exactement : à 48 % chacune, une troisième ne tient jamais sur la ligne, et la dernière rangée garde la largeur d'une colonne au lieu de s'étirer sur toute la largeur.
+    flexBasis: '48%',
+  },
   chipLabel: {
     fontFamily: font.semibold,
     fontSize: 16,
+    flexShrink: 1,
   },
 });
