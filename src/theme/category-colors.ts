@@ -1,19 +1,13 @@
 /**
  * Couleur par catégorie.
  *
- * La couleur est un canal d'information, pas une décoration : une dépense
- * d'alimentation se reconnaît à sa pastille orange avant qu'on ait lu le mot,
- * et la même teinte suit la catégorie sur tous les écrans.
+ * La couleur est un canal d'information, pas une décoration : une dépense d'alimentation se reconnaît à sa pastille orange avant qu'on ait lu le mot, et la même teinte suit la catégorie sur tous les écrans.
  *
  * Deux niveaux :
- *   1. les catégories par défaut sont mappées par leur icône, qui est stable —
- *      elle vient du seed et ne change pas quand on renomme une catégorie ;
- *   2. tout le reste, catégories personnalisées comprises, reçoit une teinte
- *      dérivée de son identifiant. Déterministe, donc stable d'un appareil à
- *      l'autre et d'une session à l'autre, sans colonne en base ni migration.
+ * 1. les catégories par défaut sont mappées par leur icône, qui est stable — elle vient du seed et ne change pas quand on renomme une catégorie ;
+ * 2. tout le reste, catégories personnalisées comprises, reçoit une teinte dérivée de son identifiant. Déterministe, donc stable d'un appareil à l'autre et d'une session à l'autre, sans colonne en base ni migration.
  *
- * Chaque teinte existe en clair et en sombre : un orange lisible sur papier
- * devient illisible sur fond profond, et inversement.
+ * Chaque teinte existe en clair et en sombre : un orange lisible sur papier devient illisible sur fond profond, et inversement.
  */
 
 export type CategoryTone = {
@@ -93,9 +87,7 @@ const FALLBACK_ORDER: ToneName[] = [
 ];
 
 /**
- * Icônes du seed (20260904000300_seed_categories.sql). Les revenus prennent
- * les verts, les dépenses se répartissent le reste ; les couleurs proches sont
- * séparées pour rester distinguables au premier coup d'œil.
+ * Icônes du seed (20260904000300_seed_categories.sql). Les revenus prennent les verts, les dépenses se répartissent le reste ; les couleurs proches sont séparées pour rester distinguables au premier coup d'œil.
  */
 const BY_ICON: Record<string, ToneName> = {
   cart: 'orange', // Alimentation

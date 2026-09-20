@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: font.semibold,
-    fontSize: 13,
+    fontSize: 15,
   },
   input: {
     fontFamily: font.medium,
@@ -51,10 +51,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md - 2,
-    fontSize: 16,
+    fontSize: 18,
   },
   error: {
     fontFamily: font.medium,
-    fontSize: 12,
+    fontSize: 14,
   },
 });

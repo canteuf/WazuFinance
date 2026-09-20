@@ -8,11 +8,12 @@ import {
 } from '@expo-google-fonts/bricolage-grotesque';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { useAuth } from '@/hooks/use-auth';
 import { useClearCacheOnUserChange } from '@/hooks/use-clear-cache-on-user-change';
+import { applyThemePreference, readThemePreference } from '@/lib/theme-preference';
 import { AuthProvider } from '@/providers/auth-provider';
 import { QueryProvider } from '@/providers/query-provider';
 
@@ -34,8 +35,7 @@ export default function RootLayout() {
 }
 
 /**
- * Composant sans rendu : isolé de RootNavigator pour que la logique de garde
- * de navigation reste indépendante de la gestion du cache TanStack Query.
+ * Composant sans rendu : isolé de RootNavigator pour que la logique de garde de navigation reste indépendante de la gestion du cache TanStack Query.
  */
 function CacheSessionGuard() {
   useClearCacheOnUserChange();
@@ -43,15 +43,11 @@ function CacheSessionGuard() {
 }
 
 /**
- * Le splash reste affiché tant que la session persistée n'a pas été relue, pour
- * éviter le flash de l'écran de connexion chez un utilisateur déjà authentifié.
+ * Le splash reste affiché tant que la session persistée n'a pas été relue, pour éviter le flash de l'écran de connexion chez un utilisateur déjà authentifié.
  */
 function RootNavigator() {
   const { session, isLoading } = useAuth();
-  // React Native n'a pas de police de repli par famille : tant que Bricolage
-  // Grotesque n'est pas chargée, chaque écran s'afficherait dans la police
-  // système puis se recomposerait. On garde donc le splash sur les deux
-  // attentes à la fois.
+  // React Native n'a pas de police de repli par famille : tant que Bricolage Grotesque n'est pas chargée, chaque écran s'afficherait dans la police système puis se recomposerait. On garde donc le splash sur les deux attentes à la fois.
   const [fontsLoaded, fontError] = useFonts({
     BricolageGrotesque_400Regular,
     BricolageGrotesque_500Medium,
@@ -60,10 +56,19 @@ function RootNavigator() {
     BricolageGrotesque_800ExtraBold,
   });
 
-  // Un échec de chargement ne doit pas laisser l'app derrière son splash :
-  // mieux vaut la police système que rien.
+  // Un échec de chargement ne doit pas laisser l'app derrière son splash : mieux vaut la police système que rien.
   const fontsSettled = fontsLoaded || fontError !== null;
-  const ready = !isLoading && fontsSettled;
+
+  // Le thème choisi est appliqué avant que le splash ne se retire : sinon le premier écran s'afficherait dans le thème du téléphone, puis basculerait sous les yeux de l'utilisateur. readThemePreference() ne lève jamais.
+  const [themeSettled, setThemeSettled] = useState(false);
+  useEffect(() => {
+    void readThemePreference().then((preference) => {
+      applyThemePreference(preference);
+      setThemeSettled(true);
+    });
+  }, []);
+
+  const ready = !isLoading && fontsSettled && themeSettled;
 
   useEffect(() => {
     if (ready) {

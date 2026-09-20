@@ -1,117 +1,219 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
-import { formatOccurredOn } from '@/lib/dates';
+import { goalIcon } from '@/components/savings/goal-icons';
+import { ProgressBar } from '@/components/ui/progress-bar';
+import { formatMonthYear } from '@/lib/dates';
 import { formatAmount } from '@/lib/money';
 import type { SavingsProgress } from '@/lib/savings-progress';
-import { font, radius, spacing, stackAtFontScale, useColors } from '@/theme/tokens';
+import {
+  font,
+  radius,
+  spacing,
+  stackAtFontScale,
+  useColors,
+  useElevation,
+} from '@/theme/tokens';
 
-/** Le texte dit ce que la couleur dit : un daltonien lit la même information. */
-function statusText(item: SavingsProgress): string {
-  if (item.status === 'reached') {
-    return 'Atteint';
-  }
-  const remaining = item.goal.target_amount - item.goal.current_amount;
-  return `Il reste ${formatAmount(remaining)} €`;
-}
-
+/**
+ * Carte d'objectif d'après la maquette Stitch `objectifs_d_pargne_wazu_finance` : l'icône et le nom, l'échéance, l'épargné sur la cible, la barre, puis ce qui reste et le rythme mensuel qui y mène.
+ *
+ * Un objectif atteint passe en carte atténuée, sous les objectifs en cours : il n'appelle plus d'effort.
+ */
 export function SavingsGoalRow({
   item,
+  rhythm,
   onPress,
 }: {
   item: SavingsProgress;
+  /** Rythme mensuel calculé par savings_plans(). Absent sans échéance, une fois atteint, ou tant que les totaux chargent. */
+  rhythm: number | undefined;
   onPress: () => void;
 }) {
   const colors = useColors();
+  const elevation = useElevation();
   const { fontScale } = useWindowDimensions();
+  const { goal, percent } = item;
 
-  const barColor = item.status === 'reached' ? colors.positive : colors.primary;
-  const percent = item.percent;
-
-  // Au-delà du seuil, le nom et les montants s'empilent plutôt que de se
-  // disputer la largeur — même motif que budget-row.tsx.
+  const reached = item.status === 'reached';
+  const remaining = goal.target_amount - goal.current_amount;
   const stacked = fontScale >= stackAtFontScale;
+
+  const meta = goal.target_date
+    ? `Échéance : ${formatMonthYear(goal.target_date)}`
+    : 'Sans date limite';
+
+  const footLeft = reached
+    ? `${formatAmount(goal.current_amount)} € atteints`
+    : `Reste ${formatAmount(remaining)} €`;
+  const footRight = reached
+    ? null
+    : rhythm !== undefined
+      ? `Rythme : ${formatAmount(rhythm)} €/mois`
+      : goal.target_date
+        ? null
+        : 'Épargne libre';
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${item.goal.name}, ${formatAmount(item.goal.current_amount)} euros sur ${formatAmount(item.goal.target_amount)} euros, ${percent} %. ${statusText(item)}${item.goal.target_date ? `. Échéance : ${formatOccurredOn(item.goal.target_date)}` : ''}`}
+      accessibilityLabel={`${goal.name}, ${formatAmount(goal.current_amount)} euros sur ${formatAmount(goal.target_amount)} euros, ${percent} %. ${meta}. ${footLeft}${footRight ? `. ${footRight}` : ''}. Toucher pour verser ou modifier.`}
       onPress={onPress}
-      style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.border }]}
+      style={({ pressed }) => [
+        styles.card,
+        reached ? null : elevation.card,
+        {
+          backgroundColor: reached ? colors.surfaceMuted : colors.surface,
+          opacity: pressed ? 0.9 : 1,
+        },
+      ]}
     >
-      <View style={[styles.head, stacked && styles.headStacked]}>
-        <Text style={[styles.name, { color: colors.text }]}>{item.goal.name}</Text>
-        <Text style={[styles.amounts, { color: colors.textMuted }]}>
-          {formatAmount(item.goal.current_amount)} / {formatAmount(item.goal.target_amount)} €
+      <View style={styles.head}>
+        {/* Carré arrondi, comme les postes de dépense : le rond est réservé aux personnes. */}
+        <View
+          style={[
+            styles.glyph,
+            { backgroundColor: reached ? colors.surface : colors.surfaceMuted },
+          ]}
+        >
+          <MaterialCommunityIcons
+            name={goalIcon(goal.icon)}
+            size={22}
+            color={reached ? colors.textMuted : colors.primary}
+          />
+        </View>
+        <View style={styles.identity}>
+          <Text style={[styles.name, { color: colors.text }]} numberOfLines={2}>
+            {goal.name}
+          </Text>
+          <Text style={[styles.meta, { color: colors.textMuted }]}>{meta}</Text>
+        </View>
+        {reached ? (
+          <View style={styles.reached}>
+            <MaterialCommunityIcons name="check" size={16} color={colors.text} />
+            <Text style={[styles.reachedLabel, { color: colors.text }]}>Atteint</Text>
+          </View>
+        ) : (
+          <MaterialCommunityIcons name="pencil-outline" size={20} color={colors.textMuted} />
+        )}
+      </View>
+
+      <View style={[styles.figures, stacked && styles.figuresStacked]}>
+        <View style={styles.amounts}>
+          <Text style={[styles.current, { color: colors.text }]}>
+            {formatAmount(goal.current_amount)} €
+          </Text>
+          <Text style={[styles.target, { color: colors.textMuted }]}>
+            / {formatAmount(goal.target_amount)} €
+          </Text>
+        </View>
+        <Text style={[styles.percent, { color: reached ? colors.text : colors.primary }]}>
+          {percent} %
         </Text>
       </View>
 
-      <View style={[styles.track, { backgroundColor: colors.surfaceMuted }]}>
-        <View
-          style={[
-            styles.bar,
-            {
-              // Plafonnée à 100 % de la piste, plancher à 2 % dès qu'il y a
-              // quelque chose — même motif que budget-row.tsx.
-              width: `${item.goal.current_amount === 0 ? 0 : Math.min(Math.max(percent, 2), 100)}%`,
-              backgroundColor: barColor,
-            },
-          ]}
-        />
-      </View>
+      <ProgressBar
+        ratio={goal.current_amount === 0 ? 0 : percent / 100}
+        tone={reached ? 'muted' : 'accent'}
+        size="lg"
+      />
 
-      <Text
-        style={[
-          styles.status,
-          { color: item.status === 'reached' ? colors.positive : colors.textMuted },
-        ]}
-      >
-        {statusText(item)} · {percent} %
-        {item.goal.target_date ? ` · ${formatOccurredOn(item.goal.target_date)}` : ''}
-      </Text>
+      <View style={[styles.foot, stacked && styles.footStacked]}>
+        <Text style={[styles.footText, { color: colors.textMuted }]}>{footLeft}</Text>
+        {footRight ? (
+          <Text style={[styles.footText, { color: colors.textMuted }]}>{footRight}</Text>
+        ) : null}
+      </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth * 2,
+  card: {
+    gap: spacing.sm + 4,
+    padding: spacing.md + 2,
+    borderRadius: radius.lg,
   },
   head: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm + 4,
+  },
+  glyph: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.sm + 4,
     alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  identity: {
+    flex: 1,
+    gap: 2,
+  },
+  name: {
+    fontFamily: font.bold,
+    fontSize: 20,
+    letterSpacing: -0.3,
+  },
+  meta: {
+    fontFamily: font.regular,
+    fontSize: 15,
+  },
+  reached: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  reachedLabel: {
+    fontFamily: font.medium,
+    fontSize: 15,
+  },
+  figures: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
-  headStacked: {
+  figuresStacked: {
     flexDirection: 'column',
     alignItems: 'flex-start',
   },
-  name: {
-    fontFamily: font.semibold,
-    fontSize: 14,
-    letterSpacing: -0.1,
+  amounts: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    gap: spacing.xs + 2,
     flexShrink: 1,
   },
-  amounts: {
+  current: {
     fontFamily: font.bold,
-    fontSize: 13,
+    fontSize: 24,
+    letterSpacing: -0.4,
     fontVariant: ['tabular-nums'],
-    flexShrink: 0,
   },
-  track: {
-    height: 8,
-    borderRadius: radius.pill,
-    overflow: 'hidden',
+  target: {
+    fontFamily: font.regular,
+    fontSize: 17,
+    fontVariant: ['tabular-nums'],
   },
-  bar: {
-    height: '100%',
-    borderRadius: radius.pill,
+  percent: {
+    fontFamily: font.bold,
+    fontSize: 17,
+    fontVariant: ['tabular-nums'],
   },
-  status: {
-    fontFamily: font.medium,
-    fontSize: 12.5,
+  foot: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  footStacked: {
+    flexDirection: 'column',
+    gap: 2,
+  },
+  footText: {
+    fontFamily: font.regular,
+    fontSize: 15,
+    fontVariant: ['tabular-nums'],
   },
 });

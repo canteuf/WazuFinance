@@ -7,8 +7,9 @@ import { Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
 import { useAuth } from '@/hooks/use-auth';
 import { authErrorMessage } from '@/lib/auth-errors';
+import { goBackOr } from '@/lib/navigation';
 import { validateDisplayName, validateEmail, validatePassword } from '@/lib/validation';
-import { font, spacing, useColors } from '@/theme/tokens';
+import { font, radius, spacing, useColors } from '@/theme/tokens';
 
 type FieldErrors = {
   displayName?: string;
@@ -70,6 +71,10 @@ export default function SignUpScreen() {
   return (
     <Screen>
       <View style={styles.header}>
+        {/* Même monogramme qu'à la connexion : les deux écrans forment une seule porte d'entrée, et changer d'en-tête entre eux donnerait l'impression d'avoir changé d'application. */}
+        <View style={[styles.mark, { backgroundColor: colors.primary }]}>
+          <Text style={[styles.markLetter, { color: colors.primaryText }]}>W</Text>
+        </View>
         <Text style={[styles.title, { color: colors.text }]}>Créer un compte</Text>
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
           Votre compte personnel est privé. Vous pourrez ensuite partager un budget.
@@ -137,7 +142,11 @@ export default function SignUpScreen() {
       {notice ? <Text style={[styles.message, { color: colors.primary }]}>{notice}</Text> : null}
 
       <Button title="Créer mon compte" loading={submitting} onPress={() => void handleSubmit()} />
-      <Button title="J’ai déjà un compte" variant="ghost" onPress={() => router.back()} />
+      <Button
+        title="J’ai déjà un compte"
+        variant="ghost"
+        onPress={() => goBackOr(router, '/sign-in')}
+      />
     </Screen>
   );
 }
@@ -146,18 +155,34 @@ const styles = StyleSheet.create({
   header: {
     gap: spacing.xs,
     marginBottom: spacing.sm,
+    alignItems: 'center',
+  },
+  mark: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
+  markLetter: {
+    fontFamily: font.black,
+    fontSize: 26,
+    lineHeight: 32,
   },
   title: {
     fontFamily: font.black,
-    fontSize: 30,
+    fontSize: 28,
     letterSpacing: -0.7,
+    textAlign: 'center',
   },
   subtitle: {
     fontFamily: font.regular,
-    fontSize: 15,
+    fontSize: 17,
+    textAlign: 'center',
   },
   message: {
     fontFamily: font.medium,
-    fontSize: 14,
+    fontSize: 16,
   },
 });

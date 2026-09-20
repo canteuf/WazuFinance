@@ -3,10 +3,11 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { AmountInput } from '@/components/transaction/amount-input';
 import { CategoryPicker } from '@/components/transaction/category-picker';
-import { Button } from '@/components/ui/button';
+import { PrimaryAction } from '@/components/ui/form-actions';
 import type { Category } from '@/data/categories';
-import { parseAmount } from '@/lib/money';
-import { font, spacing, useColors } from '@/theme/tokens';
+import { WARNING_RATIO } from '@/lib/budget-progress';
+import { formatAmount, parseAmount } from '@/lib/money';
+import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 
 export type BudgetFormValues = {
   categoryId: string;
@@ -14,47 +15,29 @@ export type BudgetFormValues = {
 };
 
 type BudgetFormProps = {
-  /** Catégories proposées : à la création, celles sans budget, les plus dépensées d'abord. */
+  /** Catégories proposées : celles sans budget, les plus dépensées d'abord. */
   availableCategories: Category[];
-  initialValues?: BudgetFormValues;
-  /** En édition, la catégorie ne se choisit plus : on affiche seulement son nom. */
-  lockedCategory?: { id: string; name: string };
-  submitLabel: string;
   submitting: boolean;
-  deleting: boolean;
   errorText?: string;
   onSubmit: (values: BudgetFormValues) => void;
-  onDelete?: () => void;
 };
 
-export function BudgetForm({
-  availableCategories,
-  initialValues,
-  lockedCategory,
-  submitLabel,
-  submitting,
-  deleting,
-  errorText,
-  onSubmit,
-  onDelete,
-}: BudgetFormProps) {
+/**
+ * Création d'une enveloppe, d'après le panneau « Définir un plafond budgétaire » de la maquette `gestion_des_budgets_wazu_finance` : la catégorie, puis le plafond.
+ *
+ * Création seulement. Une enveloppe existante ne repasse pas par ce formulaire : son plafond s'augmente ou se réduit (voir budget.tsx), il ne se réécrit pas.
+ */
+export function BudgetForm({ availableCategories, submitting, errorText, onSubmit }: BudgetFormProps) {
   const colors = useColors();
+  const elevation = useElevation();
 
-  const [categoryId, setCategoryId] = useState<string | null>(
-    lockedCategory?.id ?? initialValues?.categoryId ?? null
-  );
-  const [amountText, setAmountText] = useState(
-    initialValues ? initialValues.amount.toFixed(2).replace('.', ',') : ''
-  );
+  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [amountText, setAmountText] = useState('');
   const [touched, setTouched] = useState(false);
-  // Deuxième étape de confirmation avant suppression, voir le bloc de rendu
-  // plus bas pour la justification de ce choix.
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const amount = parseAmount(amountText);
-  // `amount > 0` est une contrainte de la base : la refuser ici évite un
-  // aller-retour réseau pour apprendre ce qu'on sait déjà.
-  const valid = categoryId !== null && amount !== null && amount > 0;
+  // `amount > 0` est une contrainte de la base : la refuser ici évite un aller-retour réseau pour apprendre ce qu'on sait déjà.
+  const valid = categoryId !== null && amount !== null;
 
   function handleSubmit() {
     setTouched(true);
@@ -66,115 +49,70 @@ export function BudgetForm({
 
   return (
     <View style={styles.form}>
-      <AmountInput value={amountText} onChangeText={setAmountText} autoFocus />
-
-      {lockedCategory ? (
-        <View style={styles.block}>
-          <Text style={[styles.label, { color: colors.textMuted }]}>Catégorie</Text>
-          <Text style={[styles.locked, { color: colors.text }]}>{lockedCategory.name}</Text>
-          {/* Déplacer un budget d’une catégorie à l’autre reviendrait à en
-              supprimer un et à en créer un autre, et buterait sur l’unicité si
-              la cible en a déjà un. Supprimer puis recréer est explicite. */}
+      <View style={styles.field}>
+        <Text style={[styles.eyebrow, { color: colors.textMuted }]}>1. Choisir la catégorie</Text>
+        {availableCategories.length === 0 ? (
           <Text style={[styles.hint, { color: colors.textMuted }]}>
-            Pour changer de catégorie, supprimez ce budget et créez-en un autre.
+            Toutes les catégories de dépense ont déjà une enveloppe.
           </Text>
+        ) : (
+          <CategoryPicker
+            categories={availableCategories}
+            selectedId={categoryId}
+            onSelect={setCategoryId}
+          />
+        )}
+      </View>
+
+      <View style={styles.field}>
+        <Text style={[styles.eyebrow, { color: colors.textMuted }]}>2. Plafond de la période</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface }, elevation.card]}>
+          <AmountInput value={amountText} onChangeText={setAmountText} />
         </View>
-      ) : (
-        <View style={styles.block}>
-          <Text style={[styles.label, { color: colors.textMuted }]}>Catégorie</Text>
-          {availableCategories.length === 0 ? (
-            <Text style={[styles.hint, { color: colors.textMuted }]}>
-              Toutes les catégories de dépense ont déjà un budget.
-            </Text>
-          ) : (
-            <CategoryPicker
-              categories={availableCategories}
-              selectedId={categoryId}
-              onSelect={setCategoryId}
-            />
-          )}
-        </View>
-      )}
+        {/* Une multiplication pour l'affichage, pas une somme : le seuil que budgetProgress() appliquera au même plafond. */}
+        <Text style={[styles.hint, { color: colors.textMuted }]}>
+          {amount !== null
+            ? `L’alerte s’affichera à ${Math.round(WARNING_RATIO * 100)} % du plafond, soit ${formatAmount(Math.round(amount * WARNING_RATIO * 100) / 100)} €.`
+            : `L’alerte s’affichera à ${Math.round(WARNING_RATIO * 100)} % du plafond.`}
+        </Text>
+      </View>
 
       {touched && !valid ? (
         <Text style={[styles.error, { color: colors.danger }]}>
-          Choisissez une catégorie et un montant supérieur à zéro.
+          Choisissez une catégorie et un plafond supérieur à zéro.
         </Text>
       ) : null}
 
       {errorText ? <Text style={[styles.error, { color: colors.danger }]}>{errorText}</Text> : null}
 
-      <Button
-        title={submitLabel}
-        loading={submitting}
-        disabled={deleting}
-        onPress={handleSubmit}
-      />
-
-      {onDelete ? (
-        confirmingDelete ? (
-          // Confirmation portée par l'état du composant, pas par Alert.alert :
-          // cette app est aussi testée dans un navigateur, où Alert.alert ne
-          // fait rien — une confirmation qui en dépendrait rendrait la
-          // suppression silencieusement impossible sur le web.
-          <View style={styles.deleteRow}>
-            <Button
-              title="Confirmer la suppression"
-              variant="danger"
-              loading={deleting}
-              disabled={submitting || deleting}
-              accessibilityLabel="Confirmer la suppression définitive de ce budget"
-              onPress={onDelete}
-            />
-            <Button
-              title="Annuler"
-              variant="ghost"
-              disabled={submitting || deleting}
-              onPress={() => setConfirmingDelete(false)}
-            />
-          </View>
-        ) : (
-          <Button
-            title="Supprimer"
-            variant="ghost"
-            loading={deleting}
-            disabled={submitting || deleting}
-            onPress={() => setConfirmingDelete(true)}
-          />
-        )
-      ) : null}
+      <PrimaryAction label="Enregistrer l’enveloppe" loading={submitting} onPress={handleSubmit} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   form: {
-    gap: spacing.md,
-    padding: spacing.lg,
+    gap: spacing.lg,
   },
-  block: {
+  field: {
     gap: spacing.sm,
   },
-  deleteRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  label: {
+  eyebrow: {
     fontFamily: font.semibold,
-    fontSize: 10.5,
-    letterSpacing: 0.95,
+    fontSize: 14,
+    letterSpacing: 1.1,
     textTransform: 'uppercase',
   },
-  locked: {
-    fontFamily: font.semibold,
-    fontSize: 15,
+  card: {
+    padding: spacing.sm,
+    borderRadius: radius.lg,
   },
   hint: {
     fontFamily: font.regular,
-    fontSize: 13,
+    fontSize: 15,
   },
   error: {
     fontFamily: font.medium,
-    fontSize: 13,
+    fontSize: 15,
   },
 });

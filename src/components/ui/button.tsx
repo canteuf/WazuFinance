@@ -13,8 +13,7 @@ export function Button({ title, variant = 'primary', loading = false, disabled, 
   const isDisabled = disabled === true || loading;
   const isPrimary = variant === 'primary';
   const isDanger = variant === 'danger';
-  // primary et danger sont tous deux des fonds pleins avec du texte clair ;
-  // seule la couleur de fond change entre confirmation neutre et destructive.
+  // primary et danger sont tous deux des fonds pleins avec du texte clair ; seule la couleur de fond change entre confirmation neutre et destructive.
   const isSolid = isPrimary || isDanger;
 
   return (
@@ -48,10 +47,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    // Deux boutons côte à côte (Dépense/Revenu, Confirmer/Annuler) gardaient
-    // leur largeur intrinsèque : à forte échelle de police, la rangée
-    // débordait de l'écran. Avec flexShrink, le bouton se resserre et son
-    // libellé passe à la ligne — minHeight étant un minimum, la hauteur suit.
+    // Deux boutons côte à côte (Dépense/Revenu, Confirmer/Annuler) gardaient leur largeur intrinsèque : à forte échelle de police, la rangée débordait de l'écran. Avec flexShrink, le bouton se resserre et son libellé passe à la ligne — minHeight étant un minimum, la hauteur suit.
     flexShrink: 1,
   },
   dimmed: {
@@ -59,7 +55,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: font.bold,
-    fontSize: 15.5,
+    fontSize: 17.5,
     letterSpacing: -0.1,
     // Centre le texte quand le libellé se replie sur deux lignes.
     textAlign: 'center',

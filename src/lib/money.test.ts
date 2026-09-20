@@ -5,6 +5,7 @@ import {
   formatSigned,
   parseAmount,
   parseNonNegativeAmount,
+  previewSum,
 } from '@/lib/money';
 
 describe('parseAmount', () => {
@@ -70,15 +71,12 @@ describe('formatSigned', () => {
 });
 
 describe('formatBalance', () => {
-  // Le séparateur de milliers de fr-FR est une espace fine insécable (U+202F),
-  // pas une espace ordinaire : écrite en clair, l'attente serait fausse alors
-  // que le code est juste.
+  // Le séparateur de milliers de fr-FR est une espace fine insécable (U+202F), pas une espace ordinaire : écrite en clair, l'attente serait fausse alors que le code est juste.
   it('laisse un solde positif sans signe', () => {
     expect(formatBalance(1391.78)).toBe('1 391,78');
   });
 
-  // Signe moins typographique (U+2212), pas trait d'union : c'est ce qui tient
-  // l'alignement d'une colonne de chiffres tabulaires.
+  // Signe moins typographique (U+2212), pas trait d'union : c'est ce qui tient l'alignement d'une colonne de chiffres tabulaires.
   it('préfixe un solde négatif du signe moins typographique', () => {
     expect(formatBalance(-788.22)).toBe('−788,22');
   });
@@ -89,8 +87,7 @@ describe('formatBalance', () => {
 });
 
 describe('formatDelta', () => {
-  // La différence avec formatBalance est tout l'intérêt de cette fonction :
-  // une progression sans signe explicite ne dit pas dans quel sens elle va.
+  // La différence avec formatBalance est tout l'intérêt de cette fonction : une progression sans signe explicite ne dit pas dans quel sens elle va.
   it('marque explicitement une progression', () => {
     expect(formatDelta(320)).toBe('+320,00');
   });
@@ -127,5 +124,16 @@ describe('parseNonNegativeAmount', () => {
 
   it('refuse un montant hors bornes', () => {
     expect(parseNonNegativeAmount('12345678901')).toBeNull();
+  });
+});
+
+describe('previewSum', () => {
+  it('additionne au centime, sans erreur de flottant', () => {
+    expect(previewSum(0.1, 0.2)).toBe(0.3);
+    expect(previewSum(1850, 150.1)).toBe(2000.1);
+  });
+
+  it('retranche un delta négatif', () => {
+    expect(previewSum(200, -50.55)).toBe(149.45);
   });
 });

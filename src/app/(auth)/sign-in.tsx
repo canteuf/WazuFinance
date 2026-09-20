@@ -8,7 +8,7 @@ import { TextField } from '@/components/ui/text-field';
 import { useAuth } from '@/hooks/use-auth';
 import { authErrorMessage } from '@/lib/auth-errors';
 import { validateEmail, validatePassword } from '@/lib/validation';
-import { font, spacing, useColors } from '@/theme/tokens';
+import { font, radius, spacing, useColors } from '@/theme/tokens';
 
 type FieldErrors = {
   email?: string;
@@ -41,8 +41,7 @@ export default function SignInScreen() {
     setSubmitting(true);
     try {
       await signIn(email, password);
-      // Pas de navigation ici : la garde du layout racine bascule sur (app)
-      // dès que la session arrive.
+      // Pas de navigation ici : la garde du layout racine bascule sur (app) dès que la session arrive.
     } catch (error) {
       setFormError(authErrorMessage(error));
     } finally {
@@ -53,6 +52,10 @@ export default function SignInScreen() {
   return (
     <Screen>
       <View style={styles.header}>
+        {/* Le monogramme tient lieu de logo : une marque dessinée n'existe pas encore, et un carré à l'accent du thème vaut mieux qu'un espace vide au-dessus du titre. */}
+        <View style={[styles.mark, { backgroundColor: colors.primary }]}>
+          <Text style={[styles.markLetter, { color: colors.primaryText }]}>W</Text>
+        </View>
         <Text style={[styles.title, { color: colors.text }]}>Wazu Finance</Text>
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
           Connectez-vous pour retrouver vos budgets.
@@ -106,19 +109,34 @@ const styles = StyleSheet.create({
   header: {
     gap: spacing.xs,
     marginBottom: spacing.sm,
+    alignItems: 'center',
+  },
+  mark: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
+  markLetter: {
+    fontFamily: font.black,
+    fontSize: 26,
+    lineHeight: 32,
   },
   title: {
     fontFamily: font.black,
-    fontSize: 32,
+    fontSize: 28,
     letterSpacing: -0.8,
+    textAlign: 'center',
   },
   subtitle: {
     fontFamily: font.regular,
-    fontSize: 15,
+    fontSize: 17,
   },
   formError: {
     fontFamily: font.medium,
-    fontSize: 14,
+    fontSize: 16,
   },
   footer: {
     flexDirection: 'row',
@@ -128,10 +146,10 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontFamily: font.regular,
-    fontSize: 14,
+    fontSize: 16,
   },
   footerLink: {
     fontFamily: font.bold,
-    fontSize: 14,
+    fontSize: 16,
   },
 });

@@ -7,9 +7,7 @@ import { queryKeys } from '@/lib/query-keys';
 import type { TransactionType } from '@/types/database';
 
 /**
- * Catégories du groupe actif, filtrées par type : basculer sur Revenu ne doit
- * pas proposer Loyer. `null` les rend toutes, pour le filtre « Tout » de
- * l'historique.
+ * Catégories du groupe actif, filtrées par type : basculer sur Revenu ne doit pas proposer Loyer. `null` les rend toutes, pour le filtre « Tout » de l'historique.
  */
 export function useCategories(type: TransactionType | null): {
   categories: Category[];

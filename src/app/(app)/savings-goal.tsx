@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -14,32 +15,40 @@ import {
   SavingsGoalForm,
   type SavingsGoalFormValues,
 } from '@/components/savings/savings-goal-form';
+import { AmountAdjuster } from '@/components/ui/amount-adjuster';
 import { Button } from '@/components/ui/button';
+import { ProgressBar } from '@/components/ui/progress-bar';
+import { contentColumn } from '@/components/ui/screen';
 import { useAuth } from '@/hooks/use-auth';
 import { useSavingsGoalMutations } from '@/hooks/use-savings-goal-mutations';
 import { useSavingsGoals } from '@/hooks/use-savings-goals';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { font, spacing, useColors } from '@/theme/tokens';
+import { formatAmount } from '@/lib/money';
+import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
+import { goBackOr } from '@/lib/navigation';
 
 /**
- * Une seule route pour les deux modes : création sans paramètre, édition
- * avec ?id=. Même parti que budget.tsx et transaction.tsx.
+ * Une seule route pour les deux modes : création sans paramètre, édition avec ?id=. Même parti que budget.tsx et transaction.tsx.
+ *
+ * En édition, l'écran s'ouvre sur le versement : c'est ce qu'on vient faire neuf fois sur dix. Le montant épargné ne se réécrit pas, il s'augmente ou se diminue — add_to_savings_goal() fait l'addition en base, sans perdre un versement fait entre-temps depuis un autre appareil. Nom, icône, cible et échéance se modifient en dessous.
  */
 export default function SavingsGoalScreen() {
   const colors = useColors();
+  const elevation = useElevation();
   const router = useRouter();
   const { height: windowHeight } = useWindowDimensions();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { session } = useAuth();
   const userId = session?.user.id;
   const { goals, isLoading, error } = useSavingsGoals();
-  const { createGoal, updateGoal, deleteGoal, isSaving, isDeleting } = useSavingsGoalMutations();
+  const { createGoal, updateGoal, addToGoal, deleteGoal, isSaving, isDeleting } =
+    useSavingsGoalMutations();
   const [errorText, setErrorText] = useState<string>();
+  const [adjustError, setAdjustError] = useState<string>();
 
   const existing = typeof id === 'string' ? goals.find((goal) => goal.id === id) : undefined;
 
-  // Tous les hooks ci-dessus s'exécutent à chaque rendu ; les retours
-  // conditionnels qui suivent n'en court-circuitent aucun.
+  // Tous les hooks ci-dessus s'exécutent à chaque rendu ; les retours conditionnels qui suivent n'en court-circuitent aucun.
   if (isLoading) {
     return (
       <View style={styles.centered}>
@@ -48,30 +57,26 @@ export default function SavingsGoalScreen() {
     );
   }
 
-  // En pratique toujours vrai ici : les routes (app) ne sont atteignables
-  // qu'avec une session (garde Stack.Protected du layout racine). Ce garde
-  // évite une assertion non sûre plutôt que de documenter un cas impossible.
+  // En pratique toujours vrai ici : les routes (app) ne sont atteignables qu'avec une session (garde Stack.Protected du layout racine). Ce garde évite une assertion non sûre plutôt que de documenter un cas impossible.
   if (error || !userId) {
     return (
       <View style={styles.centered}>
         <Text style={[styles.errorTitle, { color: colors.danger }]}>
           {error ? dataErrorMessage(error) : 'Session introuvable.'}
         </Text>
-        <Button title="Retour" variant="ghost" onPress={() => router.back()} />
+        <Button title="Retour" variant="ghost" onPress={() => goBackOr(router, '/savings-goals')} />
       </View>
     );
   }
 
-  // L'objectif visé n'est plus dans la liste : supprimé pendant que la
-  // feuille était ouverte (un autre appareil du même compte), ou identifiant
-  // périmé. Sans ce garde, le formulaire s'ouvrirait vide sous « Modifier ».
+  // L'objectif visé n'est plus dans la liste : supprimé pendant que la feuille était ouverte (un autre appareil du même compte), ou identifiant périmé. Sans ce garde, le formulaire s'ouvrirait vide sous « Modifier ».
   if (typeof id === 'string' && !existing) {
     return (
       <View style={styles.centered}>
         <Text style={[styles.errorTitle, { color: colors.danger }]}>
           Cet objectif n’existe plus.
         </Text>
-        <Button title="Retour" variant="ghost" onPress={() => router.back()} />
+        <Button title="Retour" variant="ghost" onPress={() => goBackOr(router, '/savings-goals')} />
       </View>
     );
   }
@@ -80,10 +85,19 @@ export default function SavingsGoalScreen() {
     setErrorText(undefined);
 
     if (existing) {
+      // Sans le montant épargné : modifier l'objectif ne le réécrit jamais (voir UpdateSavingsGoalInput).
       updateGoal.mutate(
-        { id: existing.id, patch: values },
         {
-          onSuccess: () => router.back(),
+          id: existing.id,
+          patch: {
+            name: values.name,
+            icon: values.icon,
+            targetAmount: values.targetAmount,
+            targetDate: values.targetDate,
+          },
+        },
+        {
+          onSuccess: () => goBackOr(router, '/savings-goals'),
           onError: (mutationError) => setErrorText(dataErrorMessage(mutationError)),
         }
       );
@@ -91,10 +105,31 @@ export default function SavingsGoalScreen() {
     }
 
     createGoal.mutate(
-      { ...values, userId: userId as string },
       {
-        onSuccess: () => router.back(),
+        userId: userId as string,
+        name: values.name,
+        icon: values.icon,
+        targetAmount: values.targetAmount,
+        currentAmount: values.initialAmount,
+        targetDate: values.targetDate,
+      },
+      {
+        onSuccess: () => goBackOr(router, '/savings-goals'),
         onError: (mutationError) => setErrorText(dataErrorMessage(mutationError)),
+      }
+    );
+  }
+
+  function handleAdjust(delta: number) {
+    if (!existing) {
+      return;
+    }
+    setAdjustError(undefined);
+    addToGoal.mutate(
+      { id: existing.id, delta },
+      {
+        onSuccess: () => goBackOr(router, '/savings-goals'),
+        onError: (mutationError) => setAdjustError(dataErrorMessage(mutationError)),
       }
     );
   }
@@ -104,7 +139,7 @@ export default function SavingsGoalScreen() {
       return;
     }
     deleteGoal.mutate(existing.id, {
-      onSuccess: () => router.back(),
+      onSuccess: () => goBackOr(router, '/savings-goals'),
       onError: (mutationError) => setErrorText(dataErrorMessage(mutationError)),
     });
   }
@@ -116,38 +151,91 @@ export default function SavingsGoalScreen() {
         { backgroundColor: colors.background, maxHeight: windowHeight * 0.92 },
       ]}
     >
+      {/* Une formSheet n'accepte pas de header natif : le titre et la fermeture sont du contenu ordinaire, comme sur la saisie. */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>
-          {existing ? 'Modifier l’objectif' : 'Nouvel objectif'}
-        </Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Fermer"
           hitSlop={spacing.sm}
-          onPress={() => router.back()}
-          style={styles.closeButton}
+          onPress={() => goBackOr(router, '/savings-goals')}
+          style={styles.close}
         >
-          <Text style={[styles.closeLabel, { color: colors.textMuted }]}>✕</Text>
+          <MaterialCommunityIcons name="arrow-left" size={20} color={colors.text} />
+          <Text style={[styles.closeLabel, { color: colors.text }]}>Fermer</Text>
         </Pressable>
       </View>
 
+      <View style={styles.titleBlock}>
+        <Text style={[styles.eyebrow, { color: colors.textMuted }]}>Objectif d’épargne</Text>
+        <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
+          {existing ? existing.name : 'Nouvel objectif'}
+        </Text>
+      </View>
+
       <ScrollView
+        // La feuille centre ses blocs (`alignItems: 'center'`) : sans cette largeur explicite, le ScrollView se réduirait à la largeur de son contenu, que son propre conteneur exprime en pourcentage de lui — une mesure qui ne converge pas.
+        style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
+        {existing ? (
+          <>
+            <View style={[styles.status, { backgroundColor: colors.surface }, elevation.card]}>
+              <View style={styles.statusRow}>
+                <Text style={[styles.statusCurrent, { color: colors.text }]}>
+                  {formatAmount(existing.current_amount)} €
+                </Text>
+                <Text style={[styles.statusTarget, { color: colors.textMuted }]}>
+                  / {formatAmount(existing.target_amount)} €
+                </Text>
+              </View>
+              <ProgressBar
+                ratio={existing.current_amount / existing.target_amount}
+                tone={existing.current_amount >= existing.target_amount ? 'muted' : 'accent'}
+                size="lg"
+              />
+            </View>
+
+            <AmountAdjuster
+              options={{
+                add: { label: 'Verser', icon: 'plus-circle-outline' },
+                remove: { label: 'Retirer', icon: 'minus-circle-outline' },
+              }}
+              current={existing.current_amount}
+              minimumAfter={0}
+              amountLabel={(mode) => (mode === 'add' ? 'Montant à verser' : 'Montant à retirer')}
+              previewLabel="Nouveau total épargné"
+              previewDetail={(next) =>
+                next >= existing.target_amount
+                  ? 'Objectif atteint'
+                  : `sur ${formatAmount(existing.target_amount)} € · ${Math.round((next / existing.target_amount) * 100)} %`
+              }
+              submitLabel={(mode) =>
+                mode === 'add' ? 'Enregistrer le versement' : 'Enregistrer le retrait'
+              }
+              tooLowMessage="Le retrait dépasse le montant épargné."
+              submitting={addToGoal.isPending}
+              errorText={adjustError}
+              onSubmit={handleAdjust}
+            />
+
+            <Text style={[styles.section, { color: colors.text }]}>Paramètres de l’objectif</Text>
+          </>
+        ) : null}
+
         <SavingsGoalForm
           initialValues={
             existing
               ? {
                   name: existing.name,
+                  icon: existing.icon,
                   targetAmount: existing.target_amount,
-                  currentAmount: existing.current_amount,
                   targetDate: existing.target_date,
                 }
               : undefined
           }
-          submitLabel={existing ? 'Enregistrer' : 'Ajouter'}
+          submitLabel={existing ? 'Enregistrer les modifications' : 'Créer l’objectif'}
           submitting={isSaving}
           deleting={isDeleting}
           errorText={errorText}
@@ -160,28 +248,81 @@ export default function SavingsGoalScreen() {
 }
 
 const styles = StyleSheet.create({
-  sheet: {},
+  sheet: {
+    // Le fond garde la pleine largeur de la feuille ; ce sont les blocs qui se centrent, sur la même colonne que les écrans (voir `contentColumn`). Sans cela, le contenu d'une feuille s'étalait d'un bord à l'autre sur une tablette là où les cartes des écrans s'arrêtent à 420 points.
+    alignItems: 'center',
+  },
   header: {
+    ...contentColumn,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingTop: spacing.lg,
     paddingHorizontal: spacing.lg,
   },
-  title: {
-    fontFamily: font.bold,
-    fontSize: 17,
-    letterSpacing: -0.2,
-  },
-  closeButton: {
-    padding: spacing.xs,
+  close: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   closeLabel: {
     fontFamily: font.semibold,
     fontSize: 18,
   },
+  titleBlock: {
+    ...contentColumn,
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  eyebrow: {
+    fontFamily: font.semibold,
+    fontSize: 14,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  title: {
+    fontFamily: font.black,
+    fontSize: 28,
+    letterSpacing: -0.7,
+    textAlign: 'center',
+  },
+  scroll: {
+    alignSelf: 'stretch',
+  },
   scrollContent: {
+    ...contentColumn,
     flexGrow: 1,
+    gap: spacing.lg,
+    padding: spacing.lg,
+  },
+  status: {
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    gap: spacing.xs + 2,
+  },
+  statusCurrent: {
+    fontFamily: font.bold,
+    fontSize: 24,
+    fontVariant: ['tabular-nums'],
+  },
+  statusTarget: {
+    fontFamily: font.regular,
+    fontSize: 17,
+    fontVariant: ['tabular-nums'],
+  },
+  section: {
+    fontFamily: font.bold,
+    fontSize: 15,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginTop: spacing.sm,
   },
   centered: {
     alignItems: 'center',
@@ -191,7 +332,7 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     fontFamily: font.medium,
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
   },
 });

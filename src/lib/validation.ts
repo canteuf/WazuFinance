@@ -1,12 +1,10 @@
 /**
  * Validation des formulaires d'authentification.
  *
- * Contrôle côté client pour un retour immédiat ; la vérification qui fait
- * autorité reste celle de Supabase Auth.
+ * Contrôle côté client pour un retour immédiat ; la vérification qui fait autorité reste celle de Supabase Auth.
  */
 
-// Volontairement permissif : le seul test fiable d'une adresse est l'email de
-// confirmation. On rejette juste les fautes de frappe évidentes.
+// Volontairement permissif : le seul test fiable d'une adresse est l'email de confirmation. On rejette juste les fautes de frappe évidentes.
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const MIN_PASSWORD_LENGTH = 8;

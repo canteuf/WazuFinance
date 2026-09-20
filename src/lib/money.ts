@@ -3,9 +3,7 @@ import type { TransactionType } from '@/types/database';
 /**
  * Montants en euros.
  *
- * La base stocke du numeric(12,2) : au plus deux décimales, et une valeur
- * strictement positive imposée par la contrainte `amount > 0`. Le signe
- * affiché vient du type de la transaction, jamais de la saisie.
+ * La base stocke du numeric(12,2) : au plus deux décimales, et une valeur strictement positive imposée par la contrainte `amount > 0`. Le signe affiché vient du type de la transaction, jamais de la saisie.
  */
 
 const MAX_AMOUNT = 9_999_999_999.99;
@@ -26,8 +24,7 @@ export function parseAmount(input: string): number | null {
 }
 
 /**
- * Comme parseAmount, mais accepte zéro — un objectif d'épargne commence
- * parfois à 0 €, contrairement à une transaction ou un plafond de budget.
+ * Comme parseAmount, mais accepte zéro — un objectif d'épargne commence parfois à 0 €, contrairement à une transaction ou un plafond de budget.
  */
 export function parseNonNegativeAmount(input: string): number | null {
   const normalised = input.trim().replace(',', '.');
@@ -56,9 +53,7 @@ export function formatAmount(value: number): string {
 /**
  * Signe moins typographique (U+2212), et non le trait d'union.
  *
- * Il a la même chasse que le plus et s'aligne sur la hauteur des chiffres :
- * dans une colonne de montants en chiffres tabulaires, un trait d'union se
- * voit trop court et casse l'alignement optique.
+ * Il a la même chasse que le plus et s'aligne sur la hauteur des chiffres : dans une colonne de montants en chiffres tabulaires, un trait d'union se voit trop court et casse l'alignement optique.
  */
 const MINUS = '−';
 
@@ -82,11 +77,18 @@ export function formatBalance(value: number): string {
 /**
  * Écart entre deux montants, signe toujours visible : « +320,00 », « −120,00 ».
  *
- * Distinct de formatBalance, qui n'affiche le signe que s'il est négatif : un
- * solde de 320 se lit « 320,00 », mais une progression de 320 doit se lire
- * « +320,00 », sans quoi rien ne dit dans quel sens elle va.
+ * Distinct de formatBalance, qui n'affiche le signe que s'il est négatif : un solde de 320 se lit « 320,00 », mais une progression de 320 doit se lire « +320,00 », sans quoi rien ne dit dans quel sens elle va.
  */
 export function formatDelta(value: number): string {
   const sign = value < 0 ? MINUS : '+';
   return `${sign}${formatAmount(Math.abs(value))}`;
+}
+
+/**
+ * Montant après un versement ou un ajustement, pour l'aperçu du formulaire seulement.
+ *
+ * Le calcul qui fait foi a lieu en base (add_to_savings_goal, adjust_budget_amount). Celui-ci ne sert qu'à afficher « Nouveau total » avant d'enregistrer, et passe par des centimes entiers : additionner les deux nombres tels quels donnerait 0,1 + 0,2 = 0,30000000000000004.
+ */
+export function previewSum(current: number, delta: number): number {
+  return (Math.round(current * 100) + Math.round(delta * 100)) / 100;
 }

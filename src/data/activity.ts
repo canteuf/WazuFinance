@@ -13,18 +13,11 @@ export type ActivityCursor = {
 /**
  * Une page du journal du groupe, les plus récentes d'abord.
  *
- * Même règle que listPage() de l'historique, pour la même raison : la
- * pagination porte sur le couple `(occurred_at, id)`, jamais sur un décalage.
- * Une entrée écrite pendant le défilement décalerait toutes les pages
- * suivantes d'un `OFFSET`.
+ * Même règle que listPage() de l'historique, pour la même raison : la pagination porte sur le couple `(occurred_at, id)`, jamais sur un décalage. Une entrée écrite pendant le défilement décalerait toutes les pages suivantes d'un `OFFSET`.
  *
- * `occurredAt` garde les microsecondes que rend Postgres. Un aller-retour par
- * `Date` les tronquerait à la milliseconde, et la comparaison `lt` sauterait
- * ou répéterait une entrée.
+ * `occurredAt` garde les microsecondes que rend Postgres. Un aller-retour par `Date` les tronquerait à la milliseconde, et la comparaison `lt` sauterait ou répéterait une entrée.
  *
- * Les valeurs d'horodatage sont entre guillemets : `.`, `:` et `+` sont des
- * caractères réservés dans l'arbre `or` de PostgREST. Le client encode les
- * guillemets dans l'URL.
+ * Les valeurs d'horodatage sont entre guillemets : `.`, `:` et `+` sont des caractères réservés dans l'arbre `or` de PostgREST. Le client encode les guillemets dans l'URL.
  */
 export async function listActivityPage(
   groupId: string,
@@ -34,9 +27,7 @@ export async function listActivityPage(
   let query = supabase.from('activity_log').select('*').eq('group_id', groupId);
 
   if (cursor !== null) {
-    // PostgREST n'exprime pas la comparaison de couples `(a, b) < (c, d)` :
-    // ce `or` produit le même prédicat. Les deux valeurs viennent d'une ligne
-    // déjà renvoyée par le serveur, jamais d'une saisie.
+    // PostgREST n'exprime pas la comparaison de couples `(a, b) < (c, d)` : ce `or` produit le même prédicat. Les deux valeurs viennent d'une ligne déjà renvoyée par le serveur, jamais d'une saisie.
     query = query.or(
       `occurred_at.lt."${cursor.occurredAt}",` +
         `and(occurred_at.eq."${cursor.occurredAt}",id.lt.${cursor.id})`

@@ -7,9 +7,9 @@
  *
  * puis remettre cet en-tête et les alias d'enums en fin de fichier.
  *
- * Toujours régénérer depuis --linked, jamais depuis --local : la pile locale
- * tourne une autre version de PostgREST et omet le bloc __InternalSupabase.
- * Si la migration n'est pas encore poussée, la pousser d'abord.
+ * Toujours régénérer depuis --linked, jamais depuis --local : la pile locale tourne une autre version de PostgREST et omet le bloc __InternalSupabase. Si la migration n'est pas encore poussée, la pousser d'abord.
+ *
+ * Sous PowerShell, l'opérateur de redirection écrit en UTF-16 : le fichier ne compile alors plus, tsc ne trouvant plus aucun export, et git le voit comme binaire. Rediriger vers `Out-File -Encoding utf8`, ou relire le fichier et le réécrire en UTF-8 après coup.
  */
 
 export type Json =
@@ -326,6 +326,7 @@ export type Database = {
         Row: {
           created_at: string
           current_amount: number
+          icon: string
           id: string
           name: string
           target_amount: number
@@ -336,6 +337,7 @@ export type Database = {
         Insert: {
           created_at?: string
           current_amount?: number
+          icon?: string
           id?: string
           name: string
           target_amount: number
@@ -346,6 +348,7 @@ export type Database = {
         Update: {
           created_at?: string
           current_amount?: number
+          icon?: string
           id?: string
           name?: string
           target_amount?: number
@@ -460,6 +463,52 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_to_savings_goal: {
+        Args: { p_delta: number; p_goal_id: string }
+        Returns: {
+          created_at: string
+          current_amount: number
+          icon: string
+          id: string
+          name: string
+          target_amount: number
+          target_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "savings_goals"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      adjust_budget_amount: {
+        Args: { p_budget_id: string; p_delta: number }
+        Returns: {
+          amount: number
+          category_id: string
+          created_at: string
+          group_id: string
+          id: string
+          period: Database["public"]["Enums"]["budget_period"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "budgets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      budget_totals: {
+        Args: { p_from: string; p_group_id: string; p_to: string }
+        Returns: {
+          ceiling: number
+          remaining: number
+          spent: number
+        }[]
+      }
       category_breakdown: {
         Args: { p_from: string; p_group_id: string; p_to: string }
         Returns: {
@@ -470,11 +519,70 @@ export type Database = {
         }[]
       }
       create_shared_group: { Args: { name: string }; Returns: string }
+      daily_totals: {
+        Args: {
+          p_category_id?: string
+          p_from?: string
+          p_group_id: string
+          p_search?: string
+          p_to?: string
+          p_type?: Database["public"]["Enums"]["transaction_type"]
+        }
+        Returns: {
+          occurred_on: string
+          total: number
+          tx_count: number
+        }[]
+      }
+      delete_own_account: { Args: never; Returns: undefined }
+      filtered_totals: {
+        Args: {
+          p_category_id?: string
+          p_from?: string
+          p_group_id: string
+          p_search?: string
+          p_to?: string
+          p_type?: Database["public"]["Enums"]["transaction_type"]
+        }
+        Returns: {
+          balance: number
+          expense: number
+          income: number
+          tx_count: number
+        }[]
+      }
+      frequent_amounts: {
+        Args: {
+          p_group_id: string
+          p_limit?: number
+          p_type: Database["public"]["Enums"]["transaction_type"]
+        }
+        Returns: {
+          amount: number
+        }[]
+      }
+      group_overviews: {
+        Args: never
+        Returns: {
+          group_id: string
+          member_count: number
+          member_names: string[]
+          monthly_budget: number
+          shared_monthly_total: number
+        }[]
+      }
       is_group_member: { Args: { gid: string }; Returns: boolean }
       is_group_owner: { Args: { gid: string }; Returns: boolean }
       join_group_with_code: {
         Args: { invitation_code: string }
         Returns: string
+      }
+      owned_groups_with_other_members: {
+        Args: never
+        Returns: {
+          id: string
+          name: string
+        }[]
       }
       period_summary: {
         Args: { p_from: string; p_group_id: string; p_to: string }
@@ -482,6 +590,21 @@ export type Database = {
           balance: number
           expense: number
           income: number
+          tx_count: number
+        }[]
+      }
+      savings_overview: {
+        Args: { p_today: string }
+        Returns: {
+          monthly_effort: number
+          total_saved: number
+        }[]
+      }
+      savings_plans: {
+        Args: { p_today: string }
+        Returns: {
+          goal_id: string
+          monthly_rhythm: number
         }[]
       }
       shares_group_with: { Args: { other_user_id: string }; Returns: boolean }
@@ -630,6 +753,7 @@ export const Constants = {
     },
   },
 } as const
+
 
 // Alias lisibles pour les enums du schéma, utilisés dans le code applicatif.
 export type MembershipRole = Enums<'membership_role'>;

@@ -10,7 +10,7 @@
 create extension if not exists pgtap with schema extensions;
 
 BEGIN;
-SELECT plan(10);
+SELECT plan(13);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures, créées en tant que postgres (RLS contournée)
@@ -107,6 +107,47 @@ SELECT is(
   0.00::numeric(12,2),
   'Une période sans opération renvoie zéro et non NULL'
 );
+
+-- ---------------------------------------------------------------------------
+-- tx_count — les deux types confondus, mêmes bornes que les sommes
+-- ---------------------------------------------------------------------------
+
+-- Trois lignes dans [2026-09-03, 2026-10-03) : le salaire du 3 septembre, les
+-- courses du 15 et le transport du 2 octobre. Les deux autres tombent hors
+-- bornes. Le compte mêle entrées et sorties : c'est un nombre d'écritures, pas
+-- un nombre de dépenses.
+SELECT is(
+  (select tx_count from public.period_summary(
+     '00000000-0000-0000-0000-0000000000a1', '2026-09-03', '2026-10-03')),
+  3,
+  'Le compte porte sur les deux types et respecte les bornes'
+);
+
+-- count(*) rend 0 sur zéro ligne là où sum() rendrait NULL : le client n'a pas
+-- de cas de plus à traiter pour une période vide.
+SELECT is(
+  (select tx_count from public.period_summary(
+     '00000000-0000-0000-0000-0000000000a1', '2027-01-01', '2027-02-01')),
+  0,
+  'Une période sans opération compte zéro et non NULL'
+);
+
+-- Même raison que pour le solde : security invoker, donc la policy filtre tout
+-- avant le comptage. Le nombre d'écritures d'un groupe est une information sur
+-- ce groupe, et ne doit pas fuir plus que ses montants.
+select set_config('request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-0000000000f2","role":"authenticated"}', true);
+
+SELECT is(
+  (select tx_count from public.period_summary(
+     '00000000-0000-0000-0000-0000000000a1', '2026-09-03', '2026-10-03')),
+  0,
+  'Un non-membre ne compte aucune opération'
+);
+
+-- Retour à Alice pour la suite du fichier.
+select set_config('request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-0000000000f1","role":"authenticated"}', true);
 
 -- ---------------------------------------------------------------------------
 -- Bob, étranger au groupe

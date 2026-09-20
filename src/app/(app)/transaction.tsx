@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -15,16 +16,17 @@ import {
   type TransactionFormValues,
 } from '@/components/transaction/transaction-form';
 import { Button } from '@/components/ui/button';
+import { contentColumn } from '@/components/ui/screen';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useAuth } from '@/hooks/use-auth';
 import { useTransaction } from '@/hooks/use-transaction';
 import { useTransactionMutations } from '@/hooks/use-transaction-mutations';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { font, spacing, useColors } from '@/theme/tokens';
+import { goBackOr } from '@/lib/navigation';
 
 /**
- * Une seule route pour les deux modes : création sans paramètre, édition avec
- * ?id=. Le formulaire est ainsi écrit et corrigé une seule fois.
+ * Une seule route pour les deux modes : création sans paramètre, édition avec ?id=. Le formulaire est ainsi écrit et corrigé une seule fois.
  */
 export default function TransactionScreen() {
   const colors = useColors();
@@ -32,7 +34,12 @@ export default function TransactionScreen() {
   const { height: windowHeight } = useWindowDimensions();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { session } = useAuth();
-  const { activeGroupId, isLoading: groupLoading, error: groupError } = useActiveGroup();
+  const {
+    activeGroupId,
+    activeGroup,
+    isLoading: groupLoading,
+    error: groupError,
+  } = useActiveGroup();
   const { createTransaction, updateTransaction, deleteTransaction, isSaving, isDeleting } =
     useTransactionMutations();
   const [errorText, setErrorText] = useState<string>();
@@ -41,8 +48,7 @@ export default function TransactionScreen() {
 
   const userId = session?.user.id;
 
-  // Tous les hooks ci-dessus s'exécutent à chaque rendu ; les retours
-  // conditionnels qui suivent n'en court-circuitent aucun.
+  // Tous les hooks ci-dessus s'exécutent à chaque rendu ; les retours conditionnels qui suivent n'en court-circuitent aucun.
   if (groupLoading) {
     return (
       <View style={styles.centered}>
@@ -51,17 +57,14 @@ export default function TransactionScreen() {
     );
   }
 
-  // Sans cette branche, un chargement des adhésions en échec (ou l'absence
-  // de groupe actif) tombait sur une feuille fitToContents vide : ni
-  // contenu, ni message, ni sortie. Le bouton Retour reste la seule issue
-  // fiable, la poignée de la feuille ne l'étant pas sur toutes les plateformes.
+  // Sans cette branche, un chargement des adhésions en échec (ou l'absence de groupe actif) tombait sur une feuille fitToContents vide : ni contenu, ni message, ni sortie. Le bouton Retour reste la seule issue fiable, la poignée de la feuille ne l'étant pas sur toutes les plateformes.
   if (groupError || !activeGroupId || !userId) {
     return (
       <View style={styles.centered}>
         <Text style={[styles.errorTitle, { color: colors.danger }]}>
           {groupError ? dataErrorMessage(groupError) : 'Aucun groupe actif.'}
         </Text>
-        <Button title="Retour" variant="ghost" onPress={() => router.back()} />
+        <Button title="Retour" variant="ghost" onPress={() => goBackOr(router, '/')} />
       </View>
     );
   }
@@ -74,17 +77,14 @@ export default function TransactionScreen() {
     );
   }
 
-  // React Query v5 laisse isLoading à false une fois l'échec établi : sans ce
-  // garde, un fetch en échec (réseau, ligne supprimée, accès révoqué) laisse
-  // passer un formulaire vide sous le titre « Modifier », et l'enregistrer
-  // écraserait la vraie transaction avec des valeurs ressaisies de zéro.
+  // React Query v5 laisse isLoading à false une fois l'échec établi : sans ce garde, un fetch en échec (réseau, ligne supprimée, accès révoqué) laisse passer un formulaire vide sous le titre « Modifier », et l'enregistrer écraserait la vraie transaction avec des valeurs ressaisies de zéro.
   if (typeof id === 'string' && existing.isError) {
     return (
       <View style={styles.centered}>
         <Text style={[styles.errorTitle, { color: colors.danger }]}>
           {dataErrorMessage(existing.error)}
         </Text>
-        <Button title="Retour" variant="ghost" onPress={() => router.back()} />
+        <Button title="Retour" variant="ghost" onPress={() => goBackOr(router, '/')} />
       </View>
     );
   }
@@ -96,7 +96,7 @@ export default function TransactionScreen() {
       updateTransaction.mutate(
         { id, patch: values },
         {
-          onSuccess: () => router.back(),
+          onSuccess: () => goBackOr(router, '/'),
           onError: (error) => setErrorText(dataErrorMessage(error)),
         }
       );
@@ -106,7 +106,7 @@ export default function TransactionScreen() {
     createTransaction.mutate(
       { ...values, groupId: activeGroupId as string, userId: userId as string },
       {
-        onSuccess: () => router.back(),
+        onSuccess: () => goBackOr(router, '/'),
         onError: (error) => setErrorText(dataErrorMessage(error)),
       }
     );
@@ -117,7 +117,7 @@ export default function TransactionScreen() {
       return;
     }
     deleteTransaction.mutate(id, {
-      onSuccess: () => router.back(),
+      onSuccess: () => goBackOr(router, '/'),
       onError: (error) => setErrorText(dataErrorMessage(error)),
     });
   }
@@ -133,41 +133,41 @@ export default function TransactionScreen() {
     : undefined;
 
   return (
-    // sheetAllowedDetents: 'fitToContents' calcule la hauteur de la feuille à
-    // partir de celle du contenu ; flex: 1 empêcherait cette mesure (la vue
-    // s'étirerait pour remplir un espace disponible qui n'existe pas encore).
-    // maxHeight borne la feuille à une fraction de l'écran : le ScrollView
-    // ci-dessous devient alors le seul à défiler, clavier ouvert compris, au
-    // lieu que fitToContents mesure un contenu plus haut que l'écran.
+    // sheetAllowedDetents: 'fitToContents' calcule la hauteur de la feuille à partir de celle du contenu ; flex: 1 empêcherait cette mesure (la vue s'étirerait pour remplir un espace disponible qui n'existe pas encore). maxHeight borne la feuille à une fraction de l'écran : le ScrollView ci-dessous devient alors le seul à défiler, clavier ouvert compris, au lieu que fitToContents mesure un contenu plus haut que l'écran.
     <View style={[styles.sheet, { backgroundColor: colors.background, maxHeight: windowHeight * 0.92 }]}>
-      {/* Une formSheet n'accepte pas de header natif : le titre et la
-          fermeture sont du contenu ordinaire (spec, contrainte Android). Sur
-          le web, la présentation retombe sur un écran plein sans navigation
-          native : ce bouton est la seule sortie hors du retour navigateur. */}
+      {/* Une formSheet n'accepte pas de header natif : le titre et la fermeture sont du contenu ordinaire (spec, contrainte Android). Sur le web, la présentation retombe sur un écran plein sans navigation native : ce bouton est la seule sortie hors du retour navigateur. */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>
-          {typeof id === 'string' ? 'Modifier l’opération' : 'Nouvelle opération'}
-        </Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Fermer"
+          accessibilityLabel="Annuler"
           hitSlop={spacing.sm}
-          onPress={() => router.back()}
-          style={styles.closeButton}
+          onPress={() => goBackOr(router, '/')}
+          style={styles.cancel}
         >
-          <Text style={[styles.closeLabel, { color: colors.textMuted }]}>✕</Text>
+          <MaterialCommunityIcons name="arrow-left" size={20} color={colors.text} />
+          <Text style={[styles.cancelLabel, { color: colors.text }]}>Annuler</Text>
         </Pressable>
       </View>
 
+      <View style={styles.titleBlock}>
+        <Text style={[styles.eyebrow, { color: colors.textMuted }]}>Carnet de comptes</Text>
+        <Text style={[styles.title, { color: colors.text }]}>
+          {typeof id === 'string' ? 'Modifier l’écriture' : 'Nouvelle écriture'}
+        </Text>
+      </View>
+
       <ScrollView
+        // La feuille centre ses blocs (`alignItems: 'center'`) : sans cette largeur explicite, le ScrollView se réduirait à la largeur de son contenu, que son propre conteneur exprime en pourcentage de lui — une mesure qui ne converge pas.
+        style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
         <TransactionForm
           groupId={activeGroupId}
+          groupName={activeGroup?.name ?? ''}
           initialValues={initialValues}
-          submitLabel={typeof id === 'string' ? 'Enregistrer' : 'Ajouter'}
+          submitLabel="Enregistrer l’écriture"
           submitting={isSaving}
           deleting={isDeleting}
           errorText={errorText}
@@ -180,22 +180,44 @@ export default function TransactionScreen() {
 }
 
 const styles = StyleSheet.create({
-  sheet: {},
+  sheet: {
+    // Le fond garde la pleine largeur de la feuille ; ce sont les blocs qui se centrent, sur la même colonne que les écrans (voir `contentColumn`). Sans cela, le contenu d'une feuille s'étalait d'un bord à l'autre sur une tablette là où les cartes des écrans s'arrêtent à 420 points.
+    alignItems: 'center',
+  },
   header: {
+    ...contentColumn,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingTop: spacing.lg,
     paddingHorizontal: spacing.lg,
   },
-  closeButton: {
-    padding: spacing.xs,
+  cancel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
-  closeLabel: {
+  cancelLabel: {
     fontFamily: font.semibold,
     fontSize: 18,
   },
+  titleBlock: {
+    ...contentColumn,
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  eyebrow: {
+    fontFamily: font.semibold,
+    fontSize: 14,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  scroll: {
+    alignSelf: 'stretch',
+  },
   scrollContent: {
+    ...contentColumn,
     flexGrow: 1,
   },
   centered: {
@@ -206,14 +228,14 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   title: {
-    flexShrink: 1,
-    fontFamily: font.bold,
-    fontSize: 18,
-    letterSpacing: -0.2,
+    fontFamily: font.black,
+    fontSize: 28,
+    letterSpacing: -0.7,
+    textAlign: 'center',
   },
   errorTitle: {
     fontFamily: font.medium,
-    fontSize: 15,
+    fontSize: 17,
     textAlign: 'center',
   },
 });

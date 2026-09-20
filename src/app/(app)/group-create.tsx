@@ -1,11 +1,14 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
+import { contentColumn } from '@/components/ui/screen';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useGroupMutations } from '@/hooks/use-group-mutations';
 import { dataErrorMessage } from '@/lib/data-errors';
+import { goBackOr } from '@/lib/navigation';
 import { font, radius, spacing, useColors } from '@/theme/tokens';
 
 /** Créer un groupe partagé (spec section 1, écran 7). formSheet, un seul champ. */
@@ -28,11 +31,9 @@ export default function GroupCreateScreen() {
     }
     createGroup.mutate(name.trim(), {
       onSuccess: (groupId) => {
-        // Le groupe qu'on vient de créer devient le groupe actif : sinon
-        // l'utilisateur resterait sur son compte personnel sans comprendre où
-        // est passé le groupe qu'il vient de créer.
+        // Le groupe qu'on vient de créer devient le groupe actif : sinon l'utilisateur resterait sur son compte personnel sans comprendre où est passé le groupe qu'il vient de créer.
         setActiveGroupId(groupId);
-        router.back();
+        goBackOr(router, '/groups');
       },
       onError: (error) => setErrorText(dataErrorMessage(error)),
     });
@@ -46,10 +47,10 @@ export default function GroupCreateScreen() {
           accessibilityRole="button"
           accessibilityLabel="Fermer"
           hitSlop={spacing.sm}
-          onPress={() => router.back()}
+          onPress={() => goBackOr(router, '/groups')}
           style={styles.closeButton}
         >
-          <Text style={[styles.closeLabel, { color: colors.textMuted }]}>✕</Text>
+          <MaterialCommunityIcons name="close" size={20} color={colors.textMuted} />
         </Pressable>
       </View>
 
@@ -79,8 +80,12 @@ export default function GroupCreateScreen() {
 }
 
 const styles = StyleSheet.create({
-  sheet: {},
+  sheet: {
+    // Le fond garde la pleine largeur de la feuille ; ce sont les blocs qui se centrent, sur la même colonne que les écrans (voir `contentColumn`). Sans cela, le contenu d'une feuille s'étalait d'un bord à l'autre sur une tablette là où les cartes des écrans s'arrêtent à 420 points.
+    alignItems: 'center',
+  },
   header: {
+    ...contentColumn,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -88,18 +93,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   title: {
-    fontFamily: font.bold,
-    fontSize: 17,
-    letterSpacing: -0.2,
+    // Même famille de titres que les autres feuilles et que les en-têtes d'écran, en plus court : ici le titre partage sa ligne avec la fermeture, et 28 points passeraient à la ligne sur un téléphone étroit.
+    fontFamily: font.black,
+    fontSize: 22,
+    letterSpacing: -0.5,
+    flexShrink: 1,
   },
   closeButton: {
     padding: spacing.xs,
   },
-  closeLabel: {
-    fontFamily: font.semibold,
-    fontSize: 18,
-  },
   form: {
+    ...contentColumn,
     gap: spacing.md,
     padding: spacing.lg,
   },
@@ -109,10 +113,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,
-    fontSize: 16,
+    fontSize: 18,
   },
   error: {
     fontFamily: font.medium,
-    fontSize: 13,
+    fontSize: 15,
   },
 });
