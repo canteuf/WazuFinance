@@ -25,6 +25,8 @@ type CategoryPickerProps = {
  * Chaque tuile porte la couleur de sa catégorie, pas l'accent générique de l'app : sélectionnée, elle se remplit de sa propre teinte. C'est ce qui rend la couleur reconnaissable d'un écran à l'autre plutôt que décorative.
  *
  * Les dimensions suivent l'échelle de police du système. Avec la largeur fixe d'avant, un libellé de 11 px porté à 22 px à 200 % débordait de la tuile et se faisait tronquer — « Remboursement » devenait illisible. Moins de tuiles par ligne valent mieux qu'un libellé coupé : qui règle son téléphone à 200 % en a besoin.
+ *
+ * La grille se cale sur une estimation au caractère, que la fonte réellement chargée dément parfois de quelques points ; le libellé ramène donc sa propre garantie, par adjustsFontSizeToFit, pour qu'un mot ne soit jamais coupé en deux.
  */
 export function CategoryPicker({ categories, selectedId, onSelect }: CategoryPickerProps) {
   const colors = useColors();
@@ -93,9 +95,13 @@ export function CategoryPicker({ categories, selectedId, onSelect }: CategoryPic
                   size={iconSize}
                   color={selected ? colors.surface : tone.tint}
                 />
-                {/* Deux lignes au plus : un nom de plusieurs mots passe à la ligne entre deux mots, et categoryGridLayout() réduit les colonnes avant qu'un mot seul ne tienne plus. */}
+                {/* Deux lignes au plus : un nom de plusieurs mots passe à la ligne entre deux mots, et categoryGridLayout() réduit les colonnes avant qu'un mot seul ne tienne plus.
+
+                    adjustsFontSizeToFit rattrape le cas que l'estimation ne peut pas trancher : categoryGridLayout() calcule la largeur d'un libellé au caractère près, et sur un mot long comme « Remboursement » l'écart avec la fonte réellement chargée suffit à faire retenir une colonne de trop. Le mot se faisait alors couper en plein milieu — un mot seul n'a pas d'espace où se replier sur la seconde ligne. Plutôt que de durcir le seuil, ce qui coûterait une colonne à tous les autres libellés, la tuile réduit ce seul mot de 15 % au plus. */}
                 <Text
                   numberOfLines={2}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.85}
                   style={[
                     styles.label,
                     row.iconAbove && styles.labelStacked,
