@@ -84,7 +84,7 @@ export default function GroupsScreen() {
 
       {/* Ce que les policies garantissent, et rien de plus : un groupe partagé est visible de tous ses membres, le compte personnel et les objectifs d'épargne de personne d'autre. */}
       <View style={[styles.note, { backgroundColor: colors.surfaceMuted }]}>
-        <MaterialCommunityIcons name="shield-check-outline" size={22} color={colors.primary} />
+        <MaterialCommunityIcons name="eye-off-outline" size={22} color={colors.primary} />
         <Text style={[styles.noteText, { color: colors.text }]}>
           Votre compte personnel et vos objectifs d’épargne restent invisibles des autres membres.
           Seules les opérations et les enveloppes d’un groupe partagé sont vues de tout le groupe.
@@ -473,6 +473,8 @@ const styles = StyleSheet.create({
     fontFamily: font.regular,
     fontSize: 16,
     lineHeight: 23,
+    // Justifié comme la carte de suppression de compte, pour la même raison : le paragraphe fait quatre lignes pleines, et un bord droit en dents de scie donne un air brouillon à une note qu'on veut voir lue. Android n'applique `justify` qu'à partir d'API 26 ; en dessous le texte reste aligné à gauche.
+    textAlign: 'justify',
   },
   error: {
     fontFamily: font.medium,

@@ -66,6 +66,8 @@ export function CategoryPicker({ categories, selectedId, onSelect }: CategoryPic
             const category = categories[slot];
             const selected = category.id === selectedId;
             const tone = categoryTone(category, isDark);
+            // Un libellé d'un seul mot ne peut pas se replier ; voir le commentaire sur le Text du libellé.
+            const singleWord = !category.name.includes(' ');
 
             return (
               <Pressable
@@ -95,13 +97,17 @@ export function CategoryPicker({ categories, selectedId, onSelect }: CategoryPic
                   size={iconSize}
                   color={selected ? colors.surface : tone.tint}
                 />
-                {/* Deux lignes au plus : un nom de plusieurs mots passe à la ligne entre deux mots, et categoryGridLayout() réduit les colonnes avant qu'un mot seul ne tienne plus.
+                {/* Le nombre de lignes dépend du libellé, parce que les deux cas n'ont pas le même recours quand la tuile est trop étroite.
 
-                    adjustsFontSizeToFit rattrape le cas que l'estimation ne peut pas trancher : categoryGridLayout() calcule la largeur d'un libellé au caractère près, et sur un mot long comme « Remboursement » l'écart avec la fonte réellement chargée suffit à faire retenir une colonne de trop. Le mot se faisait alors couper en plein milieu — un mot seul n'a pas d'espace où se replier sur la seconde ligne. Plutôt que de durcir le seuil, ce qui coûterait une colonne à tous les autres libellés, la tuile réduit ce seul mot de 15 % au plus. */}
+                    Un nom de plusieurs mots (« Autres revenus ») se replie entre deux mots : deux lignes, taille inchangée. Un nom d'un seul mot n'a nulle part où se couper, et la seconde ligne ne lui sert à rien — Android y casse le mot en plein milieu, ce qui donnait « Rembourseme / nt ». Il tient donc sur une ligne, quitte à être réduit, ce qui reste lisible là où une coupure ne l'est pas.
+
+                    C'est le rattrapage de ce que l'estimation ne peut pas trancher : categoryGridLayout() calcule la largeur au caractère près, et sur treize lettres l'écart avec la fonte réellement chargée suffit à faire retenir une colonne de trop. Durcir le seuil à la place a été essayé et annulé — « Alimentation » passe à un point près, donc toute marge coûte une colonne à la grille entière.
+
+                    adjustsFontSizeToFit n'agit que sur une seule ligne sous Android : associé à numberOfLines={2}, il est ignoré. D'où les deux branches plutôt qu'un réglage commun. */}
                 <Text
-                  numberOfLines={2}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.85}
+                  numberOfLines={singleWord ? 1 : 2}
+                  adjustsFontSizeToFit={singleWord}
+                  minimumFontScale={0.75}
                   style={[
                     styles.label,
                     row.iconAbove && styles.labelStacked,
@@ -157,7 +163,9 @@ const styles = StyleSheet.create({
     fontSize: LABEL_FONT_SIZE,
     flexShrink: 1,
   },
+  // En colonne, flexShrink joue sur la hauteur : sans alignSelf le libellé prendrait sa largeur naturelle et déborderait de la tuile, et adjustsFontSizeToFit n'aurait aucune largeur à viser.
   labelStacked: {
     textAlign: 'center',
+    alignSelf: 'stretch',
   },
 });

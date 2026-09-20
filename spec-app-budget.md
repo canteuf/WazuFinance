@@ -107,6 +107,6 @@ Un compte personnel privé est modélisé comme un groupe à un seul membre. Cel
 - Multi-devises : pas de besoin identifié pour l'instant. Ajout simple a posteriori (colonne `currency` sur `transactions` et `budgets`) si le besoin apparaît, donc pas de raison de complexifier le schéma maintenant.
 - Notifications push : nécessite Expo Notifications, la gestion des permissions iOS/Android, et un job côté serveur (edge function Supabase) qui vérifie les seuils. L'alerte visuelle in-app suffit pour la V1 ; les notifications viennent une fois le cœur de l'app stable.
 
-## 7. Prochaine étape
+## 7. État
 
-Ce document sert de base à passer à Claude Code pour démarrer l'implémentation : structure du projet Expo, configuration Supabase (schéma SQL + policies RLS), puis écrans un par un en commençant par l'authentification et la saisie de transaction.
+Ce document a servi de base à l'implémentation, et reste la référence du périmètre et du modèle de données. Le périmètre V1 décrit ici est livré : tous les écrans, l'export CSV et PDF, et un build natif installé sur appareil. L'avancement écran par écran est dans [README.md](README.md) ; les règles de code et les pièges rencontrés en chemin, dans [CLAUDE.md](CLAUDE.md).

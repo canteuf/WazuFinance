@@ -22,6 +22,8 @@ npx expo export --platform android --output-dir <dir>   # bundle check, no devic
 npx supabase db push                # apply pending migrations to the linked project
 npx supabase migration list --linked  # compare local vs remote migration state
 npm run db:types                    # regenerate src/types/database.ts from the linked project
+
+eas build -p android --profile preview   # installable APK, built by EAS (global eas-cli)
 ```
 
 The project is linked to Supabase ref `ozwltxywsqvgmefuqvfv`. Migration files must keep the CLI's `<14-digit timestamp>_name.sql` naming or `db push` skips them.
@@ -39,6 +41,29 @@ Per [AGENTS.md](AGENTS.md): read https://docs.expo.dev/versions/v57.0.0/ before 
 **Never run `npm audit fix --force`.** npm resolves an advisory by picking whatever version falls outside the vulnerable range, regardless of the SDK: on 2026-09-10 it downgraded `expo` to 46 and `expo-router` to 5 — eleven majors back — and the app could no longer start. Align versions with `npx expo install --fix` only. The moderate advisories `npm audit` reports come from two packages pulled in by the SDK itself (`decode-uri-component` through react-navigation, `uuid` through Expo's tooling); they have no npm-side fix that keeps SDK 57, and they go away when Expo ships patch releases, which `npx expo install --fix` picks up.
 
 Windows: if `npm ci` or `npm install` fails with `EPERM` on `@unrs/resolver-binding-win32-x64-msvc/*.node`, VS Code's ESLint server has that native module loaded. Run "ESLint: Restart ESLint Server" or move the folder out of `node_modules` — never kill the VS Code extension host, which Claude Code runs inside.
+
+## Native build (EAS)
+
+**The three profiles in `eas.json` pin `"node": "22.20.0"`, and that pin is load-bearing.** `@supabase/supabase-js` and its five sub-packages declare `engines.node >= 22`; react-native declares `^20.19.4 || ^22.13.0 || ^24.3.0`. The intersection starts at 22.13. The build worker otherwise defaults to Node 20, where `npm ci` fails hard on the engine conflict — in about fifteen seconds, and the build log shows only `npm ci --include=dev exited with non-zero code: 1`, never the engine mismatch itself. Any new dependency raising its Node floor has to be checked against this pin.
+
+**`eas-cli` is installed globally, never as a project dependency.** EAS runs `npm ci --include=dev` on the worker, so a dev dependency ships 344 packages to a machine that has no use for them. `cli.version` in `eas.json` already enforces the version. Removing it from `devDependencies` also removes the local `eas` binary, so `npx eas` stops resolving — the package is named `eas-cli`, and the bare `eas` command comes from the global install.
+
+Installing the resulting APK needs `adb` from the Android platform-tools. Without it the build still succeeds; only the automatic install step fails, with `spawn adb ENOENT`, and the APK stays downloadable from the build URL.
+
+Windows PATH: `[Environment]::SetEnvironmentVariable("Path", $env:Path + ";…", "User")` is a trap. `$env:Path` holds the *merged* machine + user PATH, so each call copies the machine PATH into the user PATH. Past 2047 characters in a `REG_SZ` key, Windows silently stops merging the user PATH altogether and every globally installed tool disappears from new sessions. Read the user scope explicitly instead — `[Environment]::GetEnvironmentVariable("Path", "User")` — and keep the key `REG_EXPAND_SZ`. VS Code also hands each terminal the environment it captured at its own launch, so a PATH change needs VS Code itself restarted, not just a new terminal tab.
+
+## App icons
+
+`app.json` wires four generated files from `assets/images/`, and Android composes three of them itself rather than taking a finished square.
+
+- `android-icon-foreground.png` — the glyph alone on transparency. Android masks the icon to the launcher's shape (circle, squircle, teardrop), so the drawing has to stay inside the central ~66 %: here 560 × 436 on a 1024 canvas. A full-bleed icon used as the foreground gets its corners cut.
+- `android-icon-background.png` — opaque, edge to edge, **no border and no rounded corners**. A hairline border there reads as a stray line once the mask is applied.
+- `android-icon-monochrome.png` — the same silhouette in flat white, for Android 13+ themed icons, which recolour it against the wallpaper.
+- `icon.png` — the flattened squircle, for iOS and the web.
+
+**An app icon is judged at 48 dp, not at 1024.** The original artwork put a mid-green glyph on a dark-green field — 3.4:1, which dissolves in the launcher. The shipped background is `#062019`, giving 6.89:1. Any new artwork should be checked by compositing foreground over background, masking to a circle and downsampling to 48 px before it is accepted.
+
+The splash screen shares that background colour; `imageWidth` is 140 because the W is much wider than tall, where the Expo template's 76 suited its own square logo.
 
 ## Architecture
 
@@ -164,6 +189,7 @@ Out, with reasons:
 - **The theme choice goes through `Appearance.setColorScheme()`, not a theme provider.** `src/lib/theme-preference.ts` stores `system` / `light` / `dark` in AsyncStorage; the root layout reads and applies it before hiding the splash, so the first screen never flashes the phone's theme. `useColorScheme()` then returns the forced value everywhere — `useColors()`, the navigation theme and native components follow without knowing the setting exists. `system` (the default) maps to `'unspecified'`, which hands control back to the phone. React Native Web doesn't implement the override: on web the app follows the browser.
 - **Font scale is followed, not capped.** System font scaling grows text without growing its container, so containers must widen or reflow: derive sizes from `useWindowDimensions().fontScale` (it re-renders on change, unlike `PixelRatio.getFontScale()`), and stack two-column rows past `stackAtFontScale`. Only two places cap it — `AmountInput` and the dashboard balance — because their available width is the screen itself.
 - **A `<Link asChild>` child's `style` must be `StyleSheet.flatten(...)`, never an array.** `asChild` renders through a `Slot`, which throws a render error on an array style — and only in development, so `npx expo export` (a production build) passes without a word, as do tsc, lint and Jest. The failure surfaces on a device running the dev bundle, which is the last place the project checks. Every `asChild` site flattens; keep it that way.
+- **`categoryGridLayout()` estimates label widths per character, so the tile itself carries the fallback — and the fallback differs by label.** The grid picks its column count from `CHAR_WIDTH_RATIO = 0.55`, which on a thirteen-letter word like « Remboursement » lands within a point of the real width, close enough to keep one column too many. A multi-word label absorbs that on a second line; a single word has nowhere to break and Android splits it mid-letter (« Rembourseme / nt »). `CategoryPicker` therefore branches: multi-word labels keep `numberOfLines={2}`, single words take `numberOfLines={1}` plus `adjustsFontSizeToFit` and shrink instead. **`adjustsFontSizeToFit` is ignored on Android whenever `numberOfLines > 1`** — pairing it with two lines is a no-op, which is why the branch exists rather than one shared setting. `labelStacked` needs `alignSelf: 'stretch'` for the same reason: in a column, `flexShrink` governs height, so without it the label has no bounded width to shrink against. Tightening the grid threshold instead was tried and reverted twice: « Alimentation » clears three columns by one point, so any margin costs the whole grid a column and breaks the mockup's two-then-three shape (three Jest cases pin it).
 - **Expense entry in ≤3 taps** from the main screen (amount, category, confirm). Retention depends on it — it drives navigation and form design. `Screen`'s optional `floatingAction` renders outside the `ScrollView`, pinned in place, so a lengthening list can't scroll it out of reach.
 - Transaction history must be paginated (`transactions_group_occurred_idx` covers the filter + sort).
 - Forms default to smart values: last-used category, today's date — both are editable, just pre-filled to save a tap.

@@ -13,11 +13,13 @@ La spécification fonctionnelle complète est dans [spec-app-budget.md](spec-app
 | 3. Historique des opérations : pagination et filtres par période, catégorie et type | Livré |
 | 4. Ajout et modification d'une opération, en trois appuis depuis l'écran principal | Livré |
 | 5. Budgets par catégorie : alerte à 80 % et à 100 % du plafond | Livré |
-| Journal d'activité : qui a modifié ou supprimé quoi dans un budget partagé | Spec et plan prêts |
-| 6. Objectifs d'épargne | À faire |
-| 7. Gestion du groupe : membres, invitations | À faire |
-| 8. Paramètres du compte | À faire |
-| Export CSV / PDF | Après les écrans principaux |
+| Journal d'activité : qui a modifié ou supprimé quoi dans un budget partagé | Livré |
+| 6. Objectifs d'épargne | Livré |
+| 7. Gestion du groupe : membres, invitations | Livré |
+| 8. Paramètres du compte | Livré |
+| Export CSV / PDF | Livré |
+
+Le périmètre V1 est complet. L'application tourne en build natif : APK installé et vérifié sur Pixel 7 et Galaxy S21 Ultra.
 
 Hors V1, par décision : connexion bancaire, multi-devises, notifications push. Les raisons sont dans la spec, §6.
 
@@ -33,7 +35,8 @@ Prérequis :
 - Node.js ;
 - un projet Supabase ;
 - Expo Go ou un build de développement sur téléphone ;
-- Docker Desktop, pour les tests de base de données uniquement.
+- Docker Desktop, pour les tests de base de données uniquement ;
+- `eas-cli` en global et les platform-tools Android, pour produire et installer un APK.
 
 1. Installer les dépendances :
 
@@ -82,23 +85,30 @@ Prérequis :
 | `npx supabase migration list --linked` | Compare migrations locales et distantes |
 | `npm run db:types` | Régénère `src/types/database.ts` depuis le projet lié, après une migration |
 | `npx expo export --platform android --output-dir <dossier>` | Vérifie que le bundle se construit, sans appareil |
-| `npx eas build -p android --profile preview` | APK installable sur un appareil, construit par EAS |
+| `eas build -p android --profile preview` | APK installable sur un appareil, construit par EAS (`eas-cli` installé globalement) |
 
 ## Build natif (EAS)
 
 Expo Go suffit pour développer, mais pas pour valider : le partage de fichiers, l'impression PDF et les modules natifs s'y comportent autrement que dans une app installée. Le profil `preview` de [eas.json](eas.json) produit un APK qu'on installe directement sur un appareil, sans passer par le Play Store.
 
 ```bash
-npx eas login                                   # une fois, compte expo.dev
-npx eas init                                    # une fois, crée le projectId dans app.json
-npx eas env:create --name EXPO_PUBLIC_SUPABASE_URL --value <url> --environment preview --visibility plaintext
-npx eas env:create --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <cle> --environment preview --visibility plaintext
-npx eas build -p android --profile preview      # ~10-20 min, QR code à la fin
+npm install -g eas-cli                          # une fois, outil de développement, pas une dépendance du projet
+eas login                                       # une fois, compte expo.dev
+eas init                                        # une fois, crée le projectId dans app.json
+eas env:set --name EXPO_PUBLIC_SUPABASE_URL --value <url> --environment preview --visibility plaintext
+eas env:set --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <cle> --environment preview --visibility plaintext
+eas build -p android --profile preview          # ~10-20 min, QR code à la fin
 ```
+
+`eas-cli` s'installe globalement et **ne doit pas figurer dans les dépendances du projet** : EAS exécute `npm ci --include=dev` sur le serveur de build, où ces 344 paquets n'ont rien à faire. La version attendue est verrouillée par le champ `cli.version` de [eas.json](eas.json), pas par une dépendance.
 
 Les deux variables sont indispensables : `.env` n'est pas versionné, donc EAS ne le voit pas, et [src/lib/env.ts](src/lib/env.ts) lève une erreur au démarrage si l'une manque. Elles sont publiques par conception — la sécurité repose sur les policies RLS, jamais sur le secret de la clé anon — d'où `--visibility plaintext`. Ne jamais y mettre la clé `service_role`.
 
 Le premier build demande un keystore de signature : laisser EAS le générer et le conserver, c'est lui qui servira à toutes les mises à jour de l'app.
+
+Les trois profils de [eas.json](eas.json) fixent `"node": "22.20.0"`. Ce n'est pas un détail de confort : `@supabase/supabase-js` déclare `engines.node >= 22`, React Native veut `^20.19.4 || ^22.13.0 || ^24.3.0`, et l'intersection commence à 22.13. Sans ce réglage, le serveur de build prend Node 20 et `npm ci` s'arrête sur un conflit de moteur — un échec en quinze secondes, dont le journal ne montre que `npm ci --include=dev exited with non-zero code: 1`.
+
+Installer l'APK sur un appareil demande `adb`, qui vient des [platform-tools Android](https://developer.android.com/tools/releases/platform-tools). Sans lui, le build aboutit mais l'installation automatique échoue sur `spawn adb ENOENT` ; l'APK reste téléchargeable depuis le lien affiché.
 
 ## Architecture
 
@@ -111,6 +121,7 @@ src/lib/          modules purs : montants, dates, erreurs, clés de cache, progr
 src/providers/    session, groupe actif, cache
 src/theme/        jetons de couleur, typographie, espacements
 src/types/        types générés depuis la base (ne pas éditer à la main)
+assets/images/    icônes de l'app, écran de démarrage, favicon
 supabase/         migrations SQL, policies RLS, tests pgTAP
 docs/superpowers/ specs de conception et plans d'implémentation, écran par écran
 ```
