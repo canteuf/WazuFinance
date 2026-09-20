@@ -19,7 +19,8 @@ import { spacing, useColors } from '@/theme/tokens';
  * Une liste borne son `contentContainerStyle` à `CONTENT_MAX_WIDTH + CONTENT_GUTTER * 2`, la gouttière étant à l'intérieur du conteneur et non autour.
  */
 export const CONTENT_MAX_WIDTH = 420;
-export const CONTENT_GUTTER = spacing.lg;
+// 16 plutôt que 24 : sur un téléphone de 412 points, la colonne passait de 364 à 380, et les cartes gagnent cette largeur là où elle manquait. Au-delà de 452 points de large, `CONTENT_MAX_WIDTH` borne déjà la colonne et la gouttière n'est plus que le reste, réparti de part et d'autre.
+export const CONTENT_GUTTER = spacing.md;
 
 /**
  * La colonne, gouttières comprises, pour les blocs qui portent eux-mêmes leur gouttière : le `contentContainerStyle` d'une liste virtualisée, et les blocs d'une feuille de formulaire, dont le fond doit rester pleine largeur pendant que le contenu se centre.

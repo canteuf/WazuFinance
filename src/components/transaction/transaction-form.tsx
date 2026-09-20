@@ -6,6 +6,7 @@ import { AmountInput } from '@/components/transaction/amount-input';
 import { CategoryPicker } from '@/components/transaction/category-picker';
 import { DateField } from '@/components/transaction/date-field';
 import { Button } from '@/components/ui/button';
+import { CONTENT_GUTTER } from '@/components/ui/screen';
 import { useCategories } from '@/hooks/use-categories';
 import { useFrequentAmounts } from '@/hooks/use-frequent-amounts';
 import { dataErrorMessage } from '@/lib/data-errors';
@@ -305,7 +306,9 @@ function Segment({
 const styles = StyleSheet.create({
   container: {
     gap: spacing.lg,
-    padding: spacing.lg,
+    // Gouttière partagée avec les écrans, pour que la grille de catégories tombe sur la même colonne que le contenu d'un `Screen` ; l'espacement vertical, lui, reste celui du rythme des blocs.
+    paddingHorizontal: CONTENT_GUTTER,
+    paddingVertical: spacing.lg,
   },
   card: {
     gap: spacing.sm,

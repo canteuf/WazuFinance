@@ -16,7 +16,7 @@ import {
   type TransactionFormValues,
 } from '@/components/transaction/transaction-form';
 import { Button } from '@/components/ui/button';
-import { contentColumn } from '@/components/ui/screen';
+import { CONTENT_GUTTER, contentColumn } from '@/components/ui/screen';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useAuth } from '@/hooks/use-auth';
 import { useTransaction } from '@/hooks/use-transaction';
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingTop: spacing.lg,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: CONTENT_GUTTER,
   },
   cancel: {
     flexDirection: 'row',
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     paddingTop: spacing.md,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: CONTENT_GUTTER,
   },
   eyebrow: {
     fontFamily: font.semibold,

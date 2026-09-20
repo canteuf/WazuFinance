@@ -16,7 +16,7 @@ import { AmountAdjuster } from '@/components/ui/amount-adjuster';
 import { Button } from '@/components/ui/button';
 import { DeleteAction } from '@/components/ui/form-actions';
 import { ProgressBar } from '@/components/ui/progress-bar';
-import { contentColumn } from '@/components/ui/screen';
+import { CONTENT_GUTTER, contentColumn } from '@/components/ui/screen';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useBudgetMutations } from '@/hooks/use-budget-mutations';
 import { useBudgets } from '@/hooks/use-budgets';
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingTop: spacing.lg,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: CONTENT_GUTTER,
   },
   close: {
     flexDirection: 'row',
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     paddingTop: spacing.md,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: CONTENT_GUTTER,
   },
   eyebrow: {
     fontFamily: font.semibold,
