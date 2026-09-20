@@ -82,6 +82,23 @@ Prérequis :
 | `npx supabase migration list --linked` | Compare migrations locales et distantes |
 | `npm run db:types` | Régénère `src/types/database.ts` depuis le projet lié, après une migration |
 | `npx expo export --platform android --output-dir <dossier>` | Vérifie que le bundle se construit, sans appareil |
+| `npx eas build -p android --profile preview` | APK installable sur un appareil, construit par EAS |
+
+## Build natif (EAS)
+
+Expo Go suffit pour développer, mais pas pour valider : le partage de fichiers, l'impression PDF et les modules natifs s'y comportent autrement que dans une app installée. Le profil `preview` de [eas.json](eas.json) produit un APK qu'on installe directement sur un appareil, sans passer par le Play Store.
+
+```bash
+npx eas login                                   # une fois, compte expo.dev
+npx eas init                                    # une fois, crée le projectId dans app.json
+npx eas env:create --name EXPO_PUBLIC_SUPABASE_URL --value <url> --environment preview --visibility plaintext
+npx eas env:create --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <cle> --environment preview --visibility plaintext
+npx eas build -p android --profile preview      # ~10-20 min, QR code à la fin
+```
+
+Les deux variables sont indispensables : `.env` n'est pas versionné, donc EAS ne le voit pas, et [src/lib/env.ts](src/lib/env.ts) lève une erreur au démarrage si l'une manque. Elles sont publiques par conception — la sécurité repose sur les policies RLS, jamais sur le secret de la clé anon — d'où `--visibility plaintext`. Ne jamais y mettre la clé `service_role`.
+
+Le premier build demande un keystore de signature : laisser EAS le générer et le conserver, c'est lui qui servira à toutes les mises à jour de l'app.
 
 ## Architecture
 
