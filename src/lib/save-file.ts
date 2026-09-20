@@ -1,4 +1,4 @@
-import { cacheDirectory, deleteAsync, moveAsync, writeAsStringAsync } from 'expo-file-system/legacy';
+import { cacheDirectory, deleteAsync, writeAsStringAsync } from 'expo-file-system/legacy';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
@@ -31,21 +31,22 @@ export async function saveTextFile(name: string, content: string, mimeType: stri
 /**
  * Convertit le document HTML en PDF A4 (WebView d'impression du système), puis le partage.
  *
- * expo-print écrit le PDF sous un nom aléatoire : il est déplacé vers `name` avant le partage, sans quoi la pièce jointe arriverait en « 3F2A…pdf ». Le renommage est un confort, pas une condition — s'il échoue, le PDF part sous son nom d'origine plutôt que d'être perdu.
+ * Le PDF est récupéré en base64 et réécrit dans le cache de l'expérience, au lieu d'être repris depuis le fichier qu'expo-print vient d'écrire. Ce fichier vit dans `<cache>/Print/`, un sous-dossier qu'expo-file-system place hors du périmètre qu'il s'autorise bien qu'il soit sous le même cache : sous Expo Go, il refuse de le déplacer (« isn't movable »), de le copier (« isn't readable »), et expo-sharing refuse de le lire (« Not allowed to read file under given URL »). Aucune opération sur ce chemin n'aboutit, donc on ne le touche pas.
+ *
+ * `base64: true` renvoie le document en mémoire, sans passer par le système de fichiers : la seule écriture est la nôtre, à la racine du cache, exactement comme pour le CSV — qui, lui, a toujours fonctionné. Cela donne aussi son nom à la pièce jointe, qui arriverait sinon en « 3F2A…pdf ».
+ *
+ * Le coût est de garder le PDF en mémoire le temps de l'écriture ; un relevé d'opérations reste petit, et l'encodage base64 le gonfle d'un tiers.
  */
 export async function saveHtmlAsPdf(name: string, html: string): Promise<void> {
-  const { uri: printed } = await Print.printToFileAsync({ html, ...A4 });
-
-  let target = printed;
-  try {
-    const named = cacheUri(name);
-    // Un export précédent du même nom ferait échouer le déplacement.
-    await deleteAsync(named, { idempotent: true });
-    await moveAsync({ from: printed, to: named });
-    target = named;
-  } catch {
-    target = printed;
+  const { base64 } = await Print.printToFileAsync({ html, ...A4, base64: true });
+  if (base64 === undefined) {
+    throw new Error('Le PDF n’a pas pu être lu après sa création.');
   }
+
+  const target = cacheUri(name);
+  // Un export précédent du même nom resterait sinon en place.
+  await deleteAsync(target, { idempotent: true });
+  await writeAsStringAsync(target, base64, { encoding: 'base64' });
 
   await share(target, 'application/pdf', 'com.adobe.pdf');
 }
