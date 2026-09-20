@@ -40,6 +40,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "fe28b68d-a627-4078-800d-6ceda2c7eef7"
+      }
+    },
+    "owner": "canteuf"
   }
 }
