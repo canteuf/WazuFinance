@@ -80,7 +80,7 @@ Prérequis :
 | `npm run test:db` | Tests pgTAP de `supabase/tests/` contre la base locale |
 | `npx supabase db reset` | Réapplique les migrations à la base locale |
 | `npx supabase migration list --linked` | Compare migrations locales et distantes |
-| `npx supabase gen types typescript --linked > src/types/database.ts` | Régénère les types après une migration |
+| `npm run db:types` | Régénère `src/types/database.ts` depuis le projet lié, après une migration |
 | `npx expo export --platform android --output-dir <dossier>` | Vérifie que le bundle se construit, sans appareil |
 
 ## Architecture

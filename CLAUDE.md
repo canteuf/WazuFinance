@@ -21,7 +21,7 @@ npx expo export --platform android --output-dir <dir>   # bundle check, no devic
 
 npx supabase db push                # apply pending migrations to the linked project
 npx supabase migration list --linked  # compare local vs remote migration state
-npx supabase gen types typescript --linked > src/types/database.ts
+npm run db:types                    # regenerate src/types/database.ts from the linked project
 ```
 
 The project is linked to Supabase ref `ozwltxywsqvgmefuqvfv`. Migration files must keep the CLI's `<14-digit timestamp>_name.sql` naming or `db push` skips them.
@@ -175,4 +175,4 @@ Out, with reasons:
 - **Comments are never hard-wrapped.** One paragraph is one physical line, however long — `//`, `/* */` and `{/* */}` alike. `.vscode/settings.json` sets `editor.wordWrap: "on"`, so the editor folds them to the window width; re-wrapping them by hand at ~80 columns undoes that, and turns a one-word edit into a diff spanning every line of the paragraph. A blank line still separates paragraphs, and bullets, JSDoc tags and indented code samples keep their own lines.
 - User-facing strings in French, code identifiers in English. SQL comments in French, matching the spec.
 - Supabase errors are mapped to French text by code in [src/lib/auth-errors.ts](src/lib/auth-errors.ts) — map codes, never message strings, which change between versions.
-- TypeScript strict, no `any`. `src/types/database.ts` is **generated** — never edit it by hand. After any migration: `npx supabase gen types typescript --linked > src/types/database.ts`, then restore the header comment and the enum aliases at the end of the file.
+- TypeScript strict, no `any`. `src/types/database.ts` is **generated** — never edit it by hand. After any migration, run `npm run db:types`, never `supabase gen types … > src/types/database.ts`: the redirection drops the header comment and the enum aliases the app imports, and under PowerShell it writes UTF-16, after which tsc sees no exports at all. [scripts/gen-db-types.mjs](scripts/gen-db-types.mjs) captures the output instead, re-attaches both, and writes UTF-8. A new enum in a migration is added to its `ALIASES` block.

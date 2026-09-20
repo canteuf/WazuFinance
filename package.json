@@ -54,7 +54,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "jest",
-    "test:db": "npx supabase test db"
+    "test:db": "npx supabase test db",
+    "db:types": "node scripts/gen-db-types.mjs"
   },
   "private": true,
   "jest": {

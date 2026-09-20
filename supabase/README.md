@@ -26,10 +26,10 @@ npx supabase db push
 Après chaque migration, régénérer les types de l'application depuis le projet lié, **une fois la migration poussée** :
 
 ```bash
-npx supabase gen types typescript --linked > src/types/database.ts
+npm run db:types
 ```
 
-Remettre ensuite l'en-tête et les alias d'enums en fin de fichier. Toujours partir de `--linked`, jamais de `--local` : la pile locale tourne une autre version de PostgREST et omet le bloc `__InternalSupabase`.
+Ce script remet lui-même l'en-tête et les alias d'enums, et écrit en UTF-8. Ne pas rediriger `supabase gen types` vers le fichier à la main : la redirection perd les deux, et sous PowerShell elle écrit en UTF-16, après quoi tsc ne trouve plus aucun export. Toujours partir de `--linked`, jamais de `--local` : la pile locale tourne une autre version de PostgREST et omet le bloc `__InternalSupabase`.
 
 ## Réglages du projet à vérifier
 
