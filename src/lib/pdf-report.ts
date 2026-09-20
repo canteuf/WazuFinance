@@ -72,7 +72,9 @@ export function buildTransactionsReportHtml(input: ReportInput): string {
 <style>
   @page { size: A4; margin: 16mm 14mm; }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #12201C; font-size: 11pt; }
+  /* La page fait au moins la hauteur du papier, moins ses marges : c'est ce qui permet à la mention d'édition de descendre en pied de page quand le relevé tient sur une page, au lieu de flotter juste sous la dernière écriture. */
+  html, body { min-height: calc(297mm - 32mm); }
+  body { margin: 0; display: flex; flex-direction: column; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #12201C; font-size: 11pt; }
   header { border-bottom: 2px solid #0EA47A; padding-bottom: 10px; margin-bottom: 16px; }
   .brand { color: #0EA47A; font-weight: 800; letter-spacing: 1.5px; font-size: 9pt; text-transform: uppercase; }
   h1 { font-size: 20pt; margin: 4px 0 2px; }
@@ -81,7 +83,8 @@ export function buildTransactionsReportHtml(input: ReportInput): string {
   .total { flex: 1; background: #F1F5F3; border-radius: 8px; padding: 10px 12px; }
   .total .label { color: #5E6E69; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 1px; }
   .total .value { font-size: 14pt; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
-  table { width: 100%; border-collapse: collapse; }
+  /* flex: none — dans le corps en colonne, le tableau garderait sinon la place restante et ses filets s'étireraient jusqu'au pied. */
+  table { width: 100%; border-collapse: collapse; flex: none; }
   thead { display: table-header-group; }
   th { text-align: left; color: #5E6E69; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid #DDE5E2; padding: 6px 6px; }
   td { border-bottom: 1px solid #EEF2F0; padding: 6px 6px; vertical-align: top; }
@@ -93,7 +96,8 @@ export function buildTransactionsReportHtml(input: ReportInput): string {
   th.amount { font-weight: normal; }
   .income { color: #0B7A5B; }
   .empty { color: #5E6E69; text-align: center; padding: 24px; }
-  footer { margin-top: 14px; color: #5E6E69; font-size: 8.5pt; }
+  /* margin-top: auto pousse le pied au bas de la page tant que le contenu est plus court qu'elle ; au-delà, il reprend sa place à la suite du tableau, sur la dernière page. Un pied répété sur chaque page demanderait une position fixe, que la WebView d'impression d'Android ne rend pas de façon fiable. */
+  footer { margin-top: auto; padding-top: 14px; border-top: 1px solid #EEF2F0; color: #5E6E69; font-size: 8.5pt; }
 </style>
 </head>
 <body>
