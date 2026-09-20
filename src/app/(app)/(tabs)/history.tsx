@@ -14,6 +14,8 @@ import {
 import { TransactionRow } from '@/components/transaction/transaction-row';
 import { AccountButton } from '@/components/ui/account-button';
 import { Button } from '@/components/ui/button';
+import { CONTENT_GUTTER, contentColumn } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import type { TransactionFilters } from '@/data/transactions';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useCategories } from '@/hooks/use-categories';
@@ -59,9 +61,11 @@ function exportFiltersLabel(
   return parts.join(' · ');
 }
 
-/** Une erreur Supabase porte un `code` que dataErrorMessage() sait traduire ; une erreur d'écriture ou de partage du fichier n'en a pas, et son message est déjà en français (voir save-file.ts). */
+/**
+ * Le client Supabase rejette avec un objet littéral, que dataErrorMessage() traduit par son SQLSTATE. Les modules natifs (impression, fichiers, partage), eux, rejettent avec une vraie `Error` — c'est là-dessus qu'on les distingue, et non sur l'absence de `code` : une erreur native en porte un elle aussi (`ERR_…`), ce qui la faisait passer pour une erreur SQL inconnue et affichait « Une erreur inattendue est survenue » à la place de sa cause.
+ */
 function exportErrorMessage(error: unknown): string {
-  if (error instanceof Error && !('code' in error)) {
+  if (error instanceof Error) {
     return `Export impossible : ${error.message}`;
   }
   return dataErrorMessage(error);
@@ -221,8 +225,7 @@ export default function HistoryScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       {/* Pas de bouton retour : l'écran est une destination d'onglet, pas une page empilée. */}
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Opérations</Text>
+      <ScreenHeader title="Opérations">
         {/* C'est ici qu'on vient vérifier ses opérations ; le tableau de bord porte déjà assez d'éléments. */}
         {/* Exporte exactement ce que la liste montre : mêmes filtres, même groupe. Désactivé quand il n'y a rien à exporter, plutôt que de produire un fichier réduit à son en-tête. */}
         <Pressable
@@ -232,7 +235,7 @@ export default function HistoryScreen() {
           disabled={!canExport}
           hitSlop={spacing.sm}
           onPress={() => setFormatMenuOpen((open) => !open)}
-          style={[styles.headerLink, styles.exportButton, { opacity: canExport ? 1 : 0.4 }]}
+          style={[styles.exportButton, { opacity: canExport ? 1 : 0.4 }]}
         >
           {exporting ? (
             <ActivityIndicator size="small" color={colors.primary} />
@@ -253,7 +256,7 @@ export default function HistoryScreen() {
           </Pressable>
         </Link>
         <AccountButton />
-      </View>
+      </ScreenHeader>
       {formatMenuOpen && !exporting ? (
         <View style={styles.formatMenu}>
           {FORMATS.map((format) => (
@@ -401,40 +404,22 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    // À grande taille de police, le lien passe à la ligne au lieu de sortir de l'écran.
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
-  },
-  title: {
-    fontFamily: font.bold,
-    fontSize: 24,
-    letterSpacing: -0.5,
-    flexShrink: 1,
-  },
-  headerLink: {
-    // Pousse les liens au bord droit de l'en-tête.
-    marginLeft: 'auto',
-  },
   exportButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
   },
   journalLink: {
-    marginLeft: spacing.sm,
+    justifyContent: 'center',
   },
   formatMenu: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     flexWrap: 'wrap',
     gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
+    // Mêmes bornes que la liste : le menu se déplie sous le bouton « Exporter » de l'en-tête et doit tomber dans la même colonne.
+    ...contentColumn,
+    paddingHorizontal: CONTENT_GUTTER,
     paddingBottom: spacing.sm,
   },
   formatChip: {
@@ -452,14 +437,17 @@ const styles = StyleSheet.create({
   exportError: {
     fontFamily: font.medium,
     fontSize: 15,
-    paddingHorizontal: spacing.lg,
+    ...contentColumn,
+    paddingHorizontal: CONTENT_GUTTER,
   },
   headerLinkLabel: {
     fontFamily: font.semibold,
     fontSize: 16,
   },
   content: {
-    paddingHorizontal: spacing.lg,
+    // Même colonne que `Screen` et que l'en-tête : la gouttière seule laissait les cartes s'étirer au-delà du titre dès que l'écran dépassait 468 points.
+    ...contentColumn,
+    paddingHorizontal: CONTENT_GUTTER,
     // Dégage la pilule « Saisie », qui flotte au-dessus du bas de la liste.
     paddingBottom: spacing.xl * 3,
     flexGrow: 1,

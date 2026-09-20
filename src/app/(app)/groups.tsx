@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { Card } from '@/components/ui/card';
 import { AvatarStack } from '@/components/ui/member-avatar';
 import { Screen } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { StatusBadge } from '@/components/ui/status-badge';
 import type { GroupOverview, MembershipSummary } from '@/data/groups';
 import { useActiveGroup } from '@/hooks/use-active-group';
@@ -28,24 +29,18 @@ export default function GroupsScreen() {
   const { overviews, isLoading, error } = useGroupOverviews();
 
   return (
-    <Screen align="top">
-      <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Retour"
-          hitSlop={spacing.sm}
-          onPress={() => goBackOr(router, '/')}
-          style={[styles.back, { backgroundColor: colors.surfaceMuted }]}
-        >
-          <MaterialCommunityIcons name="arrow-left" size={20} color={colors.text} />
-        </Pressable>
-        <Text style={[styles.title, { color: colors.text }]}>Mes groupes</Text>
-        <View style={[styles.countPill, { backgroundColor: colors.surfaceMuted }]}>
-          <Text style={[styles.countLabel, { color: colors.text }]}>
-            {groups.length === 1 ? '1 espace' : `${groups.length} espaces`}
-          </Text>
-        </View>
-      </View>
+    <Screen
+      align="top"
+      header={
+        <ScreenHeader title="Mes groupes" onBack={() => goBackOr(router, '/')}>
+          <View style={[styles.countPill, { backgroundColor: colors.surfaceMuted }]}>
+            <Text style={[styles.countLabel, { color: colors.text }]}>
+              {groups.length === 1 ? '1 espace' : `${groups.length} espaces`}
+            </Text>
+          </View>
+        </ScreenHeader>
+      }
+    >
       <Text style={[styles.subtitle, { color: colors.textMuted }]}>
         Votre compte personnel et les budgets que vous partagez.
       </Text>
@@ -308,24 +303,6 @@ function RoleTag({ owner }: { owner: boolean }) {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  back: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    flex: 1,
-    fontFamily: font.black,
-    fontSize: 30,
-    letterSpacing: -0.8,
-  },
   countPill: {
     paddingHorizontal: spacing.sm + 4,
     paddingVertical: spacing.xs + 2,

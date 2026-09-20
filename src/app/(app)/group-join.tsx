@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
+import { contentColumn } from '@/components/ui/screen';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useGroupMutations } from '@/hooks/use-group-mutations';
 import { dataErrorMessage } from '@/lib/data-errors';
@@ -86,8 +87,12 @@ export default function GroupJoinScreen() {
 }
 
 const styles = StyleSheet.create({
-  sheet: {},
+  sheet: {
+    // Le fond garde la pleine largeur de la feuille ; ce sont les blocs qui se centrent, sur la même colonne que les écrans (voir `contentColumn`). Sans cela, le contenu d'une feuille s'étalait d'un bord à l'autre sur une tablette là où les cartes des écrans s'arrêtent à 420 points.
+    alignItems: 'center',
+  },
   header: {
+    ...contentColumn,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -95,14 +100,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   title: {
-    fontFamily: font.bold,
-    fontSize: 19,
-    letterSpacing: -0.2,
+    // Même famille de titres que les autres feuilles et que les en-têtes d'écran, en plus court : ici le titre partage sa ligne avec la fermeture, et 28 points passeraient à la ligne sur un téléphone étroit.
+    fontFamily: font.black,
+    fontSize: 22,
+    letterSpacing: -0.5,
+    flexShrink: 1,
   },
   closeButton: {
     padding: spacing.xs,
   },
   form: {
+    ...contentColumn,
     gap: spacing.md,
     padding: spacing.lg,
   },

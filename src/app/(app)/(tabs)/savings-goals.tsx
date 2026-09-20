@@ -6,6 +6,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { SavingsGoalRow } from '@/components/savings/savings-goal-row';
 import { AccountButton } from '@/components/ui/account-button';
 import { Screen } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useSavingsGoals } from '@/hooks/use-savings-goals';
 import { useSavingsOverview } from '@/hooks/use-savings-overview';
@@ -54,6 +55,11 @@ export default function SavingsGoalsScreen() {
       align="top"
       inTabs
       floatingAlign="center"
+      header={
+        <ScreenHeader title="Objectifs d’épargne">
+          <AccountButton />
+        </ScreenHeader>
+      }
       floatingAction={
         // La saisie en trois taps reste à portée depuis chaque onglet, comme sur la maquette.
         <Link href="/transaction" asChild>
@@ -73,14 +79,8 @@ export default function SavingsGoalsScreen() {
         </Link>
       }
     >
-      <View style={styles.topRow}>
-        <Text style={[styles.brand, { color: colors.textMuted }]}>Épargne</Text>
-        <AccountButton />
-      </View>
-
       <View style={styles.titleRow}>
         <View style={styles.titleBlock}>
-          <Text style={[styles.title, { color: colors.text }]}>Objectifs d’épargne</Text>
           {items.length > 0 ? (
             <Text style={[styles.subtitle, { color: colors.textMuted }]}>{counts}</Text>
           ) : null}
@@ -177,17 +177,6 @@ export default function SavingsGoalsScreen() {
 }
 
 const styles = StyleSheet.create({
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  brand: {
-    fontFamily: font.semibold,
-    fontSize: 15,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -199,11 +188,6 @@ const styles = StyleSheet.create({
   titleBlock: {
     flexShrink: 1,
     gap: 2,
-  },
-  title: {
-    fontFamily: font.black,
-    fontSize: 28,
-    letterSpacing: -0.7,
   },
   subtitle: {
     fontFamily: font.regular,

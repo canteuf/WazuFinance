@@ -1,11 +1,13 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { CONTENT_GUTTER, contentColumn } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useActivity } from '@/hooks/use-activity';
 import { useAuth } from '@/hooks/use-auth';
@@ -179,22 +181,11 @@ export default function ActivityScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Retour"
-          hitSlop={spacing.sm}
-          onPress={() => goBackOr(router, '/history')}
-        >
-          <MaterialCommunityIcons name="chevron-left" size={26} color={colors.textMuted} />
-        </Pressable>
-        <View style={styles.headerText}>
-          <Text style={[styles.title, { color: colors.text }]}>Journal</Text>
-          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            Modifications et suppressions
-          </Text>
-        </View>
-      </View>
+      <ScreenHeader
+        title="Journal"
+        subtitle="Modifications et suppressions"
+        onBack={() => goBackOr(router, '/history')}
+      />
 
       {renderBody()}
     </View>
@@ -205,29 +196,10 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-  },
-  headerText: {
-    gap: 3,
-    flexShrink: 1,
-  },
-  title: {
-    fontFamily: font.bold,
-    fontSize: 24,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontFamily: font.regular,
-    fontSize: 14.5,
-  },
   content: {
-    paddingHorizontal: spacing.lg,
+    // Même colonne que `Screen` et que l'en-tête ; voir history.tsx.
+    ...contentColumn,
+    paddingHorizontal: CONTENT_GUTTER,
     flexGrow: 1,
   },
   separator: {

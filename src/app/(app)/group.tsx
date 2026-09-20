@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { AvatarStack, MemberAvatar } from '@/components/ui/member-avatar';
 import { Screen } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useAuth } from '@/hooks/use-auth';
@@ -109,21 +110,16 @@ export default function GroupScreen() {
   const memberCountLabel = members.length === 1 ? '1 membre' : `${members.length} membres`;
 
   return (
-    <Screen align="top">
-      <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Retour"
-          hitSlop={spacing.sm}
-          onPress={() => goBackOr(router, '/groups')}
-        >
-          <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
-        </Pressable>
-        <View style={styles.headerText}>
-          <Text style={[styles.title, { color: colors.text }]}>Détail du groupe</Text>
-          <Text style={[styles.subtitle, { color: colors.textMuted }]}>Gestion du groupe</Text>
-        </View>
-      </View>
+    <Screen
+      align="top"
+      header={
+        <ScreenHeader
+          title="Détail du groupe"
+          subtitle="Gestion du groupe"
+          onBack={() => goBackOr(router, '/groups')}
+        />
+      }
+    >
 
       {blockingError ? (
         <Text style={[styles.message, { color: colors.danger }]}>
@@ -356,23 +352,6 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontFamily: font.semibold,
     fontSize: 18,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  headerText: {
-    flexShrink: 1,
-  },
-  title: {
-    fontFamily: font.black,
-    fontSize: 24,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontFamily: font.regular,
-    fontSize: 15,
   },
   summary: {
     gap: spacing.md,

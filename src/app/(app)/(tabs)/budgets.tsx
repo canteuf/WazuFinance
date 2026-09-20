@@ -7,6 +7,7 @@ import { BudgetRow } from '@/components/budget/budget-row';
 import { AccountButton } from '@/components/ui/account-button';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { Screen } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useBudgetProgress } from '@/hooks/use-budget-progress';
 import { useBudgetTotals } from '@/hooks/use-budget-totals';
@@ -69,6 +70,11 @@ export default function BudgetsScreen() {
       align="top"
       inTabs
       floatingAlign="center"
+      header={
+        <ScreenHeader title="Enveloppes">
+          <AccountButton />
+        </ScreenHeader>
+      }
       floatingAction={
         // La saisie en trois taps reste à portée depuis chaque onglet, comme sur la maquette.
         <Link href="/transaction" asChild>
@@ -88,17 +94,11 @@ export default function BudgetsScreen() {
         </Link>
       }
     >
-      <View style={styles.headerRow}>
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>Enveloppes</Text>
-          {items.length > 0 ? (
-            <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-              Triées par urgence, les enveloppes à risque d’abord
-            </Text>
-          ) : null}
-        </View>
-        <AccountButton />
-      </View>
+      {items.length > 0 ? (
+        <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+          Triées par urgence, les enveloppes à risque d’abord
+        </Text>
+      ) : null}
 
       {blockingError ? (
         // Si le chargement des adhésions échoue, `activeGroupId` reste `null` : `useBudgetProgress()` reste alors désactivé (ni chargement ni erreur) et sans ce garde l'écran afficherait à tort « Aucune enveloppe » au lieu du vrai message.
@@ -305,21 +305,6 @@ function NewEnvelopeButton() {
 }
 
 const styles = StyleSheet.create({
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  header: {
-    gap: 3,
-    flexShrink: 1,
-  },
-  title: {
-    fontFamily: font.black,
-    fontSize: 28,
-    letterSpacing: -0.7,
-  },
   subtitle: {
     fontFamily: font.regular,
     fontSize: 15.5,

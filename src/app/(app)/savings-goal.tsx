@@ -18,6 +18,7 @@ import {
 import { AmountAdjuster } from '@/components/ui/amount-adjuster';
 import { Button } from '@/components/ui/button';
 import { ProgressBar } from '@/components/ui/progress-bar';
+import { contentColumn } from '@/components/ui/screen';
 import { useAuth } from '@/hooks/use-auth';
 import { useSavingsGoalMutations } from '@/hooks/use-savings-goal-mutations';
 import { useSavingsGoals } from '@/hooks/use-savings-goals';
@@ -172,6 +173,8 @@ export default function SavingsGoalScreen() {
       </View>
 
       <ScrollView
+        // La feuille centre ses blocs (`alignItems: 'center'`) : sans cette largeur explicite, le ScrollView se réduirait à la largeur de son contenu, que son propre conteneur exprime en pourcentage de lui — une mesure qui ne converge pas.
+        style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
@@ -245,8 +248,12 @@ export default function SavingsGoalScreen() {
 }
 
 const styles = StyleSheet.create({
-  sheet: {},
+  sheet: {
+    // Le fond garde la pleine largeur de la feuille ; ce sont les blocs qui se centrent, sur la même colonne que les écrans (voir `contentColumn`). Sans cela, le contenu d'une feuille s'étalait d'un bord à l'autre sur une tablette là où les cartes des écrans s'arrêtent à 420 points.
+    alignItems: 'center',
+  },
   header: {
+    ...contentColumn,
     flexDirection: 'row',
     alignItems: 'center',
     paddingTop: spacing.lg,
@@ -262,6 +269,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   titleBlock: {
+    ...contentColumn,
     alignItems: 'center',
     gap: spacing.xs,
     paddingTop: spacing.md,
@@ -279,7 +287,11 @@ const styles = StyleSheet.create({
     letterSpacing: -0.7,
     textAlign: 'center',
   },
+  scroll: {
+    alignSelf: 'stretch',
+  },
   scrollContent: {
+    ...contentColumn,
     flexGrow: 1,
     gap: spacing.lg,
     padding: spacing.lg,

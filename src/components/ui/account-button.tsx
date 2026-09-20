@@ -29,7 +29,7 @@ export function AccountButton() {
         {initial ? (
           <Text style={[styles.initial, { color: colors.primaryText }]}>{initial}</Text>
         ) : (
-          <MaterialCommunityIcons name="account-outline" size={18} color={colors.primaryText} />
+          <MaterialCommunityIcons name="account-outline" size={22} color={colors.primaryText} />
         )}
       </Pressable>
     </Link>
@@ -38,8 +38,9 @@ export function AccountButton() {
 
 const styles = StyleSheet.create({
   button: {
-    width: 34,
-    height: 34,
+    // Même diamètre que le bouton de retour des en-têtes : les deux occupent le même coin selon l'écran, et deux pastilles de tailles différentes au même endroit se remarquaient en passant d'un écran à l'autre.
+    width: 42,
+    height: 42,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -47,7 +48,7 @@ const styles = StyleSheet.create({
   },
   initial: {
     fontFamily: font.bold,
-    fontSize: 17,
-    lineHeight: 21,
+    fontSize: 20,
+    lineHeight: 25,
   },
 });
