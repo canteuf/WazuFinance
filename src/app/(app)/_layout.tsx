@@ -25,8 +25,9 @@ function AppStack() {
     <Stack screenOptions={{ headerShown: false }}>
       {/* Les quatre destinations racines vivent dans (tabs) et partagent la barre d'onglets. Tout ce qui suit s'ouvre au-dessus d'elles : une pile pour les écrans pleins, une feuille pour les formulaires courts — dans les deux cas la barre disparaît, ce qui est la convention attendue d'un écran ouvert depuis un onglet. */}
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="activity" />
-      <Stack.Screen name="settings" />
+      {/* `slide_from_right` explicite sur les écrans pleins : `default` laisse chaque plateforme choisir sa propre animation (poussée iOS, fondu ou glissement Android selon la version), l'app ne se comportait donc pas de la même façon d'un appareil à l'autre. */}
+      <Stack.Screen name="activity" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="settings" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen
         name="budget"
         options={{
@@ -45,7 +46,7 @@ function AppStack() {
           sheetCornerRadius: 24,
         }}
       />
-      <Stack.Screen name="groups" />
+      <Stack.Screen name="groups" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen
         name="group-create"
         options={{
@@ -64,7 +65,7 @@ function AppStack() {
           sheetCornerRadius: 24,
         }}
       />
-      <Stack.Screen name="group" />
+      <Stack.Screen name="group" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen
         name="transaction"
         options={{

@@ -23,6 +23,8 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        // Fondu croisé entre onglets : le défaut est `none`, un changement d'onglet remplaçait l'écran d'un coup sec. `fade` plutôt que `shift` — les onglets sont des destinations de même rang, un glissement suggérerait un ordre gauche-droite que la barre n'impose pas.
+        animation: 'fade',
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {

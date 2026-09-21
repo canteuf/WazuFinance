@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { TransactionRow } from '@/components/transaction/transaction-row';
 import { Card } from '@/components/ui/card';
+import { FadeInRow } from '@/components/ui/fade-in-row';
 import type { TransactionWithCategory } from '@/data/transactions';
 import { font, spacing, useColors } from '@/theme/tokens';
 
@@ -28,7 +29,9 @@ export function RecentTransactions({
       {transactions.map((transaction, index) => (
         <Fragment key={transaction.id}>
           {index > 0 ? <View style={[styles.divider, { backgroundColor: colors.border }]} /> : null}
-          <TransactionRow transaction={transaction} inGroup />
+          <FadeInRow index={index}>
+            <TransactionRow transaction={transaction} inGroup />
+          </FadeInRow>
         </Fragment>
       ))}
     </Card>
