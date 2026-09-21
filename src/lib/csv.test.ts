@@ -3,7 +3,7 @@ import { buildTransactionsCsv, exportFileName, type ExportRow } from '@/lib/csv'
 const row: ExportRow = {
   occurredOn: '2026-09-19',
   type: 'expense',
-  amount: 12.5,
+  amount: 12500,
   categoryName: 'Alimentation',
   note: 'Marché',
   authorName: 'Camille',
@@ -20,15 +20,20 @@ describe('buildTransactionsCsv', () => {
     expect(lines(csv.slice(1))[0]).toBe('Date;Type;Catégorie;Montant;Note;Saisie par');
   });
 
-  it('écrit une dépense en négatif avec une virgule décimale', () => {
+  it('écrit une dépense en négatif, sans décimale', () => {
     expect(lines(buildTransactionsCsv([row]))[1]).toBe(
-      '2026-09-19;Dépense;Alimentation;-12,50;Marché;Camille'
+      '2026-09-19;Dépense;Alimentation;-12500;Marché;Camille'
     );
   });
 
   it('écrit un revenu en positif', () => {
-    const csv = buildTransactionsCsv([{ ...row, type: 'income', amount: 2100, categoryName: 'Salaire' }]);
-    expect(lines(csv)[1]).toContain(';Revenu;Salaire;2100,00;');
+    const csv = buildTransactionsCsv([{ ...row, type: 'income', amount: 210000, categoryName: 'Salaire' }]);
+    expect(lines(csv)[1]).toContain(';Revenu;Salaire;210000;');
+  });
+
+  it('arrondit une valeur décimale héritée d’avant le franc CFA, comme l’affichage', () => {
+    expect(lines(buildTransactionsCsv([{ ...row, amount: 12.5 }]))[1]).toContain(';-13;');
+    expect(lines(buildTransactionsCsv([{ ...row, amount: 0.4 }]))[1]).toContain(';0;');
   });
 
   it('entoure de guillemets un texte contenant un séparateur, un guillemet ou un retour à la ligne', () => {
@@ -43,7 +48,7 @@ describe('buildTransactionsCsv', () => {
 
   it('laisse vides la note et l’auteur absents, et nomme l’absence de catégorie', () => {
     const csv = buildTransactionsCsv([{ ...row, note: null, authorName: null, categoryName: null }]);
-    expect(lines(csv)[1]).toBe('2026-09-19;Dépense;Sans catégorie;-12,50;;');
+    expect(lines(csv)[1]).toBe('2026-09-19;Dépense;Sans catégorie;-12500;;');
   });
 
   it('termine le fichier par une fin de ligne', () => {

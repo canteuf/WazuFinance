@@ -96,6 +96,8 @@ Tables: `users`, `budget_groups`, `account_memberships`, `categories` (`group_id
 
 **The budget period is not the calendar month.** `budget_groups.period_start_day` (1–28, `check`-constrained) sets the day a period starts, so a budget can follow the payday. It sits on the group, not the user, so both members of a shared budget see the same figures — and `budget_groups_update_owner` already restricts who can change it. The 28 cap exists because the 29th, 30th and 31st don't occur every month. Bounds are computed client-side by `periodBounds()`: the server is UTC, and `date_trunc('month', now())` reports the wrong period during the first hours of a rollover day.
 
+**The currency is the CFA franc (XAF), which has no minor unit (ISO 4217 exponent 0).** [src/lib/money.ts](src/lib/money.ts) is its only definition: `CURRENCY_SYMBOL`, `formatMoney()` (amount + non-breaking space + code), `spokenAmount()` for accessibility labels, and integer-only `parseAmount()`. The app enters and displays whole amounts, with no decimals and a `number-pad` keyboard; the columns stay `numeric(12,2)` and hold integers, so there was no migration. A screen never writes `€` or `XAF` itself — it goes through `money.ts`, so the code changes in one place. Amounts saved before the switch (in euros, possibly with decimals) were not converted: they keep their value, read as XAF, and are rounded on display and in the edit field.
+
 ## Data access layers
 
 `screens → hooks → src/data/ → supabase`, one-way dependencies. A screen never imports `supabase` directly; `src/data/` never imports React. TanStack Query holds the cache; keys all live in `src/lib/query-keys.ts`.
@@ -181,7 +183,7 @@ In: manual transaction entry, per-category budgets with in-app visual alerts, sa
 
 Out, with reasons:
 - **Bank connection** — needs an aggregator (Plaid / Powens), PSD2 compliance, recurring API cost. Separate project after V1 is validated by usage.
-- **Multi-currency** — no identified need; adding a `currency` column to `transactions` and `budgets` later is cheap, so don't complicate the schema now.
+- **Multi-currency** — no identified need (the single currency is XAF, see Core data model); adding a `currency` column to `transactions` and `budgets` later is cheap, so don't complicate the schema now.
 - **Push notifications** — needs Expo Notifications, iOS/Android permissions, and a Supabase edge function checking thresholds. In-app alerts suffice for V1.
 
 ## UX constraints that shape the code

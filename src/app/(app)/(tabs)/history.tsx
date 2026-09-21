@@ -25,7 +25,7 @@ import { useTransactionHistory } from '@/hooks/use-transaction-history';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { formatPeriodLabel, periodPresets, todayIso } from '@/lib/dates';
 import { dayTitle, groupByDay } from '@/lib/ledger';
-import { formatDelta } from '@/lib/money';
+import { formatDelta, withCurrency } from '@/lib/money';
 import { normalizeSearch } from '@/lib/search';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 
@@ -309,7 +309,7 @@ export default function HistoryScreen() {
                       { color: day.total > 0 ? colors.positive : colors.text },
                     ]}
                   >
-                    Total : {formatDelta(day.total)} €
+                    Total : {withCurrency(formatDelta(day.total))}
                   </Text>
                 ) : null}
               </View>

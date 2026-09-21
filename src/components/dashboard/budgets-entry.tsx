@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-na
 import { Card } from '@/components/ui/card';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { useBudgetProgress } from '@/hooks/use-budget-progress';
-import { formatAmount } from '@/lib/money';
+import { formatAmount, formatMoney } from '@/lib/money';
 import { font, spacing, stackAtFontScale, useColors } from '@/theme/tokens';
 
 /** Enveloppes détaillées sur le tableau de bord avant de renvoyer à l'onglet. */
@@ -96,7 +96,7 @@ export function BudgetsEntry() {
                       },
                     ]}
                   >
-                    {formatAmount(item.spent)} / {formatAmount(item.budget.amount)} €
+                    {formatAmount(item.spent)} / {formatMoney(item.budget.amount)}
                   </Text>
                 </View>
                 <ProgressBar

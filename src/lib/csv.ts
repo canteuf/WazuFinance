@@ -1,7 +1,7 @@
 /**
  * Export CSV des opérations.
  *
- * Le format vise Excel en français, là où le fichier sera ouvert le plus souvent : point-virgule comme séparateur (la virgule y est le séparateur décimal), montants à virgule, et une marque d'ordre des octets UTF-8 en tête, sans laquelle Excel lit « Santé » comme « SantÃ© ». LibreOffice et Numbers acceptent ce format tel quel.
+ * Le format vise Excel en français, là où le fichier sera ouvert le plus souvent : point-virgule comme séparateur (la virgule y est le séparateur décimal), montants entiers en francs CFA, et une marque d'ordre des octets UTF-8 en tête, sans laquelle Excel lit « Santé » comme « SantÃ© ». LibreOffice et Numbers acceptent ce format tel quel.
  *
  * Pur et sans React : le format est couvert par Jest.
  */
@@ -36,10 +36,10 @@ function quote(cell: string): string {
   return /[";\r\n]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell;
 }
 
-/** Montant signé, deux décimales, virgule : les dépenses en négatif pour qu'une somme de la colonne donne le solde. */
+/** Montant signé et entier : les dépenses en négatif pour qu'une somme de la colonne donne le solde. Le franc CFA n'a pas de sous-unité, donc aucun séparateur décimal à choisir entre la virgule d'Excel en français et le point des autres tableurs. Arrondi avant le signe, comme l'affichage de l'app. */
 function formatCsvAmount(amount: number, type: ExportRow['type']): string {
-  const signed = type === 'expense' ? -amount : amount;
-  return signed.toFixed(2).replace('.', ',');
+  const rounded = Math.round(amount);
+  return String(type === 'expense' ? -rounded : rounded);
 }
 
 export function buildTransactionsCsv(rows: ExportRow[]): string {

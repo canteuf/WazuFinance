@@ -104,7 +104,7 @@ Un compte personnel privé est modélisé comme un groupe à un seul membre. Cel
 
 **Exclu de la V1 :**
 - Connexion bancaire automatique : nécessite un agrégateur (Plaid, ou Budget Insight/Powens en France), une conformité DSP2, et un coût API récurrent. Chantier séparé à évaluer une fois la V1 validée par l'usage.
-- Multi-devises : pas de besoin identifié pour l'instant. Ajout simple a posteriori (colonne `currency` sur `transactions` et `budgets`) si le besoin apparaît, donc pas de raison de complexifier le schéma maintenant.
+- Multi-devises : pas de besoin identifié pour l'instant. La devise unique est le franc CFA (XAF), sans sous-unité : montants entiers, colonnes `numeric(12,2)` inchangées. Ajout simple a posteriori (colonne `currency` sur `transactions` et `budgets`) si le besoin apparaît, donc pas de raison de complexifier le schéma maintenant.
 - Notifications push : nécessite Expo Notifications, la gestion des permissions iOS/Android, et un job côté serveur (edge function Supabase) qui vérifie les seuils. L'alerte visuelle in-app suffit pour la V1 ; les notifications viennent une fois le cœur de l'app stable.
 
 ## 7. État

@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-na
 import { goalIcon } from '@/components/savings/goal-icons';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { formatMonthYear } from '@/lib/dates';
-import { formatAmount } from '@/lib/money';
+import { formatMoney, spokenAmount } from '@/lib/money';
 import type { SavingsProgress } from '@/lib/savings-progress';
 import {
   font,
@@ -44,12 +44,12 @@ export function SavingsGoalRow({
     : 'Sans date limite';
 
   const footLeft = reached
-    ? `${formatAmount(goal.current_amount)} € atteints`
-    : `Reste ${formatAmount(remaining)} €`;
+    ? `${formatMoney(goal.current_amount)} atteints`
+    : `Reste ${formatMoney(remaining)}`;
   const footRight = reached
     ? null
     : rhythm !== undefined
-      ? `Rythme : ${formatAmount(rhythm)} €/mois`
+      ? `Rythme : ${formatMoney(rhythm)}/mois`
       : goal.target_date
         ? null
         : 'Épargne libre';
@@ -57,7 +57,7 @@ export function SavingsGoalRow({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${goal.name}, ${formatAmount(goal.current_amount)} euros sur ${formatAmount(goal.target_amount)} euros, ${percent} %. ${meta}. ${footLeft}${footRight ? `. ${footRight}` : ''}. Toucher pour verser ou modifier.`}
+      accessibilityLabel={`${goal.name}, ${spokenAmount(goal.current_amount)} sur ${spokenAmount(goal.target_amount)}, ${percent} %. ${meta}. ${footLeft}${footRight ? `. ${footRight}` : ''}. Toucher pour verser ou modifier.`}
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
@@ -101,10 +101,10 @@ export function SavingsGoalRow({
       <View style={[styles.figures, stacked && styles.figuresStacked]}>
         <View style={styles.amounts}>
           <Text style={[styles.current, { color: colors.text }]}>
-            {formatAmount(goal.current_amount)} €
+            {formatMoney(goal.current_amount)}
           </Text>
           <Text style={[styles.target, { color: colors.textMuted }]}>
-            / {formatAmount(goal.target_amount)} €
+            / {formatMoney(goal.target_amount)}
           </Text>
         </View>
         <Text style={[styles.percent, { color: reached ? colors.text : colors.primary }]}>

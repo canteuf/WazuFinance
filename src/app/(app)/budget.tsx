@@ -24,7 +24,7 @@ import { useCategories } from '@/hooks/use-categories';
 import { useCategoryBreakdown } from '@/hooks/use-category-breakdown';
 import { budgetProgress, WARNING_RATIO } from '@/lib/budget-progress';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { formatAmount } from '@/lib/money';
+import { formatMoney } from '@/lib/money';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 import { goBackOr } from '@/lib/navigation';
 
@@ -201,10 +201,10 @@ export default function BudgetScreen() {
             <View style={[styles.status, { backgroundColor: colors.surface }, elevation.card]}>
               <View style={styles.statusRow}>
                 <Text style={[styles.statusSpent, { color: colors.text }]}>
-                  {formatAmount(progress.spent)} €
+                  {formatMoney(progress.spent)}
                 </Text>
                 <Text style={[styles.statusCeiling, { color: colors.textMuted }]}>
-                  dépensés sur {formatAmount(existing.amount)} €
+                  dépensés sur {formatMoney(existing.amount)}
                 </Text>
               </View>
               <ProgressBar
@@ -220,13 +220,13 @@ export default function BudgetScreen() {
                 remove: { label: 'Réduire', icon: 'arrow-down' },
               }}
               current={existing.amount}
-              minimumAfter={0.01}
+              minimumAfter={1}
               amountLabel={(mode) =>
                 mode === 'add' ? 'Ajouter au plafond' : 'Retirer du plafond'
               }
               previewLabel="Nouveau plafond"
               previewDetail={(next) =>
-                `Alerte à ${formatAmount(Math.round(next * WARNING_RATIO * 100) / 100)} € · ${Math.round((progress.spent / next) * 100)} % déjà dépensés`
+                `Alerte à ${formatMoney(next * WARNING_RATIO)} ·${Math.round((progress.spent / next) * 100)} % déjà dépensés`
               }
               submitLabel={(mode) =>
                 mode === 'add' ? 'Augmenter le plafond' : 'Réduire le plafond'

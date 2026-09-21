@@ -5,7 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { AmountInput } from '@/components/transaction/amount-input';
 import { PrimaryAction } from '@/components/ui/form-actions';
 import { SegmentedControl } from '@/components/ui/segmented-control';
-import { formatAmount, parseAmount, previewSum } from '@/lib/money';
+import { formatMoney, parseAmount, previewSum } from '@/lib/money';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
@@ -32,7 +32,7 @@ export function AmountAdjuster({
 }: {
   options: Record<AdjustMode, { label: string; icon: IconName }>;
   current: number;
-  /** Plus petite valeur acceptée après un retrait : 0 pour une épargne, 0,01 pour un plafond, qui reste positif. */
+  /** Plus petite valeur acceptée après un retrait : 0 pour une épargne, 1 pour un plafond, qui reste positif. */
   minimumAfter: number;
   amountLabel: (mode: AdjustMode) => string;
   previewLabel: string;
@@ -90,7 +90,7 @@ export function AmountAdjuster({
         <View style={[styles.preview, { backgroundColor: colors.surfaceMuted }]}>
           <Text style={[styles.previewLabel, { color: colors.textMuted }]}>{previewLabel}</Text>
           <Text style={[styles.previewValue, { color: colors.text }]}>
-            {formatAmount(next ?? current)} €
+            {formatMoney(next ?? current)}
           </Text>
           {detail ? (
             <Text style={[styles.previewDetail, { color: colors.textMuted }]}>{detail}</Text>

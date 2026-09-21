@@ -5,13 +5,14 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 
 import { SavingsGoalRow } from '@/components/savings/savings-goal-row';
 import { AccountButton } from '@/components/ui/account-button';
+import { FadeInRow } from '@/components/ui/fade-in-row';
 import { Screen } from '@/components/ui/screen';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useSavingsGoals } from '@/hooks/use-savings-goals';
 import { useSavingsOverview } from '@/hooks/use-savings-overview';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { formatAmount } from '@/lib/money';
+import { formatMoney } from '@/lib/money';
 import { savingsProgress } from '@/lib/savings-progress';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 
@@ -116,14 +117,14 @@ export default function SavingsGoalsScreen() {
               adjustsFontSizeToFit
               numberOfLines={1}
             >
-              {formatAmount(overview.totalSaved)} €
+              {formatMoney(overview.totalSaved)}
             </Text>
           </View>
           {overview.monthlyEffort > 0 ? (
             <View style={styles.summarySide}>
               <Text style={[styles.sideLabel, { color: colors.textMuted }]}>Effort mensuel</Text>
               <Text style={[styles.sideValue, { color: colors.text }]}>
-                +{formatAmount(overview.monthlyEffort)} €/mois
+                +{formatMoney(overview.monthlyEffort)}/mois
               </Text>
             </View>
           ) : null}
@@ -146,13 +147,14 @@ export default function SavingsGoalsScreen() {
         </View>
       ) : (
         <View style={styles.list}>
-          {active.map((item) => (
-            <SavingsGoalRow
-              key={item.goal.id}
-              item={item}
-              rhythm={overview?.rhythms.get(item.goal.id)}
-              onPress={() => open(item.goal.id)}
-            />
+          {active.map((item, index) => (
+            <FadeInRow key={item.goal.id} index={index}>
+              <SavingsGoalRow
+                item={item}
+                rhythm={overview?.rhythms.get(item.goal.id)}
+                onPress={() => open(item.goal.id)}
+              />
+            </FadeInRow>
           ))}
 
           {reached.length > 0 ? (
@@ -160,13 +162,14 @@ export default function SavingsGoalsScreen() {
               <Text style={[styles.section, { color: colors.text }]}>
                 {reached.length === 1 ? 'Objectif atteint' : 'Objectifs atteints'}
               </Text>
-              {reached.map((item) => (
-                <SavingsGoalRow
-                  key={item.goal.id}
-                  item={item}
-                  rhythm={undefined}
-                  onPress={() => open(item.goal.id)}
-                />
+              {reached.map((item, index) => (
+                <FadeInRow key={item.goal.id} index={index}>
+                  <SavingsGoalRow
+                    item={item}
+                    rhythm={undefined}
+                    onPress={() => open(item.goal.id)}
+                  />
+                </FadeInRow>
               ))}
             </>
           ) : null}

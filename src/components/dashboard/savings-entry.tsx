@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useSavingsGoals } from '@/hooks/use-savings-goals';
-import { formatAmount } from '@/lib/money';
+import { formatAmount, formatMoney } from '@/lib/money';
 import { savingsProgress } from '@/lib/savings-progress';
 import { font, spacing, stackAtFontScale, useColors } from '@/theme/tokens';
 
@@ -101,7 +101,7 @@ export function SavingsEntry() {
                     ]}
                   >
                     {formatAmount(item.goal.current_amount)} /{' '}
-                    {formatAmount(item.goal.target_amount)} €
+                    {formatMoney(item.goal.target_amount)}
                   </Text>
                 </View>
                 <ProgressBar
@@ -111,7 +111,7 @@ export function SavingsEntry() {
                 <Text style={[styles.meta, { color: colors.textMuted }]}>
                   {item.status === 'reached'
                     ? 'Atteint'
-                    : `Reste ${formatAmount(remaining)} € · ${item.percent} %`}
+                    : `Reste ${formatMoney(remaining)} ·${item.percent} %`}
                 </Text>
               </View>
             );

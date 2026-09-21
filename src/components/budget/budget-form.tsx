@@ -6,7 +6,7 @@ import { CategoryPicker } from '@/components/transaction/category-picker';
 import { PrimaryAction } from '@/components/ui/form-actions';
 import type { Category } from '@/data/categories';
 import { WARNING_RATIO } from '@/lib/budget-progress';
-import { formatAmount, parseAmount } from '@/lib/money';
+import { formatMoney, parseAmount } from '@/lib/money';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 
 export type BudgetFormValues = {
@@ -72,7 +72,7 @@ export function BudgetForm({ availableCategories, submitting, errorText, onSubmi
         {/* Une multiplication pour l'affichage, pas une somme : le seuil que budgetProgress() appliquera au même plafond. */}
         <Text style={[styles.hint, { color: colors.textMuted }]}>
           {amount !== null
-            ? `L’alerte s’affichera à ${Math.round(WARNING_RATIO * 100)} % du plafond, soit ${formatAmount(Math.round(amount * WARNING_RATIO * 100) / 100)} €.`
+            ? `L’alerte s’affichera à ${Math.round(WARNING_RATIO * 100)} % du plafond, soit ${formatMoney(amount * WARNING_RATIO)}.`
             : `L’alerte s’affichera à ${Math.round(WARNING_RATIO * 100)} % du plafond.`}
         </Text>
       </View>

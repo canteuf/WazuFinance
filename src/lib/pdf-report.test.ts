@@ -1,11 +1,11 @@
 import type { ExportRow } from '@/lib/csv';
-import { formatBalance, formatSigned } from '@/lib/money';
+import { formatBalance, formatSigned, withCurrency } from '@/lib/money';
 import { buildTransactionsReportHtml, escapeHtml, type ReportInput } from '@/lib/pdf-report';
 
 const expense: ExportRow = {
   occurredOn: '2026-09-19',
   type: 'expense',
-  amount: 12.5,
+  amount: 12500,
   categoryName: 'Alimentation',
   note: 'Marché',
   authorName: 'Camille',
@@ -16,8 +16,8 @@ const input: ReportInput = {
   periodLabel: 'Septembre 2026',
   filtersLabel: '',
   generatedAt: '19 septembre 2026 à 21:40',
-  totals: { income: 2100, expense: 12.5, balance: 2087.5, txCount: 2 },
-  rows: [expense, { ...expense, type: 'income', amount: 2100, categoryName: 'Salaire', note: null }],
+  totals: { income: 210000, expense: 12500, balance: 197500, txCount: 2 },
+  rows: [expense, { ...expense, type: 'income', amount: 210000, categoryName: 'Salaire', note: null }],
 };
 
 describe('escapeHtml', () => {
@@ -37,9 +37,9 @@ describe('buildTransactionsReportHtml', () => {
   });
 
   it('reprend les totaux tels que fournis, sans les recalculer', () => {
-    expect(html).toContain(formatSigned(2100, 'income'));
-    expect(html).toContain(formatSigned(12.5, 'expense'));
-    expect(html).toContain(`${formatBalance(2087.5)} €`);
+    expect(html).toContain(formatSigned(210000, 'income'));
+    expect(html).toContain(formatSigned(12500, 'expense'));
+    expect(html).toContain(withCurrency(formatBalance(197500)));
   });
 
   it('liste une ligne par opération, date au format français', () => {

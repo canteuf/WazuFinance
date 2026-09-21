@@ -11,7 +11,7 @@ import type { GroupOverview, MembershipSummary } from '@/data/groups';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useGroupOverviews } from '@/hooks/use-group-overviews';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { formatAmount } from '@/lib/money';
+import { formatMoney } from '@/lib/money';
 import { goBackOr } from '@/lib/navigation';
 import { font, radius, spacing, useColors, useElevation, useIsDark } from '@/theme/tokens';
 
@@ -182,7 +182,7 @@ function SharedTotal({
         ) : isLoading || total === undefined ? (
           <ActivityIndicator color={colors.primary} style={styles.loader} />
         ) : (
-          <Text style={[styles.totalValue, { color: colors.text }]}>{formatAmount(total)} €</Text>
+          <Text style={[styles.totalValue, { color: colors.text }]}>{formatMoney(total)}</Text>
         )}
         {/* Dit d'où vient le chiffre : sans cette ligne, « engagé » se lirait comme « dépensé ». */}
         <Text style={[styles.totalHint, { color: colors.textMuted }]}>
@@ -212,7 +212,7 @@ function GroupCard({
     ? [
         overview.memberCount === 1 ? '1 membre' : `${overview.memberCount} membres`,
         overview.monthlyBudget > 0
-          ? `${formatAmount(overview.monthlyBudget)} € budgétés ce mois`
+          ? `${formatMoney(overview.monthlyBudget)} budgétés ce mois`
           : 'Aucun plafond',
       ].join(' · ')
     : null;

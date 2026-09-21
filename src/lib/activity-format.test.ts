@@ -32,10 +32,13 @@ function entry(overrides: Partial<ActivityLogRow> = {}): ActivityLogRow {
   };
 }
 
+// Le code de devise est précédé d'une espace insécable (U+00A0) : écrite en clair, elle ne se distinguerait pas d'une espace ordinaire.
+const XAF = ' XAF';
+
 describe('formatActivity — opérations', () => {
   it('décrit un changement de montant', () => {
     expect(formatActivity(entry(), null, categories)).toBe(
-      'Marie a modifié Restaurants : 15,00 € → 150,00 €'
+      `Marie a modifié Restaurants : 15${XAF} → 150${XAF}`
     );
   });
 
@@ -83,24 +86,24 @@ describe('formatActivity — opérations', () => {
       categories
     );
 
-    expect(result).toBe('Marie a supprimé Alimentation · Carrefour, 54,00 € du 8 sept.');
+    expect(result).toBe(`Marie a supprimé Alimentation · Carrefour, 54${XAF} du 8 sept.`);
   });
 
   it(`dit « Vous » quand l'auteur est l'utilisateur courant`, () => {
     expect(formatActivity(entry(), 'user-marie', categories)).toBe(
-      'Vous avez modifié Restaurants : 15,00 € → 150,00 €'
+      `Vous avez modifié Restaurants : 15${XAF} → 150${XAF}`
     );
   });
 
   it(`garde le nom d'un auteur dont le compte a disparu`, () => {
     expect(formatActivity(entry({ actor_id: null }), 'user-marie', categories)).toBe(
-      'Marie a modifié Restaurants : 15,00 € → 150,00 €'
+      `Marie a modifié Restaurants : 15${XAF} → 150${XAF}`
     );
   });
 
   it(`signale une action faite hors de l'app`, () => {
     expect(formatActivity(entry({ actor_id: null, actor_name: null }), null, categories)).toBe(
-      "Hors de l'app a modifié Restaurants : 15,00 € → 150,00 €"
+      `Hors de l'app a modifié Restaurants : 15${XAF} → 150${XAF}`
     );
   });
 
@@ -112,7 +115,7 @@ describe('formatActivity — opérations', () => {
       categories
     );
 
-    expect(result).toBe('Marie a modifié catégorie supprimée : 15,00 € → 150,00 €');
+    expect(result).toBe(`Marie a modifié catégorie supprimée : 15${XAF} → 150${XAF}`);
   });
 
   it(`nomme « Sans catégorie » une opération sans catégorie`, () => {
@@ -123,7 +126,7 @@ describe('formatActivity — opérations', () => {
       categories
     );
 
-    expect(result).toBe('Marie a modifié Sans catégorie : 15,00 € → 150,00 €');
+    expect(result).toBe(`Marie a modifié Sans catégorie : 15${XAF} → 150${XAF}`);
   });
 
   it(`garde l'entrée sans détail quand aucun champ n'est affichable`, () => {
@@ -152,7 +155,7 @@ describe('formatActivity — budgets', () => {
       categories
     );
 
-    expect(result).toBe('Marie a modifié le plafond Restaurants : 200,00 € → 300,00 €');
+    expect(result).toBe(`Marie a modifié le plafond Restaurants : 200${XAF} → 300${XAF}`);
   });
 
   it(`décrit une suppression de budget`, () => {
@@ -162,7 +165,7 @@ describe('formatActivity — budgets', () => {
       categories
     );
 
-    expect(result).toBe('Marie a supprimé le budget Restaurants (200,00 €)');
+    expect(result).toBe(`Marie a supprimé le budget Restaurants (200${XAF})`);
   });
 
   it(`garde l'entrée sans détail quand aucun champ n'est affichable`, () => {

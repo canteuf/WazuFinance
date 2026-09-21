@@ -12,7 +12,7 @@ import { useFrequentAmounts } from '@/hooks/use-frequent-amounts';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { formatOccurredOn, todayIso } from '@/lib/dates';
 import { readLastCategory } from '@/lib/last-used';
-import { formatAmount, parseAmount } from '@/lib/money';
+import { formatMoney, parseAmount, spokenAmount, toAmountInput } from '@/lib/money';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 import type { TransactionType } from '@/types/database';
 
@@ -62,7 +62,7 @@ export function TransactionForm({
   // Suit le type choisi : les habitudes de dépense et de revenu n'ont rien en commun.
   const frequentAmounts = useFrequentAmounts(type);
   const [amountText, setAmountText] = useState(
-    initialValues ? initialValues.amount.toFixed(2).replace('.', ',') : ''
+    initialValues ? toAmountInput(initialValues.amount) : ''
   );
   // Sélection brute : posée par la présélection initiale, la lecture de la dernière catégorie utilisée, ou un choix explicite dans CategoryPicker.
   const [categorySelection, setCategorySelection] = useState<string | null>(
@@ -151,12 +151,12 @@ export function TransactionForm({
               <Pressable
                 key={value}
                 accessibilityRole="button"
-                accessibilityLabel={`Montant ${formatAmount(value)} euros`}
-                onPress={() => setAmountText(value.toFixed(2).replace('.', ','))}
+                accessibilityLabel={`Montant ${spokenAmount(value)}`}
+                onPress={() => setAmountText(toAmountInput(value))}
                 style={[styles.quick, { backgroundColor: colors.surfaceMuted }]}
               >
                 <Text style={[styles.quickLabel, { color: colors.text }]}>
-                  {formatAmount(value)} €
+                  {formatMoney(value)}
                 </Text>
               </Pressable>
             ))}

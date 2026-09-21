@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import type { CategorySlice } from '@/data/summary';
 import { useCategoryBreakdown } from '@/hooks/use-category-breakdown';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { formatAmount } from '@/lib/money';
+import { formatMoney, spokenAmount } from '@/lib/money';
 import { categoryTone } from '@/theme/category-colors';
 import { font, radius, spacing, useColors, useIsDark } from '@/theme/tokens';
 
@@ -95,7 +95,7 @@ export function CategoryBreakdown() {
       <View style={styles.cardHead}>
         <Text style={[styles.heading, { color: colors.text }]}>Répartition</Text>
         <Text style={[styles.total, { color: colors.textMuted }]}>
-          {formatAmount(total)} €
+          {formatMoney(total)}
         </Text>
       </View>
 
@@ -126,7 +126,7 @@ export function CategoryBreakdown() {
             <View
               key={row.key}
               accessibilityRole="text"
-              accessibilityLabel={`${row.name} : ${formatAmount(row.total)} euros, ${Math.round(share * 100)} %`}
+              accessibilityLabel={`${row.name} : ${spokenAmount(row.total)}, ${Math.round(share * 100)} %`}
               style={styles.row}
             >
               <View style={styles.rowHead}>
@@ -138,7 +138,7 @@ export function CategoryBreakdown() {
                   </Text>
                 </View>
                 <Text style={[styles.amount, { color: colors.text }]}>
-                  {formatAmount(row.total)} €
+                  {formatMoney(row.total)}
                 </Text>
               </View>
 

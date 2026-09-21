@@ -23,7 +23,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useSavingsGoalMutations } from '@/hooks/use-savings-goal-mutations';
 import { useSavingsGoals } from '@/hooks/use-savings-goals';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { formatAmount } from '@/lib/money';
+import { formatMoney } from '@/lib/money';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 import { goBackOr } from '@/lib/navigation';
 
@@ -184,10 +184,10 @@ export default function SavingsGoalScreen() {
             <View style={[styles.status, { backgroundColor: colors.surface }, elevation.card]}>
               <View style={styles.statusRow}>
                 <Text style={[styles.statusCurrent, { color: colors.text }]}>
-                  {formatAmount(existing.current_amount)} €
+                  {formatMoney(existing.current_amount)}
                 </Text>
                 <Text style={[styles.statusTarget, { color: colors.textMuted }]}>
-                  / {formatAmount(existing.target_amount)} €
+                  / {formatMoney(existing.target_amount)}
                 </Text>
               </View>
               <ProgressBar
@@ -209,7 +209,7 @@ export default function SavingsGoalScreen() {
               previewDetail={(next) =>
                 next >= existing.target_amount
                   ? 'Objectif atteint'
-                  : `sur ${formatAmount(existing.target_amount)} € · ${Math.round((next / existing.target_amount) * 100)} %`
+                  : `sur ${formatMoney(existing.target_amount)} ·${Math.round((next / existing.target_amount) * 100)} %`
               }
               submitLabel={(mode) =>
                 mode === 'add' ? 'Enregistrer le versement' : 'Enregistrer le retrait'

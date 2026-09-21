@@ -5,7 +5,14 @@ import { Card } from '@/components/ui/card';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { usePeriodSummary } from '@/hooks/use-period-summary';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { formatAmount, formatBalance, formatDelta, formatSignedBare } from '@/lib/money';
+import {
+  CURRENCY_SYMBOL,
+  formatBalance,
+  formatDelta,
+  formatMoney,
+  formatSignedBare,
+  withCurrency,
+} from '@/lib/money';
 import { dailyAllowance } from '@/lib/period-progress';
 import { font, radius, spacing, stackAtFontScale, useColors } from '@/theme/tokens';
 
@@ -66,7 +73,7 @@ export function PeriodSummary() {
             maxFontSizeMultiplier={MAX_FONT_SCALE}
             style={[styles.currency, { color: colors.textMuted }]}
           >
-            €
+            {CURRENCY_SYMBOL}
           </Text>
         </View>
 
@@ -88,7 +95,7 @@ export function PeriodSummary() {
                 <Text
                   style={[styles.deltaText, { color: up ? colors.positive : colors.text }]}
                 >
-                  {formatDelta(delta)} €
+                  {withCurrency(formatDelta(delta))}
                 </Text>
                 <Text style={[styles.deltaText, { color: colors.textMuted }]}>
                   vs période précédente
@@ -119,7 +126,7 @@ export function PeriodSummary() {
         {allowance !== null ? (
           <Text style={[styles.paceAllowance, { color: colors.textMuted }]}>
             {/* Le solde réparti sur les jours qui restent. Absent quand le solde est négatif ou la période close : dans ces deux cas la division ne dit plus rien d'utile. */}
-            <Text style={{ color: colors.text }}>{formatAmount(allowance)} €</Text> par jour
+            <Text style={{ color: colors.text }}>{formatMoney(allowance)}</Text> par jour
             jusqu’à la fin
           </Text>
         ) : null}

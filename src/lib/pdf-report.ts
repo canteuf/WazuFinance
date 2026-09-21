@@ -7,7 +7,7 @@
  */
 
 import type { ExportRow } from '@/lib/csv';
-import { formatBalance, formatSigned } from '@/lib/money';
+import { formatBalance, formatSigned, withCurrency } from '@/lib/money';
 
 export type ReportTotals = {
   income: number;
@@ -109,7 +109,7 @@ export function buildTransactionsReportHtml(input: ReportInput): string {
 <section class="totals">
   <div class="total"><div class="label">Entrées</div><div class="value income">${formatSigned(totals.income, 'income')}</div></div>
   <div class="total"><div class="label">Sorties</div><div class="value">${formatSigned(totals.expense, 'expense')}</div></div>
-  <div class="total"><div class="label">Solde</div><div class="value">${formatBalance(totals.balance)} €</div></div>
+  <div class="total"><div class="label">Solde</div><div class="value">${withCurrency(formatBalance(totals.balance))}</div></div>
 </section>
 <table>
   <thead><tr><th>Date</th><th>Catégorie</th><th>Note</th><th>Saisie par</th><th class="amount">Montant</th></tr></thead>

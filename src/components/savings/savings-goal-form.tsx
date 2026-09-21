@@ -7,7 +7,7 @@ import { AmountInput } from '@/components/transaction/amount-input';
 import { DateField } from '@/components/transaction/date-field';
 import { DeleteAction, PrimaryAction } from '@/components/ui/form-actions';
 import { formatMonthYear, todayIso } from '@/lib/dates';
-import { parseAmount, parseNonNegativeAmount } from '@/lib/money';
+import { CURRENCY_SYMBOL, parseAmount, parseNonNegativeAmount, toAmountInput } from '@/lib/money';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 
 export type SavingsGoalFormValues = {
@@ -51,7 +51,7 @@ export function SavingsGoalForm({
   const [name, setName] = useState(initialValues?.name ?? '');
   const [icon, setIcon] = useState(initialValues ? goalIcon(initialValues.icon) : DEFAULT_GOAL_ICON);
   const [targetAmountText, setTargetAmountText] = useState(
-    initialValues ? initialValues.targetAmount.toFixed(2).replace('.', ',') : ''
+    initialValues ? toAmountInput(initialValues.targetAmount) : ''
   );
   const [initialAmountText, setInitialAmountText] = useState('');
   const [hasTargetDate, setHasTargetDate] = useState(initialValues?.targetDate != null);
@@ -136,15 +136,15 @@ export function SavingsGoalForm({
           >
             <TextInput
               accessibilityLabel="Montant déjà épargné"
-              keyboardType="decimal-pad"
-              inputMode="decimal"
-              placeholder="0,00"
+              keyboardType="number-pad"
+              inputMode="numeric"
+              placeholder="0"
               placeholderTextColor={colors.textMuted}
               value={initialAmountText}
               onChangeText={setInitialAmountText}
               style={[styles.inlineInput, { color: colors.text }]}
             />
-            <Text style={[styles.currency, { color: colors.textMuted }]}>€</Text>
+            <Text style={[styles.currency, { color: colors.textMuted }]}>{CURRENCY_SYMBOL}</Text>
           </View>
         </View>
       )}

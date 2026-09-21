@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 
 import { BudgetRow } from '@/components/budget/budget-row';
 import { AccountButton } from '@/components/ui/account-button';
+import { FadeInRow } from '@/components/ui/fade-in-row';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { Screen } from '@/components/ui/screen';
 import { ScreenHeader } from '@/components/ui/screen-header';
@@ -14,7 +15,7 @@ import { useBudgetTotals } from '@/hooks/use-budget-totals';
 import { statusFor, type BudgetProgress } from '@/lib/budget-progress';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { formatPeriodLabel, periodBounds, todayIso } from '@/lib/dates';
-import { formatAmount } from '@/lib/money';
+import { formatMoney } from '@/lib/money';
 import { periodProgress } from '@/lib/period-progress';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 
@@ -177,12 +178,13 @@ export default function BudgetsScreen() {
                   : 'Aucune enveloppe sous contrôle pour l’instant.'}
               </Text>
             ) : (
-              visible.map((item) => (
-                <BudgetRow
-                  key={item.budget.id}
-                  item={item}
-                  onPress={() => router.push(`/budget?id=${item.budget.id}`)}
-                />
+              visible.map((item, index) => (
+                <FadeInRow key={item.budget.id} index={index}>
+                  <BudgetRow
+                    item={item}
+                    onPress={() => router.push(`/budget?id=${item.budget.id}`)}
+                  />
+                </FadeInRow>
               ))
             )}
           </View>
@@ -243,7 +245,7 @@ function SummaryCard({
               adjustsFontSizeToFit
               numberOfLines={1}
             >
-              {formatAmount(spent)} €
+              {formatMoney(spent)}
             </Text>
             <Text
               style={[
@@ -257,7 +259,7 @@ function SummaryCard({
         </View>
         <View style={styles.summarySide}>
           <Text style={[styles.summaryCaption, { color: colors.textMuted }]}>Plafond total</Text>
-          <Text style={[styles.summaryCeiling, { color: colors.text }]}>{formatAmount(ceiling)} €</Text>
+          <Text style={[styles.summaryCeiling, { color: colors.text }]}>{formatMoney(ceiling)}</Text>
         </View>
       </View>
 
@@ -268,12 +270,12 @@ function SummaryCard({
           style={[styles.summaryFootText, { color: remaining < 0 ? colors.danger : colors.textMuted }]}
         >
           {remaining < 0
-            ? `Dépassement de ${formatAmount(Math.abs(remaining))} €`
-            : `${formatAmount(remaining)} € disponibles`}
+            ? `Dépassement de ${formatMoney(Math.abs(remaining))}`
+            : `${formatMoney(remaining)} disponibles`}
         </Text>
         {spent > 0 ? (
           <Text style={[styles.summaryFootText, { color: colors.textMuted }]}>
-            Moyenne : {formatAmount(average)} € / jour
+            Moyenne : {formatMoney(average)} / jour
           </Text>
         ) : null}
       </View>

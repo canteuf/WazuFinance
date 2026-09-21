@@ -5,7 +5,7 @@ import { ProgressBar } from '@/components/ui/progress-bar';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { wasEdited } from '@/lib/activity-format';
 import type { BudgetProgress, BudgetStatus } from '@/lib/budget-progress';
-import { formatAmount } from '@/lib/money';
+import { formatMoney, spokenAmount } from '@/lib/money';
 import { categoryTone } from '@/theme/category-colors';
 import {
   font,
@@ -20,19 +20,19 @@ import {
 /** Sous le nom : ce qui reste, ou de combien le plafond est dépassé. Le texte dit ce que la couleur dit, pour qui ne la distingue pas. */
 function statusText(item: BudgetProgress): string {
   if (item.status === 'over') {
-    // À exactement 100 %, rien n'est dépassé : « Dépassé de 0,00 € » disait faux. Le statut reste `over` — le budget est épuisé, la prochaine dépense le dépassera —, seul le texte change.
+    // À exactement 100 %, rien n'est dépassé : « Dépassé de 0 XAF » disait faux. Le statut reste `over` — le budget est épuisé, la prochaine dépense le dépassera —, seul le texte change.
     if (item.remaining === 0) {
       return 'Plafond atteint';
     }
-    return `Dépassement de ${formatAmount(Math.abs(item.remaining))} €`;
+    return `Dépassement de ${formatMoney(Math.abs(item.remaining))}`;
   }
-  return `Reste ${formatAmount(item.remaining)} €`;
+  return `Reste ${formatMoney(item.remaining)}`;
 }
 
 /** La pastille qualifie l'état en quelques mots, d'après la maquette : « Seuil d'alerte (84 %) », « Sous contrôle (57 %) ». */
 function badgeText(item: BudgetProgress, percent: number): string {
   if (item.status === 'over') {
-    return item.remaining === 0 ? 'Épuisé (100 %)' : `Dépassement +${formatAmount(Math.abs(item.remaining))} €`;
+    return item.remaining === 0 ? 'Épuisé (100 %)' : `Dépassement +${formatMoney(Math.abs(item.remaining))}`;
   }
   if (item.status === 'warning') {
     return `Seuil d’alerte (${percent} %)`;
@@ -89,7 +89,7 @@ export function BudgetRow({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${categoryName}, ${formatAmount(item.spent)} euros sur ${formatAmount(item.budget.amount)} euros, ${percent} %. ${statusText(item)}${edited ? '. Plafond modifié' : ''}. Toucher pour ajuster le plafond.`}
+      accessibilityLabel={`${categoryName}, ${spokenAmount(item.spent)} sur ${spokenAmount(item.budget.amount)}, ${percent} %. ${statusText(item)}${edited ? '. Plafond modifié' : ''}. Toucher pour ajuster le plafond.`}
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
@@ -134,10 +134,10 @@ export function BudgetRow({
       {/* Le dépensé passe devant : c'est le chiffre qu'on vient chercher, le plafond lui donne son échelle. */}
       <View style={styles.figures}>
         <Text style={[styles.spent, { color: statusColor[item.status] }]}>
-          {formatAmount(item.spent)} €
+          {formatMoney(item.spent)}
         </Text>
         <Text style={[styles.ceiling, { color: colors.textMuted }]}>
-          sur {formatAmount(item.budget.amount)} €{item.status === 'over' ? ` (${percent} %)` : ''}
+          sur {formatMoney(item.budget.amount)}{item.status === 'over' ? ` (${percent} %)` : ''}
         </Text>
       </View>
 

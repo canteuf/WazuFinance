@@ -1,17 +1,23 @@
 import type { TransactionType } from '@/types/database';
 
 /**
- * Montants en euros.
+ * Montants en francs CFA (XAF).
  *
- * La base stocke du numeric(12,2) : au plus deux décimales, et une valeur strictement positive imposée par la contrainte `amount > 0`. Le signe affiché vient du type de la transaction, jamais de la saisie.
+ * Le franc CFA n'a pas de sous-unité (ISO 4217 : exposant 0) : l'app ne saisit et n'affiche que des montants entiers. La base garde numeric(12,2), sans migration — elle y stocke des entiers, et `amount > 0` reste la contrainte qui compte. Le signe affiché vient du type de la transaction, jamais de la saisie.
  */
 
-const MAX_AMOUNT = 9_999_999_999.99;
+/** Code ISO 4217 de la devise, écrit après chaque montant : « 1 500 XAF ». */
+export const CURRENCY_SYMBOL = 'XAF';
 
-/** Renvoie null si la saisie ne peut pas devenir un montant valide. */
+/** Espace insécable entre le montant et le code : sans elle, « 1 500 » et « XAF » pourraient se retrouver sur deux lignes. */
+const NBSP = ' ';
+
+const MAX_AMOUNT = 9_999_999_999;
+
+/** Renvoie null si la saisie ne peut pas devenir un montant valide : des chiffres seuls, sans décimale. */
 export function parseAmount(input: string): number | null {
-  const normalised = input.trim().replace(',', '.');
-  if (!/^\d+(\.\d{1,2})?$/.test(normalised)) {
+  const normalised = input.trim();
+  if (!/^\d+$/.test(normalised)) {
     return null;
   }
 
@@ -24,11 +30,11 @@ export function parseAmount(input: string): number | null {
 }
 
 /**
- * Comme parseAmount, mais accepte zéro — un objectif d'épargne commence parfois à 0 €, contrairement à une transaction ou un plafond de budget.
+ * Comme parseAmount, mais accepte zéro — un objectif d'épargne commence parfois à 0 XAF, contrairement à une transaction ou un plafond de budget.
  */
 export function parseNonNegativeAmount(input: string): number | null {
-  const normalised = input.trim().replace(',', '.');
-  if (!/^\d+(\.\d{1,2})?$/.test(normalised)) {
+  const normalised = input.trim();
+  if (!/^\d+$/.test(normalised)) {
     return null;
   }
 
@@ -41,13 +47,36 @@ export function parseNonNegativeAmount(input: string): number | null {
 }
 
 const formatter = new Intl.NumberFormat('fr-FR', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
 });
 
-/** « 1 500,00 », sans symbole monétaire. */
+/** « 1 500 », sans code de devise. Une valeur décimale, héritée d'avant le passage au franc CFA, est arrondie. */
 export function formatAmount(value: number): string {
   return formatter.format(value);
+}
+
+/** Ajoute le code de la devise à un montant déjà formaté, signé ou non : « +320 XAF », « 1 391 XAF ». */
+export function withCurrency(formatted: string): string {
+  return `${formatted}${NBSP}${CURRENCY_SYMBOL}`;
+}
+
+/** « 1 500 XAF ». */
+export function formatMoney(value: number): string {
+  return withCurrency(formatAmount(value));
+}
+
+/**
+ * « 1 500 francs CFA », pour un libellé d'accessibilité : un lecteur d'écran épelle « XAF » lettre à lettre. Au singulier sous deux, comme le français l'accorde.
+ */
+export function spokenAmount(value: number): string {
+  const unit = Math.abs(Math.round(value)) < 2 ? 'franc CFA' : 'francs CFA';
+  return `${formatAmount(value)} ${unit}`;
+}
+
+/** Texte d'un champ de saisie pour un montant existant : « 1500 », sans séparateur de milliers, que parseAmount refuserait. */
+export function toAmountInput(value: number): string {
+  return String(Math.round(value));
 }
 
 /**
@@ -57,27 +86,27 @@ export function formatAmount(value: number): string {
  */
 const MINUS = '−';
 
-/** « −24,90 € » pour une dépense, « +1 500,00 € » pour un revenu. */
+/** « −2 490 XAF » pour une dépense, « +150 000 XAF » pour un revenu. */
 export function formatSigned(value: number, type: TransactionType): string {
   const sign = type === 'expense' ? MINUS : '+';
-  return `${sign}${formatAmount(value)} €`;
+  return `${sign}${formatMoney(value)}`;
 }
 
-/** Même chose sans symbole monétaire, le « € » étant porté à côté. */
+/** Même chose sans code de devise, le « XAF » étant porté à côté. */
 export function formatSignedBare(value: number, type: TransactionType): string {
   const sign = type === 'expense' ? MINUS : '+';
   return `${sign}${formatAmount(value)}`;
 }
 
-/** « 1 391,78 », « −788,22 » : signe seulement s'il est négatif, sans symbole. */
+/** « 139 178 », « −78 822 » : signe seulement s'il est négatif, sans code de devise. */
 export function formatBalance(value: number): string {
   return value < 0 ? `${MINUS}${formatAmount(Math.abs(value))}` : formatAmount(value);
 }
 
 /**
- * Écart entre deux montants, signe toujours visible : « +320,00 », « −120,00 ».
+ * Écart entre deux montants, signe toujours visible : « +320 », « −120 ».
  *
- * Distinct de formatBalance, qui n'affiche le signe que s'il est négatif : un solde de 320 se lit « 320,00 », mais une progression de 320 doit se lire « +320,00 », sans quoi rien ne dit dans quel sens elle va.
+ * Distinct de formatBalance, qui n'affiche le signe que s'il est négatif : un solde de 320 se lit « 320 », mais une progression de 320 doit se lire « +320 », sans quoi rien ne dit dans quel sens elle va.
  */
 export function formatDelta(value: number): string {
   const sign = value < 0 ? MINUS : '+';

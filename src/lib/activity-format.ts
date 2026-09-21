@@ -1,5 +1,5 @@
 import { dateToIso, isoToDate } from '@/lib/dates';
-import { formatAmount } from '@/lib/money';
+import { formatMoney } from '@/lib/money';
 import type { ActivityAction, ActivitySubject, Json } from '@/types/database';
 
 /**
@@ -100,7 +100,7 @@ function actorAndVerb(entry: ActivityLogRow, currentUserId: string | null): stri
 function amountChange(before: JsonObject, after: JsonObject): string | null {
   const from = readNumber(before, 'amount');
   const to = readNumber(after, 'amount');
-  return from === null || to === null ? null : `${formatAmount(from)} € → ${formatAmount(to)} €`;
+  return from === null || to === null ? null : `${formatMoney(from)} → ${formatMoney(to)}`;
 }
 
 /**
@@ -173,7 +173,7 @@ export function formatActivity(
       const amount = readNumber(before, 'amount');
       return amount === null
         ? `${actor} le budget ${name}`
-        : `${actor} le budget ${name} (${formatAmount(amount)} €)`;
+        : `${actor} le budget ${name} (${formatMoney(amount)})`;
     }
 
     const change = entry.changed_fields.includes('amount') ? amountChange(before, after) : null;
@@ -185,7 +185,7 @@ export function formatActivity(
   if (entry.action === 'delete') {
     const amount = readNumber(before, 'amount');
     const day = formatDay(readString(before, 'occurred_on'));
-    const tail = amount !== null && day !== null ? `, ${formatAmount(amount)} € du ${day}` : '';
+    const tail = amount !== null && day !== null ? `, ${formatMoney(amount)} du ${day}` : '';
     return `${actor} ${label}${tail}`;
   }
 
