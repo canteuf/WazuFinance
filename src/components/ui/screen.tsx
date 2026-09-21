@@ -18,9 +18,10 @@ import { spacing, useColors } from '@/theme/tokens';
  *
  * Une liste borne son `contentContainerStyle` à `CONTENT_MAX_WIDTH + CONTENT_GUTTER * 2`, la gouttière étant à l'intérieur du conteneur et non autour.
  */
-export const CONTENT_MAX_WIDTH = 420;
-// 16 plutôt que 24 : sur un téléphone de 412 points, la colonne passait de 364 à 380, et les cartes gagnent cette largeur là où elle manquait. Au-delà de 452 points de large, `CONTENT_MAX_WIDTH` borne déjà la colonne et la gouttière n'est plus que le reste, réparti de part et d'autre.
-export const CONTENT_GUTTER = spacing.md;
+// 560 et non 420 : la borne est là pour qu'une carte ne s'étire pas sur toute la largeur d'une tablette, où une ligne de plus de soixante-dix caractères se relit mal. À 420 elle rattrapait déjà des téléphones — un Galaxy S21 Ultra fait 480 points — et les centrait avec trente points de marge de chaque côté, ce que rien ne justifie sur un téléphone. Aucun téléphone n'atteint 560 ; une tablette, si.
+export const CONTENT_MAX_WIDTH = 560;
+// 12 plutôt que 24 : les marges d'origine laissaient deux fois plus de blanc sur les bords que les applications de référence (WhatsApp est à douze points sur ses listes), et le contenu paraissait flotter au milieu de l'écran. Valeur littérale et non un jeton `spacing` : l'échelle progresse de 8 à 16 sans passer par 12, et l'y insérer pour ce seul usage romprait sa régularité — c'est une mesure de gouttière, pas un pas d'espacement.
+export const CONTENT_GUTTER = 12;
 
 /**
  * La colonne, gouttières comprises, pour les blocs qui portent eux-mêmes leur gouttière : le `contentContainerStyle` d'une liste virtualisée, et les blocs d'une feuille de formulaire, dont le fond doit rester pleine largeur pendant que le contenu se centre.
