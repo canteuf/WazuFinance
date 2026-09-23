@@ -1,3 +1,18 @@
+/** Ce qu'il faut pour dessiner la pastille d'un membre. `avatar` est la valeur brute de `users.avatar`, pas un identifiant déjà validé. */
+export type MemberIdentity = {
+  name: string;
+  avatar: string | null;
+};
+
+/**
+ * Rejoint les deux tableaux parallèles de `group_overviews()` : les noms et les avatars, dans le même ordre.
+ *
+ * Un avatar absent devient `null`, que sa case soit vide ou que le tableau soit plus court : PostgREST rend les NULL d'un tableau tels quels, mais le type généré ne les connaît pas, et `undefined` n'a pas de sens dans `MemberIdentity`.
+ */
+export function pairMembers(names: string[], avatars: (string | null)[]): MemberIdentity[] {
+  return names.map((name, index) => ({ name, avatar: avatars[index] ?? null }));
+}
+
 /**
  * Initiales d'un nom affiché, pour une pastille d'avatar : « Camille Martin » → « CM », « Bob » → « B ».
  *

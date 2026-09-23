@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 
+import { useThemeTransition } from '@/hooks/use-theme-transition';
 import {
   applyThemePreference,
+  canOverrideTheme,
   readThemePreference,
   writeThemePreference,
   type ThemePreference,
@@ -10,9 +12,10 @@ import {
 /**
  * Choix du thème, pour l'écran des paramètres.
  *
- * Le thème lui-même est déjà appliqué au démarrage par le layout racine ; ce hook ne sert qu'à afficher le choix courant et à le changer. L'application précède l'écriture : le changement se voit tout de suite, même si le stockage échoue.
+ * Le thème lui-même est déjà appliqué au démarrage par le layout racine ; ce hook ne sert qu'à afficher le choix courant et à le changer. L'écriture ne conditionne pas l'application : le changement se voit même si le stockage échoue.
  */
 export function useThemePreference() {
+  const { run } = useThemeTransition();
   const [preference, setPreference] = useState<ThemePreference>('system');
 
   useEffect(() => {
@@ -29,7 +32,13 @@ export function useThemePreference() {
 
   function choose(next: ThemePreference) {
     setPreference(next);
-    applyThemePreference(next);
+    const apply = () => applyThemePreference(next);
+    // Le fondu n'a de sens que si le thème peut changer : sur le web, ou en retouchant le choix déjà actif, il ferait clignoter l'écran pour rien.
+    if (next === preference || !canOverrideTheme()) {
+      apply();
+    } else {
+      run(apply);
+    }
     void writeThemePreference(next);
   }
 

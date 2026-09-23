@@ -1,13 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { getProfile, updateDisplayName } from '@/data/profile';
+import { getProfile, updateAvatar, updateDisplayName } from '@/data/profile';
 import { useAuth } from '@/hooks/use-auth';
+import type { AvatarId } from '@/lib/avatars';
 import { queryKeys } from '@/lib/query-keys';
 
 /**
- * Profil de l'utilisateur connecté, et modification de son nom affiché.
+ * Profil de l'utilisateur connecté, et modification de son nom affiché et de son avatar.
  *
- * La mutation n'invalide que le profil. La liste des membres d'un groupe se recharge déjà à chaque ouverture, et le journal garde volontairement le nom tel qu'il était au moment de l'action.
+ * Les mutations n'invalident que le profil. La liste des membres d'un groupe et l'aperçu des groupes se rechargent déjà à chaque ouverture, et le journal garde volontairement le nom tel qu'il était au moment de l'action.
  */
 export function useProfile() {
   const queryClient = useQueryClient();
@@ -27,11 +28,20 @@ export function useProfile() {
     },
   });
 
+  const chooseAvatar = useMutation({
+    mutationFn: (avatar: AvatarId | null) => updateAvatar(userId as string, avatar),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.profile() });
+    },
+  });
+
   return {
     profile: query.data,
     isLoading: query.isLoading,
     error: query.error,
     rename,
     isRenaming: rename.isPending,
+    chooseAvatar,
+    isChoosingAvatar: chooseAvatar.isPending,
   };
 }

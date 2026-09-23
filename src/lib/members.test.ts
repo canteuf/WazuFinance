@@ -3,7 +3,7 @@ import {
   formatInvitationCode,
   normalizeInvitationCode,
 } from '@/lib/invitation-code';
-import { initials, toneIndex } from '@/lib/members';
+import { initials, pairMembers, toneIndex } from '@/lib/members';
 
 describe('initials', () => {
   it('prend les deux premiers mots', () => {
@@ -35,6 +35,35 @@ describe('toneIndex', () => {
       expect(index).toBeGreaterThanOrEqual(0);
       expect(index).toBeLessThan(5);
     }
+  });
+});
+
+describe('pairMembers', () => {
+  it('associe chaque nom à l’avatar de même position', () => {
+    expect(pairMembers(['Alice', 'Bob', 'Carol'], ['a01', 'a02', 'a03'])).toEqual([
+      { name: 'Alice', avatar: 'a01' },
+      { name: 'Bob', avatar: 'a02' },
+      { name: 'Carol', avatar: 'a03' },
+    ]);
+  });
+
+  it('garde les positions quand un membre n’a pas d’avatar', () => {
+    expect(pairMembers(['Alice', 'Bob', 'Carol'], ['a01', null, 'a03'])).toEqual([
+      { name: 'Alice', avatar: 'a01' },
+      { name: 'Bob', avatar: null },
+      { name: 'Carol', avatar: 'a03' },
+    ]);
+  });
+
+  it('rend null, jamais undefined, quand le tableau d’avatars est plus court', () => {
+    expect(pairMembers(['Alice', 'Bob'], ['a01'])).toEqual([
+      { name: 'Alice', avatar: 'a01' },
+      { name: 'Bob', avatar: null },
+    ]);
+  });
+
+  it('ne rend personne pour un groupe sans membre', () => {
+    expect(pairMembers([], [])).toEqual([]);
   });
 });
 

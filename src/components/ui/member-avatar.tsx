@@ -1,6 +1,8 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 
-import { initials, toneIndex } from '@/lib/members';
+import { AVATAR_SOURCES } from '@/components/ui/avatar-sources';
+import { parseAvatarId } from '@/lib/avatars';
+import { initials, toneIndex, type MemberIdentity } from '@/lib/members';
 import { font, radius, useColors, useIsDark, type Colors } from '@/theme/tokens';
 
 type Tone = { background: string; text: string };
@@ -22,13 +24,19 @@ function palette(colors: Colors, isDark: boolean): Tone[] {
   ];
 }
 
-/** Pastille ronde aux initiales d'un membre. Ronde : dans l'app, le rond désigne une personne. */
+/**
+ * Pastille ronde d'un membre : son avatar s'il en a choisi un, sinon les initiales de son nom. Ronde : dans l'app, le rond désigne une personne.
+ *
+ * `avatar` est la valeur brute de `users.avatar`, pas un identifiant déjà validé : une valeur que cette version ne connaît pas donne les initiales.
+ */
 export function MemberAvatar({
   name,
+  avatar,
   size = 32,
   ring,
 }: {
   name: string;
+  avatar?: string | null;
   size?: number;
   /** Couleur d'un liseré de détourage, pour les pastilles qui se chevauchent dans une pile. */
   ring?: string;
@@ -36,6 +44,7 @@ export function MemberAvatar({
   const colors = useColors();
   const tones = palette(colors, useIsDark());
   const tone = tones[toneIndex(name, tones.length)];
+  const avatarId = parseAvatarId(avatar);
 
   return (
     <View
@@ -44,19 +53,30 @@ export function MemberAvatar({
         {
           width: size,
           height: size,
-          backgroundColor: tone.background,
+          // Les visages sont dessinés sur fond transparent : un fond neutre et stable, pas la teinte dérivée du nom, qui irait jusqu'au vert vif de l'accent et écraserait les traits.
+          backgroundColor: avatarId ? colors.surfaceMuted : tone.background,
           borderColor: ring ?? 'transparent',
           borderWidth: ring ? 2 : 0,
         },
       ]}
     >
-      <Text
-        // L'initiale d'une pastille ne grossit pas avec la police système : son conteneur a une taille fixe, et un « CM » agrandi en sortirait. Le nom complet est dit ailleurs sur la même ligne.
-        maxFontSizeMultiplier={1}
-        style={[styles.initials, { color: tone.text, fontSize: size * 0.38 }]}
-      >
-        {initials(name)}
-      </Text>
+      {avatarId ? (
+        <Image
+          source={AVATAR_SOURCES[avatarId]}
+          // Remplit la zone intérieure, liseré exclu : une taille fixe déborderait de la pastille dès qu'elle en a un. Décoratif : le nom est dit sur la même ligne.
+          style={styles.image}
+          fadeDuration={0}
+          accessible={false}
+        />
+      ) : (
+        <Text
+          // L'initiale d'une pastille ne grossit pas avec la police système : son conteneur a une taille fixe, et un « CM » agrandi en sortirait. Le nom complet est dit ailleurs sur la même ligne.
+          maxFontSizeMultiplier={1}
+          style={[styles.initials, { color: tone.text, fontSize: size * 0.38 }]}
+        >
+          {initials(name)}
+        </Text>
+      )}
     </View>
   );
 }
@@ -64,19 +84,19 @@ export function MemberAvatar({
 /**
  * Pile de pastilles qui se chevauchent, suivie d'un « +N » pour le reste.
  *
- * `total` vient du compte fait en base, pas de la longueur de `names`, qui s'arrête à trois : c'est lui qui dit combien il reste.
+ * `total` vient du compte fait en base, pas de la longueur de `members`, qui s'arrête à trois : c'est lui qui dit combien il reste.
  */
 export function AvatarStack({
-  names,
+  members,
   total,
   size = 30,
 }: {
-  names: string[];
+  members: MemberIdentity[];
   total: number;
   size?: number;
 }) {
   const colors = useColors();
-  const hidden = total - names.length;
+  const hidden = total - members.length;
 
   return (
     <View
@@ -84,9 +104,9 @@ export function AvatarStack({
       accessible
       accessibilityLabel={total === 1 ? '1 membre' : `${total} membres`}
     >
-      {names.map((name, index) => (
-        <View key={`${name}-${index}`} style={index > 0 ? { marginLeft: -size * 0.3 } : null}>
-          <MemberAvatar name={name} size={size} ring={colors.surface} />
+      {members.map((member, index) => (
+        <View key={`${member.name}-${index}`} style={index > 0 ? { marginLeft: -size * 0.3 } : null}>
+          <MemberAvatar name={member.name} avatar={member.avatar} size={size} ring={colors.surface} />
         </View>
       ))}
       {hidden > 0 ? (
@@ -117,6 +137,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
+    // Rogne l'image carrée au rond.
+    overflow: 'hidden',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
   },
   initials: {
     fontFamily: font.bold,

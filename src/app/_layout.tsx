@@ -16,6 +16,7 @@ import { useClearCacheOnUserChange } from '@/hooks/use-clear-cache-on-user-chang
 import { applyThemePreference, readThemePreference } from '@/lib/theme-preference';
 import { AuthProvider } from '@/providers/auth-provider';
 import { QueryProvider } from '@/providers/query-provider';
+import { ThemeTransitionProvider } from '@/providers/theme-transition-provider';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -27,7 +28,9 @@ export default function RootLayout() {
       <AuthProvider>
         <CacheSessionGuard />
         <ThemeProvider value={scheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <RootNavigator />
+          <ThemeTransitionProvider>
+            <RootNavigator />
+          </ThemeTransitionProvider>
         </ThemeProvider>
       </AuthProvider>
     </QueryProvider>

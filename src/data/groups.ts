@@ -1,3 +1,4 @@
+import { pairMembers, type MemberIdentity } from '@/lib/members';
 import { supabase } from '@/lib/supabase';
 import type { MembershipRole } from '@/types/database';
 
@@ -49,8 +50,8 @@ export type GroupOverview = {
   memberCount: number;
   /** Total des plafonds mensuels du groupe, sommé par Postgres. */
   monthlyBudget: number;
-  /** Les trois premiers membres arrivés ; `memberCount` dit s'il y en a d'autres. */
-  memberNames: string[];
+  /** Les trois premiers membres arrivés, avec leur avatar ; `memberCount` dit s'il y en a d'autres. */
+  members: MemberIdentity[];
 };
 
 export type GroupOverviews = {
@@ -78,7 +79,7 @@ export async function getGroupOverviews(): Promise<GroupOverviews> {
         {
           memberCount: row.member_count,
           monthlyBudget: Number(row.monthly_budget),
-          memberNames: row.member_names,
+          members: pairMembers(row.member_names, row.member_avatars),
         },
       ])
     ),
@@ -91,6 +92,8 @@ export type GroupMember = {
   userId: string;
   displayName: string;
   email: string;
+  /** Valeur brute de `users.avatar`, `null` pour les initiales. */
+  avatar: string | null;
   role: MembershipRole;
 };
 
@@ -102,7 +105,7 @@ export type GroupMember = {
 export async function listGroupMembers(groupId: string): Promise<GroupMember[]> {
   const { data, error } = await supabase
     .from('account_memberships')
-    .select('role, users(id, display_name, email)')
+    .select('role, users(id, display_name, email, avatar)')
     .eq('group_id', groupId)
     .order('created_at', { ascending: true });
 
@@ -120,6 +123,7 @@ export async function listGroupMembers(groupId: string): Promise<GroupMember[]> 
         userId: user.id,
         displayName: user.display_name,
         email: user.email,
+        avatar: user.avatar,
         role: row.role,
       },
     ];

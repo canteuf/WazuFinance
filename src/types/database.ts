@@ -437,18 +437,21 @@ export type Database = {
       }
       users: {
         Row: {
+          avatar: string | null
           created_at: string
           display_name: string
           email: string
           id: string
         }
         Insert: {
+          avatar?: string | null
           created_at?: string
           display_name: string
           email: string
           id: string
         }
         Update: {
+          avatar?: string | null
           created_at?: string
           display_name?: string
           email?: string
@@ -563,6 +566,7 @@ export type Database = {
         Args: never
         Returns: {
           group_id: string
+          member_avatars: string[]
           member_count: number
           member_names: string[]
           monthly_budget: number

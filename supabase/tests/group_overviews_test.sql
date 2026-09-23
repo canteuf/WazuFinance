@@ -5,7 +5,7 @@
 create extension if not exists pgtap with schema extensions;
 
 BEGIN;
-SELECT plan(9);
+SELECT plan(10);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures, créées en tant que postgres (RLS contournée)
@@ -27,6 +27,10 @@ insert into public.account_memberships (group_id, user_id, role, created_at) val
   ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000a2', 'member', '2026-09-02'),
   ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000a3', 'member', '2026-09-03'),
   ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000a4', 'member', '2026-09-04');
+
+-- Alice et Carol ont choisi un avatar, Bob non : le tableau des avatars doit garder les positions, NULL compris.
+update public.users set avatar = 'a01' where id = '00000000-0000-0000-0000-0000000000a1';
+update public.users set avatar = 'a03' where id = '00000000-0000-0000-0000-0000000000a3';
 
 -- Deux plafonds mensuels et un hebdomadaire dans Coloc : l'hebdomadaire ne doit pas entrer dans la somme.
 insert into public.budgets (group_id, category_id, period, amount) values
@@ -78,6 +82,13 @@ SELECT is(
     where group_id = '00000000-0000-0000-0000-0000000000b1'),
   array['Alice', 'Bob', 'Carol'],
   'Les trois premiers membres, dans l''ordre d''arrivée'
+);
+
+SELECT is(
+  (select member_avatars from public.group_overviews()
+    where group_id = '00000000-0000-0000-0000-0000000000b1'),
+  array['a01', null, 'a03'],
+  'Les avatars suivent les noms position par position, NULL pour qui n''en a pas choisi'
 );
 
 -- Le compte personnel a son propre plafond de 1 000 €, mais n'est commun à personne.

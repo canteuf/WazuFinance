@@ -145,7 +145,9 @@ export default function GroupScreen() {
                 </Text>
               </View>
               <AvatarStack
-                names={members.slice(0, HEADER_AVATARS).map((member) => member.displayName)}
+                members={members
+                  .slice(0, HEADER_AVATARS)
+                  .map((member) => ({ name: member.displayName, avatar: member.avatar }))}
                 total={members.length}
               />
             </View>
@@ -166,7 +168,7 @@ export default function GroupScreen() {
                       <View style={[styles.divider, { backgroundColor: colors.border }]} />
                     ) : null}
                     <View style={styles.memberRow}>
-                      <MemberAvatar name={member.displayName} size={44} />
+                      <MemberAvatar name={member.displayName} avatar={member.avatar} size={44} />
                       <View style={styles.memberInfo}>
                         <Text style={[styles.memberName, { color: colors.text }]} numberOfLines={1}>
                           {member.displayName}

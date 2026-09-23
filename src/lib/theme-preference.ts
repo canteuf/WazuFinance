@@ -11,15 +11,20 @@ export function parseThemePreference(value: string | null): ThemePreference {
   return value === 'light' || value === 'dark' ? value : 'system';
 }
 
+/** Faux sur le web, où react-native-web n'implémente pas la surcharge : changer le réglage n'y change rien à l'écran. */
+export function canOverrideTheme(): boolean {
+  return typeof Appearance.setColorScheme === 'function';
+}
+
 /**
  * Impose le thème à toute l'app.
  *
  * Passe par `Appearance.setColorScheme` plutôt que par un fournisseur de thème maison : `useColorScheme()` renvoie alors la valeur imposée partout, et `useColors()`, la navigation et les composants natifs suivent sans rien savoir de ce réglage. `unspecified` rend la main au téléphone.
  *
- * Absent sur le web, où react-native-web n'implémente pas la surcharge : l'app y suit le navigateur, et le choix reste simplement mémorisé.
+ * Sans effet quand la surcharge n'existe pas (voir `canOverrideTheme`) : l'app y suit le navigateur, et le choix reste simplement mémorisé.
  */
 export function applyThemePreference(preference: ThemePreference): void {
-  if (typeof Appearance.setColorScheme !== 'function') {
+  if (!canOverrideTheme()) {
     return;
   }
   Appearance.setColorScheme(preference === 'system' ? 'unspecified' : preference);

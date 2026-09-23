@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
+import { AvatarPicker } from '@/components/settings/avatar-picker';
 import {
   SettingsDivider,
   SettingsRow,
   SettingsSection,
 } from '@/components/settings/settings-section';
 import { Button } from '@/components/ui/button';
+import { MemberAvatar } from '@/components/ui/member-avatar';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { TextField } from '@/components/ui/text-field';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
+import { parseAvatarId, type AvatarId } from '@/lib/avatars';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { validateDisplayName } from '@/lib/validation';
 import { font, spacing, useColors } from '@/theme/tokens';
@@ -21,12 +24,15 @@ const SAVED_NOTICE_MS = 2000;
 export function ProfileSection() {
   const colors = useColors();
   const { session } = useAuth();
-  const { profile, isLoading, error, rename, isRenaming } = useProfile();
+  const { profile, isLoading, error, rename, isRenaming, chooseAvatar, isChoosingAvatar } =
+    useProfile();
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string>();
+  const [pickingAvatar, setPickingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState<string>();
 
   useEffect(() => {
     if (!saved) {
@@ -65,8 +71,47 @@ export function ProfileSection() {
     });
   }
 
+  const avatar = parseAvatarId(profile.avatar);
+
+  function handleChooseAvatar(next: AvatarId | null) {
+    setAvatarError(undefined);
+    chooseAvatar.mutate(next, {
+      // Le choix se referme de lui-même : la pastille de la rangée montre déjà le résultat, et une grille restée ouverte inviterait à en essayer un autre par réflexe.
+      onSuccess: () => setPickingAvatar(false),
+      onError: (mutationError) => setAvatarError(dataErrorMessage(mutationError)),
+    });
+  }
+
   return (
     <SettingsSection title="Profil & identité" flush>
+      <SettingsRow
+        icon="account-circle-outline"
+        label="Avatar"
+        subtitle="Un visage, ou vos initiales"
+        accessibilityLabel="Avatar. Modifier"
+        trailing={<MemberAvatar name={profile.displayName} avatar={avatar} size={40} />}
+        onPress={() => {
+          setAvatarError(undefined);
+          setPickingAvatar((open) => !open);
+        }}
+      />
+
+      {pickingAvatar ? (
+        <View style={styles.editor}>
+          <AvatarPicker
+            name={profile.displayName}
+            value={avatar}
+            onSelect={handleChooseAvatar}
+            disabled={isChoosingAvatar}
+          />
+          {avatarError ? (
+            <Text style={[styles.error, { color: colors.danger }]}>{avatarError}</Text>
+          ) : null}
+        </View>
+      ) : null}
+
+      <SettingsDivider />
+
       <SettingsRow
         icon="card-account-details-outline"
         label="Nom d’affichage"

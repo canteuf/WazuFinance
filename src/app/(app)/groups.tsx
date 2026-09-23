@@ -250,7 +250,7 @@ function GroupCard({
 
         <View style={styles.groupFoot}>
           {overview ? (
-            <AvatarStack names={overview.memberNames} total={overview.memberCount} />
+            <AvatarStack members={overview.members} total={overview.memberCount} />
           ) : (
             <View />
           )}
