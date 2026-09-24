@@ -22,6 +22,7 @@ export const AVATAR_IDS = [
   'a14',
   'a15',
   'a16',
+  'a17',
 ] as const;
 
 export type AvatarId = (typeof AVATAR_IDS)[number];

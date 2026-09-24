@@ -1,5 +1,5 @@
 /**
- * Régénère les avatars de assets/avatars/ (a01.png à a16.png).
+ * Régénère les avatars de assets/avatars/ (a01.png à a17.png).
  *
  * Les visages viennent du style Avataaars de DiceBear (Pablo Stanley, libre pour un usage personnel et commercial), rastérisés en PNG par resvg. Chaque avatar fixe tout ce qui se voit — coiffure, teinte, tenue, expression, lunettes, barbe — au lieu de dépendre d'une graine : un identifiant donne toujours le même visage, quelle que soit la version de la bibliothèque, et les teintes sont réparties à dessein plutôt que tirées au hasard.
  *
@@ -55,6 +55,7 @@ const PRESETS = [
   { id: 'a14', skin: P, top: 'sides', hair: '#a55728', clothes: 'graphicShirt', clothesColor: '#b1e2ff', graphic: 'bear', eyes: 'wink', brows: 'raisedExcitedNatural', mouth: 'twinkle', ...NO_ACCESSORY, ...NO_BEARD },
   { id: 'a15', skin: D, top: 'shortRound', hair: '#e8e1e1', clothes: 'blazerAndShirt', clothesColor: '#3c4f5c', eyes: 'default', brows: 'flatNatural', mouth: 'smile', ...glasses('prescription01'), ...beard('beardMedium', '#e8e1e1') },
   { id: 'a16', skin: B, top: 'turban', hat: '#ff5c5c', clothes: 'shirtVNeck', clothesColor: '#ffffff', eyes: 'happy', brows: 'defaultNatural', mouth: 'smile', ...NO_ACCESSORY, ...NO_BEARD },
+  { id: 'a17', skin: T, top: 'curvy', hair: '#2c1b18', clothes: 'shirtCrewNeck', clothesColor: '#ffc5a8', eyes: 'happy', brows: 'defaultNatural', mouth: 'smile', ...NO_ACCESSORY, ...NO_BEARD },
 ];
 
 function toOptions(preset) {

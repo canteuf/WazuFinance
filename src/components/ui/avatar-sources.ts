@@ -24,4 +24,5 @@ export const AVATAR_SOURCES: Record<AvatarId, ImageSourcePropType> = {
   a14: require('../../../assets/avatars/a14.png'),
   a15: require('../../../assets/avatars/a15.png'),
   a16: require('../../../assets/avatars/a16.png'),
+  a17: require('../../../assets/avatars/a17.png'),
 };
