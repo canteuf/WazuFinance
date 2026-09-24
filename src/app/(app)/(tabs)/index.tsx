@@ -10,6 +10,7 @@ import {
 
 import { BudgetsEntry } from "@/components/dashboard/budgets-entry";
 import { CategoryBreakdown } from "@/components/dashboard/category-breakdown";
+import { PendingTransactions } from "@/components/dashboard/pending-transactions";
 import { PeriodSummary } from "@/components/dashboard/period-summary";
 import { RecentTransactions } from "@/components/dashboard/recent-transactions";
 import { SavingsEntry } from "@/components/dashboard/savings-entry";
@@ -102,6 +103,9 @@ export default function DashboardScreen() {
     >
       {/* La carte porte ses propres états de chargement et d'erreur : un résumé en échec ne doit pas emporter la liste, qui a pu aboutir. */}
       <PeriodSummary />
+
+      {/* Juste sous le solde, que ces saisies ne comptent pas encore : c'est là que l'œil les cherche en revenant de la feuille, et la liste des dernières opérations est souvent sous la ligne de flottaison. Ne rend rien quand rien n'attend. */}
+      <PendingTransactions />
 
       {/* Ne rend rien tant qu'aucune dépense n'existe sur la période : la liste voisine annonce déjà l'absence d'opérations, et un second état vide ne ferait que répéter la même chose. */}
       <CategoryBreakdown />

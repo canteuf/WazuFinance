@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PendingTransactions } from '@/components/dashboard/pending-transactions';
 import {
   activeFilterCount,
   DEFAULT_FILTERS,
@@ -358,6 +359,8 @@ export default function HistoryScreen() {
                   </Pressable>
                 </View>
               ) : null}
+              {/* Hors des filtres et des totaux par jour, comme sur le tableau de bord : ces saisies n'existent pas encore en base, et ne rejoignent le livre qu'à leur envoi. */}
+              <PendingTransactions />
               <View style={styles.ledgerHead}>
                 <MaterialCommunityIcons name="book-open-variant" size={18} color={colors.primary} />
                 <Text style={[styles.ledgerTitle, { color: colors.text }]} numberOfLines={1}>

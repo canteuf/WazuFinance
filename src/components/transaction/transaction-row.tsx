@@ -24,6 +24,7 @@ export function TransactionRow({
   transaction,
   inGroup = false,
   ledger = false,
+  pending = false,
 }: {
   transaction: TransactionWithCategory;
   /** Vrai quand la ligne vit dans une carte partagée avec ses voisines : elle n'a alors ni fond, ni relief, ni rayon propres, c'est la carte qui les porte. */
@@ -32,6 +33,10 @@ export function TransactionRow({
    * Disposition « livre de comptes » de l'historique : le montant passe sous le titre, avec « Débit » ou « Crédit » en regard, et la date disparaît de la ligne puisque l'en-tête de jour la porte déjà.
    */
   ledger?: boolean;
+  /**
+   * Saisie faite hors ligne, pas encore acceptée par la base : elle n'a pas d'identifiant, donc rien à ouvrir. La ligne n'est pas un lien, et « en attente d'envoi » remplace la mention « modifié ».
+   */
+  pending?: boolean;
 }) {
   const colors = useColors();
   const elevation = useElevation();
@@ -54,7 +59,10 @@ export function TransactionRow({
   const showCategoryBadge = title !== categoryName;
 
   // « aujourd'hui · modifié ». « modifié » en toutes lettres, jamais une icône seule. Le détail — qui, quoi, avant, après — est dans l'écran Activité.
-  const meta = [ledger ? null : formatOccurredOn(transaction.occurred_on), edited ? 'modifié' : null]
+  const meta = [
+    ledger ? null : formatOccurredOn(transaction.occurred_on),
+    pending ? 'en attente d’envoi' : edited ? 'modifié' : null,
+  ]
     .filter((part): part is string => Boolean(part))
     .join(' · ');
   const income = transaction.type === 'income';
@@ -73,61 +81,81 @@ export function TransactionRow({
     </Text>
   );
 
+  // Aplati : <Link asChild> transmet le style à son enfant et avertit s'il reçoit un tableau.
+  const rowStyle = StyleSheet.flatten([
+    styles.row,
+    (stacked || ledger) && styles.rowStacked,
+    inGroup ? null : elevation.card,
+    inGroup ? null : { backgroundColor: colors.surface },
+  ]);
+
+  const content = (
+    <>
+      <View style={[styles.glyph, ledger && styles.glyphLedger, { backgroundColor: tone.surface }]}>
+        <MaterialCommunityIcons
+          // Le nom vient de la base ; @expo/vector-icons le type de façon stricte, d'où la conversion explicite.
+          name={icon as React.ComponentProps<typeof MaterialCommunityIcons>['name']}
+          size={19}
+          color={tone.tint}
+        />
+      </View>
+
+      <View style={styles.rowText}>
+        <Text numberOfLines={stacked ? 2 : 1} style={[styles.name, { color: colors.text }]}>
+          {title}
+        </Text>
+        <View style={[styles.metaRow, stacked && styles.metaRowStacked]}>
+          {showCategoryBadge ? (
+            <View style={[styles.categoryTag, { backgroundColor: colors.surfaceMuted }]}>
+              <Text style={[styles.categoryTagLabel, { color: colors.text }]} numberOfLines={1}>
+                {categoryName}
+              </Text>
+            </View>
+          ) : null}
+          {meta ? (
+            <Text numberOfLines={1} style={[styles.note, { color: colors.textMuted }]}>
+              {meta}
+            </Text>
+          ) : null}
+        </View>
+        {ledger ? (
+          <View style={styles.ledgerAmountRow}>
+            {amount}
+            {/* Le mot double la couleur du montant : un lecteur daltonien ou d'écran distingue un crédit d'un débit sans comparer deux verts. */}
+            <Text style={[styles.direction, { color: income ? colors.positive : colors.textMuted }]}>
+              {income ? 'Crédit' : 'Débit'}
+            </Text>
+          </View>
+        ) : stacked ? (
+          amount
+        ) : null}
+      </View>
+
+      {stacked || ledger ? null : amount}
+    </>
+  );
+
+  if (pending) {
+    return (
+      <View
+        accessible
+        accessibilityLabel={`${title}${showCategoryBadge ? `, ${categoryName}` : ''}. En attente d’envoi`}
+        style={rowStyle}
+      >
+        {content}
+      </View>
+    );
+  }
+
   return (
     <Link href={`/transaction?id=${transaction.id}`} asChild>
       <Pressable
         accessibilityRole="button"
         // Le lecteur d'écran lit cette étiquette à la place des textes de la ligne : la catégorie y reste énoncée même quand elle n'est plus le titre, puisqu'elle n'apparaît alors que dans un badge visuel. Sans le suffixe, « modifié » n'existe que pour qui voit.
         accessibilityLabel={`Modifier ${title}${showCategoryBadge ? `, ${categoryName}` : ''}${edited ? '. Opération modifiée' : ''}`}
-        // Aplati : <Link asChild> transmet le style à son enfant et avertit s'il reçoit un tableau.
-        style={StyleSheet.flatten([
-          styles.row,
-          (stacked || ledger) && styles.rowStacked,
-          inGroup ? null : elevation.card,
-          inGroup ? null : { backgroundColor: colors.surface },
-        ])}
+        style={rowStyle}
       >
-        <View style={[styles.glyph, ledger && styles.glyphLedger, { backgroundColor: tone.surface }]}>
-          <MaterialCommunityIcons
-            // Le nom vient de la base ; @expo/vector-icons le type de façon stricte, d'où la conversion explicite.
-            name={icon as React.ComponentProps<typeof MaterialCommunityIcons>['name']}
-            size={19}
-            color={tone.tint}
-          />
-        </View>
-
-        <View style={styles.rowText}>
-          <Text numberOfLines={stacked ? 2 : 1} style={[styles.name, { color: colors.text }]}>
-            {title}
-          </Text>
-          <View style={[styles.metaRow, stacked && styles.metaRowStacked]}>
-            {showCategoryBadge ? (
-              <View style={[styles.categoryTag, { backgroundColor: colors.surfaceMuted }]}>
-                <Text style={[styles.categoryTagLabel, { color: colors.text }]} numberOfLines={1}>
-                  {categoryName}
-                </Text>
-              </View>
-            ) : null}
-            {meta ? (
-              <Text numberOfLines={1} style={[styles.note, { color: colors.textMuted }]}>
-                {meta}
-              </Text>
-            ) : null}
-          </View>
-          {ledger ? (
-            <View style={styles.ledgerAmountRow}>
-              {amount}
-              {/* Le mot double la couleur du montant : un lecteur daltonien ou d'écran distingue un crédit d'un débit sans comparer deux verts. */}
-              <Text style={[styles.direction, { color: income ? colors.positive : colors.textMuted }]}>
-                {income ? 'Crédit' : 'Débit'}
-              </Text>
-            </View>
-          ) : stacked ? (
-            amount
-          ) : null}
-        </View>
-
-        {stacked || ledger ? null : amount}
+        {content}
       </Pressable>
     </Link>
   );

@@ -7,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from 'react-native';
 
@@ -22,6 +21,7 @@ import { useBudgetMutations } from '@/hooks/use-budget-mutations';
 import { useBudgets } from '@/hooks/use-budgets';
 import { useCategories } from '@/hooks/use-categories';
 import { useCategoryBreakdown } from '@/hooks/use-category-breakdown';
+import { useSheetMaxHeight } from '@/hooks/use-sheet-max-height';
 import { budgetProgress, WARNING_RATIO } from '@/lib/budget-progress';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { formatMoney } from '@/lib/money';
@@ -37,7 +37,7 @@ export default function BudgetScreen() {
   const colors = useColors();
   const elevation = useElevation();
   const router = useRouter();
-  const { height: windowHeight } = useWindowDimensions();
+  const sheetMaxHeight = useSheetMaxHeight();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { activeGroupId, isLoading: groupLoading, error: groupError } = useActiveGroup();
   const { budgets, isLoading: budgetsLoading, error: budgetsError } = useBudgets();
@@ -163,7 +163,7 @@ export default function BudgetScreen() {
     <View
       style={[
         styles.sheet,
-        { backgroundColor: colors.background, maxHeight: windowHeight * 0.92 },
+        { backgroundColor: colors.background, maxHeight: sheetMaxHeight },
       ]}
     >
       {/* Une formSheet n'accepte pas de header natif : le titre et la fermeture sont du contenu ordinaire, comme sur la saisie. */}

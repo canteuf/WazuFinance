@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      *
      * Protège contre un téléphone déverrouillé laissé sans surveillance, pas contre un jeton de session volé — un tel jeton permet déjà tout le reste, et ce n'est pas la menace visée.
      *
-     * Effet de bord accepté : la vérification ouvre une nouvelle session pour le même utilisateur. `onAuthStateChange` la reçoit, et `useClearCacheOnUserChange()` ne vide rien puisque l'identifiant ne change pas.
+     * Effet de bord accepté : la vérification ouvre une nouvelle session pour le même utilisateur. `onAuthStateChange` la reçoit, et `usePersistedQueryCache()` ne vide rien puisque l'identifiant ne change pas.
      */
     async function verifyPassword(password: string): Promise<void> {
       const email = session?.user.email;

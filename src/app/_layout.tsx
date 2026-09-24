@@ -12,7 +12,7 @@ import { useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { useAuth } from '@/hooks/use-auth';
-import { useClearCacheOnUserChange } from '@/hooks/use-clear-cache-on-user-change';
+import { usePersistedQueryCache } from '@/hooks/use-persisted-query-cache';
 import { applyThemePreference, readThemePreference } from '@/lib/theme-preference';
 import { AuthProvider } from '@/providers/auth-provider';
 import { QueryProvider } from '@/providers/query-provider';
@@ -26,7 +26,6 @@ export default function RootLayout() {
   return (
     <QueryProvider>
       <AuthProvider>
-        <CacheSessionGuard />
         <ThemeProvider value={scheme === 'dark' ? DarkTheme : DefaultTheme}>
           <ThemeTransitionProvider>
             <RootNavigator />
@@ -38,18 +37,11 @@ export default function RootLayout() {
 }
 
 /**
- * Composant sans rendu : isolé de RootNavigator pour que la logique de garde de navigation reste indépendante de la gestion du cache TanStack Query.
- */
-function CacheSessionGuard() {
-  useClearCacheOnUserChange();
-  return null;
-}
-
-/**
  * Le splash reste affiché tant que la session persistée n'a pas été relue, pour éviter le flash de l'écran de connexion chez un utilisateur déjà authentifié.
  */
 function RootNavigator() {
   const { session, isLoading } = useAuth();
+  const cacheRestored = usePersistedQueryCache();
   // React Native n'a pas de police de repli par famille : tant que Bricolage Grotesque n'est pas chargée, chaque écran s'afficherait dans la police système puis se recomposerait. On garde donc le splash sur les deux attentes à la fois.
   const [fontsLoaded, fontError] = useFonts({
     BricolageGrotesque_400Regular,
@@ -71,7 +63,13 @@ function RootNavigator() {
     });
   }, []);
 
-  const ready = !isLoading && fontsSettled && themeSettled;
+  const ready = !isLoading && fontsSettled && themeSettled && cacheRestored;
+
+  // La relecture du cache recommence à chaque connexion, pour le cache du nouveau compte. Seul le démarrage l'attend derrière le splash : après, les écrans ne doivent pas disparaître le temps de cette relecture, et un compte qui vient de se connecter charge de toute façon ses données en ligne.
+  const [started, setStarted] = useState(false);
+  if (ready && !started) {
+    setStarted(true);
+  }
 
   useEffect(() => {
     if (ready) {
@@ -79,7 +77,7 @@ function RootNavigator() {
     }
   }, [ready]);
 
-  if (!ready) {
+  if (!ready && !started) {
     return null;
   }
 

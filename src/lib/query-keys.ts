@@ -40,7 +40,7 @@ export const queryKeys = {
     ['transactions', 'budgetTotals', groupId, from] as const,
   // Hors de ['transactions'] à dessein : le fil se consulte délibérément, se recharge à chaque ouverture et au geste « tirer pour rafraîchir ». Aucune invalidation n'a besoin de l'atteindre, et le nicher le ferait recharger à chaque saisie pour rien.
   activity: (groupId: string) => ['activity', groupId] as const,
-  // Portée personnelle, pas de groupe : une seule clé, sans le couple racine/groupe des budgets. La policy ne renvoie déjà que les objectifs de l'appelant, et useClearCacheOnUserChange() vide tout le cache au changement de compte — il n'existe pas d'équivalent « objectif actif » dont une invalidation devrait se méfier.
+  // Portée personnelle, pas de groupe : une seule clé, sans le couple racine/groupe des budgets. La policy ne renvoie déjà que les objectifs de l'appelant, et usePersistedQueryCache() vide tout le cache au changement de compte — il n'existe pas d'équivalent « objectif actif » dont une invalidation devrait se méfier.
   savingsGoals: () => ['savingsGoals'] as const,
   // Sous ['savingsGoals'] : un versement, une création ou une suppression invalident déjà ce préfixe, et les totaux suivent sans qu'aucune mutation les connaisse. `today` dans la clé : le rythme change avec le mois.
   savingsOverview: (today: string) => ['savingsGoals', 'overview', today] as const,
@@ -49,7 +49,19 @@ export const queryKeys = {
   groupMembersAll: () => ['groupMembers'] as const,
   groupMembers: (groupId: string) => ['groupMembers', groupId] as const,
   groupInvitation: (groupId: string) => ['groupInvitation', groupId] as const,
-  // Clés plates, sans groupe, comme savingsGoals : le profil et les blocages de suppression appartiennent à l'utilisateur, et useClearCacheOnUserChange() est la seule frontière qui compte.
+  // Clés plates, sans groupe, comme savingsGoals : le profil et les blocages de suppression appartiennent à l'utilisateur, et usePersistedQueryCache() est la seule frontière qui compte.
   profile: () => ['profile'] as const,
   deletionBlockers: () => ['deletionBlockers'] as const,
+};
+
+/**
+ * Clés des écritures qui patientent hors ligne. Seules ces mutations ont des valeurs par défaut enregistrées sur le QueryClient (`registerTransactionMutationDefaults`) : c'est ce qui permet de rejouer, après un redémarrage de l'app, une saisie restée en file — la fonction ne se sérialise pas, seule la clé survit sur le disque et la retrouve.
+ *
+ * Espace de noms distinct des clés de requête : `['transactionWrites']` ne recoupe rien dans `queryKeys`, et la racine sert à compter ce qui reste en attente.
+ */
+export const mutationKeys = {
+  transactionWrites: () => ['transactionWrites'] as const,
+  createTransaction: () => ['transactionWrites', 'create'] as const,
+  updateTransaction: () => ['transactionWrites', 'update'] as const,
+  deleteTransaction: () => ['transactionWrites', 'delete'] as const,
 };

@@ -7,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from 'react-native';
 
@@ -22,6 +21,7 @@ import { CONTENT_GUTTER, contentColumn } from '@/components/ui/screen';
 import { useAuth } from '@/hooks/use-auth';
 import { useSavingsGoalMutations } from '@/hooks/use-savings-goal-mutations';
 import { useSavingsGoals } from '@/hooks/use-savings-goals';
+import { useSheetMaxHeight } from '@/hooks/use-sheet-max-height';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { formatMoney } from '@/lib/money';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
@@ -36,7 +36,7 @@ export default function SavingsGoalScreen() {
   const colors = useColors();
   const elevation = useElevation();
   const router = useRouter();
-  const { height: windowHeight } = useWindowDimensions();
+  const sheetMaxHeight = useSheetMaxHeight();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { session } = useAuth();
   const userId = session?.user.id;
@@ -148,7 +148,7 @@ export default function SavingsGoalScreen() {
     <View
       style={[
         styles.sheet,
-        { backgroundColor: colors.background, maxHeight: windowHeight * 0.92 },
+        { backgroundColor: colors.background, maxHeight: sheetMaxHeight },
       ]}
     >
       {/* Une formSheet n'accepte pas de header natif : le titre et la fermeture sont du contenu ordinaire, comme sur la saisie. */}

@@ -7,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from 'react-native';
 
@@ -19,6 +18,8 @@ import { Button } from '@/components/ui/button';
 import { CONTENT_GUTTER, contentColumn } from '@/components/ui/screen';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useAuth } from '@/hooks/use-auth';
+import { useIsOnline } from '@/hooks/use-offline-status';
+import { useSheetMaxHeight } from '@/hooks/use-sheet-max-height';
 import { useTransaction } from '@/hooks/use-transaction';
 import { useTransactionMutations } from '@/hooks/use-transaction-mutations';
 import { dataErrorMessage } from '@/lib/data-errors';
@@ -31,7 +32,7 @@ import { goBackOr } from '@/lib/navigation';
 export default function TransactionScreen() {
   const colors = useColors();
   const router = useRouter();
-  const { height: windowHeight } = useWindowDimensions();
+  const sheetMaxHeight = useSheetMaxHeight();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { session } = useAuth();
   const {
@@ -42,6 +43,7 @@ export default function TransactionScreen() {
   } = useActiveGroup();
   const { createTransaction, updateTransaction, deleteTransaction, isSaving, isDeleting } =
     useTransactionMutations();
+  const online = useIsOnline();
   const [errorText, setErrorText] = useState<string>();
 
   const existing = useTransaction(id);
@@ -89,37 +91,38 @@ export default function TransactionScreen() {
     );
   }
 
+  const callbacks = {
+    onSuccess: () => goBackOr(router, '/'),
+    onError: (error: Error) => setErrorText(dataErrorMessage(error)),
+  };
+
+  // Hors ligne, l'écriture se met en file et ne réussira qu'au retour du réseau : attendre ce succès laisserait la feuille ouverte sur un bouton qui tourne. Elle se ferme donc aussitôt, et le bandeau d'état compte l'écriture en attente ; un refus ultérieur de la base s'affiche en alerte (query-provider), puisque la feuille ne sera plus là pour le montrer.
+  function closeIfQueued() {
+    if (!online) {
+      goBackOr(router, '/');
+    }
+  }
+
   function handleSubmit(values: TransactionFormValues) {
     setErrorText(undefined);
 
     if (typeof id === 'string') {
-      updateTransaction.mutate(
-        { id, patch: values },
-        {
-          onSuccess: () => goBackOr(router, '/'),
-          onError: (error) => setErrorText(dataErrorMessage(error)),
-        }
+      updateTransaction.mutate({ id, patch: values }, callbacks);
+    } else {
+      createTransaction.mutate(
+        { ...values, groupId: activeGroupId as string, userId: userId as string },
+        callbacks
       );
-      return;
     }
-
-    createTransaction.mutate(
-      { ...values, groupId: activeGroupId as string, userId: userId as string },
-      {
-        onSuccess: () => goBackOr(router, '/'),
-        onError: (error) => setErrorText(dataErrorMessage(error)),
-      }
-    );
+    closeIfQueued();
   }
 
   function handleDelete() {
     if (typeof id !== 'string') {
       return;
     }
-    deleteTransaction.mutate(id, {
-      onSuccess: () => goBackOr(router, '/'),
-      onError: (error) => setErrorText(dataErrorMessage(error)),
-    });
+    deleteTransaction.mutate(id, callbacks);
+    closeIfQueued();
   }
 
   const initialValues = existing.data
@@ -134,7 +137,7 @@ export default function TransactionScreen() {
 
   return (
     // sheetAllowedDetents: 'fitToContents' calcule la hauteur de la feuille à partir de celle du contenu ; flex: 1 empêcherait cette mesure (la vue s'étirerait pour remplir un espace disponible qui n'existe pas encore). maxHeight borne la feuille à une fraction de l'écran : le ScrollView ci-dessous devient alors le seul à défiler, clavier ouvert compris, au lieu que fitToContents mesure un contenu plus haut que l'écran.
-    <View style={[styles.sheet, { backgroundColor: colors.background, maxHeight: windowHeight * 0.92 }]}>
+    <View style={[styles.sheet, { backgroundColor: colors.background, maxHeight: sheetMaxHeight }]}>
       {/* Une formSheet n'accepte pas de header natif : le titre et la fermeture sont du contenu ordinaire (spec, contrainte Android). Sur le web, la présentation retombe sur un écran plein sans navigation native : ce bouton est la seule sortie hors du retour navigateur. */}
       <View style={styles.header}>
         <Pressable
