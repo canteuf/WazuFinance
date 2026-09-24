@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AmountInput } from '@/components/transaction/amount-input';
+import { CategoryCreator } from '@/components/transaction/category-creator';
 import { CategoryPicker } from '@/components/transaction/category-picker';
 import { DateField } from '@/components/transaction/date-field';
 import { Button } from '@/components/ui/button';
@@ -185,6 +186,7 @@ export function TransactionForm({
         {categoryError ? (
           <Text style={[styles.error, { color: colors.danger }]}>{categoryError}</Text>
         ) : null}
+        <CategoryCreator type={type} onCreated={(category) => setCategorySelection(category.id)} />
       </View>
 
       <View style={styles.field}>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AmountInput } from '@/components/transaction/amount-input';
+import { CategoryCreator } from '@/components/transaction/category-creator';
 import { CategoryPicker } from '@/components/transaction/category-picker';
 import { PrimaryAction } from '@/components/ui/form-actions';
 import type { Category } from '@/data/categories';
@@ -62,6 +63,8 @@ export function BudgetForm({ availableCategories, submitting, errorText, onSubmi
             onSelect={setCategoryId}
           />
         )}
+        {/* Une enveloppe se pose sur une dépense : la catégorie créée ici en est une, et elle est choisie d'office. */}
+        <CategoryCreator type="expense" onCreated={(category) => setCategoryId(category.id)} />
       </View>
 
       <View style={styles.field}>
