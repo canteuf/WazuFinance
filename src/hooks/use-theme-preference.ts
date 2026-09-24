@@ -31,8 +31,11 @@ export function useThemePreference() {
   }, []);
 
   function choose(next: ThemePreference) {
-    setPreference(next);
-    const apply = () => applyThemePreference(next);
+    // La sélection bouge avec le thème, sous la photo, et non au toucher : la capture part avant que le rendu du toucher soit peint, la photo montrait donc l'ancienne sélection, et le rectangle semblait aller sur le bouton touché, revenir sur l'ancien, puis repartir au fil du fondu.
+    const apply = () => {
+      setPreference(next);
+      applyThemePreference(next);
+    };
     // Le fondu n'a de sens que si le thème peut changer : sur le web, ou en retouchant le choix déjà actif, il ferait clignoter l'écran pour rien.
     if (next === preference || !canOverrideTheme()) {
       apply();
