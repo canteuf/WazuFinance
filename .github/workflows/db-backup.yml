@@ -1,0 +1,85 @@
+# Sauvegarde nocturne de la base Supabase.
+#
+# Le plan gratuit de Supabase ne donne accès à aucune sauvegarde : ce workflow en produit une chaque nuit, chiffrée, conservée 30 jours comme artefact du workflow.
+#
+# Trois fichiers, selon la procédure documentée par Supabase : les rôles, le schéma, puis les données (auth.users compris — les comptes et leurs mots de passe hachés). `supabase db dump` et non `pg_dump` directement : la CLI lance le pg_dump de la version du serveur (Postgres 17), là où celui préinstallé sur le runner est plus ancien et refuse de sauvegarder un serveur plus récent.
+#
+# L'archive est chiffrée avant d'être téléversée : elle contient les opérations de tous les utilisateurs de l'app, et un artefact se télécharge par quiconque a accès au dépôt — y compris s'il devient public un jour.
+#
+# Secrets du dépôt (Settings → Secrets and variables → Actions) :
+#   SUPABASE_DB_URL    chaîne « Session pooler » du tableau de bord Supabase (bouton Connect), mot de passe inclus et encodé en pourcentage. Pas la connexion directe : elle n'existe qu'en IPv6 sur le plan gratuit, et les runners GitHub n'ont que l'IPv4.
+#   BACKUP_PASSPHRASE  phrase de passe du chiffrement. Sans elle, les sauvegardes sont illisibles : la garder aussi hors de GitHub.
+#
+# Restauration, dans une base vide :
+#   gpg --decrypt wazu-db-AAAA-MM-JJ.tar.gz.gpg > backup.tar.gz && tar -xzf backup.tar.gz
+#   psql --single-transaction --variable ON_ERROR_STOP=1 \
+#     --file roles.sql --file schema.sql \
+#     --command 'SET session_replication_role = replica' \
+#     --file data.sql --dbname "<chaîne de connexion de la base cible>"
+
+name: Sauvegarde de la base
+
+on:
+  schedule:
+    # 02:00 UTC, 03:00 à Douala : l'heure où l'app sert le moins.
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Vérifier les secrets
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::Secrets SUPABASE_DB_URL et BACKUP_PASSPHRASE requis (voir l'en-tête du workflow)."
+            exit 1
+          fi
+
+      - uses: supabase/setup-cli@v1
+        with:
+          # Même version que la CLI du projet (npx supabase --version).
+          version: 2.117.0
+
+      - name: Sauvegarder les rôles, le schéma et les données
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          mkdir backup
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/roles.sql --role-only
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/schema.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/data.sql --use-copy --data-only
+          # Une sauvegarde vide passerait pour une réussite : on vérifie que les données contiennent bien les opérations.
+          grep -q 'COPY "public"."transactions"' backup/data.sql
+          ls -l backup
+
+      - name: Chiffrer
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          name="wazu-db-$(date -u +%Y-%m-%d)"
+          tar -czf backup.tar.gz -C backup .
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback \
+            --passphrase-fd 0 --symmetric --cipher-algo AES256 \
+            --output "$name.tar.gz.gpg" backup.tar.gz
+          rm -rf backup backup.tar.gz
+          echo "BACKUP_NAME=$name" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BACKUP_NAME }}
+          path: ${{ env.BACKUP_NAME }}.tar.gz.gpg
+          # 30 jours glissants : de quoi remonter avant une erreur remarquée tard, sans dépasser le stockage gratuit d'un dépôt privé (500 Mo).
+          retention-days: 30
+          if-no-files-found: error

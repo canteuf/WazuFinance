@@ -52,6 +52,15 @@ Installing the resulting APK needs `adb` from the Android platform-tools. Withou
 
 Windows PATH: `[Environment]::SetEnvironmentVariable("Path", $env:Path + ";…", "User")` is a trap. `$env:Path` holds the *merged* machine + user PATH, so each call copies the machine PATH into the user PATH. Past 2047 characters in a `REG_SZ` key, Windows silently stops merging the user PATH altogether and every globally installed tool disappears from new sessions. Read the user scope explicitly instead — `[Environment]::GetEnvironmentVariable("Path", "User")` — and keep the key `REG_EXPAND_SZ`. VS Code also hands each terminal the environment it captured at its own launch, so a PATH change needs VS Code itself restarted, not just a new terminal tab.
 
+## Database backups and keep-alive (GitHub Actions)
+
+The Supabase free plan offers no downloadable backup and pauses a project after 7 days without activity. Two workflows cover both, at no cost:
+
+- `.github/workflows/db-backup.yml` — nightly at 02:00 UTC (and on demand): `supabase db dump` for roles, schema and data (`auth.users` included), tarred, encrypted with `gpg --symmetric`, uploaded as a 30-day artifact. It uses the Supabase CLI rather than the runner's `pg_dump`, which is older than the server (Postgres 17) and refuses to dump it. It fails if `data.sql` holds no `COPY "public"."transactions"`, so an empty dump never passes for a success. The restore procedure is in the file header.
+- `.github/workflows/db-keepalive.yml` — every two days at 06:00 UTC: one real SQL query through `psql`.
+
+Both read the `SUPABASE_DB_URL` repository secret, which must be the **Session pooler** connection string (dashboard → Connect), percent-encoded: the direct connection is IPv6-only on the free plan and GitHub runners are IPv4-only. The backup also needs `BACKUP_PASSPHRASE`; without it the artifacts cannot be read, so it has to be kept outside GitHub too. The CLI version in `db-backup.yml` follows the project's (`npx supabase --version`).
+
 ## App icons
 
 `app.json` wires four generated files from `assets/images/`, and Android composes three of them itself rather than taking a finished square.
