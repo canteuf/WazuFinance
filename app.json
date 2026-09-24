@@ -7,9 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "wazufinance",
     "userInterfaceStyle": "automatic",
-    "ios": {
-      "icon": "./assets/expo.icon"
-    },
     "android": {
       "package": "com.wazufinance.app",
       "adaptiveIcon": {
