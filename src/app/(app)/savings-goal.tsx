@@ -178,6 +178,8 @@ export default function SavingsGoalScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        // Même raison que sur la saisie d’une écriture : sans défilement imbriqué, la feuille Android capte le glissement vers le bas et le haut du formulaire devient inaccessible.
+        nestedScrollEnabled
       >
         {existing ? (
           <>

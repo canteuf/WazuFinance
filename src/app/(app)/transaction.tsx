@@ -165,6 +165,8 @@ export default function TransactionScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        // Sur Android, la feuille (BottomSheetBehavior) ne cède le geste qu’à un enfant dont le défilement imbriqué est activé, ce que le ScrollView de React Native ne fait pas par défaut : sans cette prop, la feuille captait tout glissement vers le bas pour se déplacer elle-même, et une fois le haut du formulaire masqué, on ne pouvait plus y remonter.
+        nestedScrollEnabled
       >
         <TransactionForm
           groupId={activeGroupId}
