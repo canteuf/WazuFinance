@@ -6,6 +6,7 @@ import { DEFAULT_GOAL_ICON, GOAL_ICONS, goalIcon } from '@/components/savings/go
 import { AmountInput } from '@/components/transaction/amount-input';
 import { DateField } from '@/components/transaction/date-field';
 import { DeleteAction, PrimaryAction } from '@/components/ui/form-actions';
+import { IconChoiceGrid } from '@/components/ui/icon-choice-grid';
 import { formatMonthYear, todayIso } from '@/lib/dates';
 import { CURRENCY_SYMBOL, parseAmount, parseNonNegativeAmount, toAmountInput } from '@/lib/money';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
@@ -102,30 +103,12 @@ export function SavingsGoalForm({
 
       <View style={styles.field}>
         <Text style={[styles.eyebrow, { color: colors.textMuted }]}>Icône</Text>
-        <View style={styles.icons}>
-          {GOAL_ICONS.map((option) => {
-            const selected = option.name === icon;
-            return (
-              <Pressable
-                key={option.name}
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-                accessibilityLabel={option.label}
-                onPress={() => setIcon(option.name)}
-                style={[
-                  styles.icon,
-                  { backgroundColor: selected ? colors.primary : colors.surfaceMuted },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  name={option.name}
-                  size={22}
-                  color={selected ? colors.primaryText : colors.primary}
-                />
-              </Pressable>
-            );
-          })}
-        </View>
+        <IconChoiceGrid
+          options={GOAL_ICONS}
+          selected={icon}
+          onSelect={setIcon}
+          accessibilityLabel="Icône de l’objectif"
+        />
       </View>
 
       {editing ? null : (
@@ -242,18 +225,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     minHeight: 54,
     fontSize: 18,
-  },
-  icons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  icon: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.sm + 4,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   inline: {
     flexDirection: 'row',
