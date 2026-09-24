@@ -10,6 +10,17 @@ Les migrations s'appliquent dans l'ordre, une seule fois chacune. Leur nom suit 
 | `migrations/20260904000400_harden_personal_group_guard.sql` | Rend le garde du compte personnel indépendant de l'ordre des cascades. Sans cette migration, la suppression d'un compte pouvait échouer. |
 | `migrations/20260908000100_period_summary.sql` | `budget_groups.period_start_day` (1 à 28) et `period_summary()` : entrées, sorties et solde d'une période |
 | `migrations/20260909000100_category_breakdown.sql` | `category_breakdown()` : dépenses d'une période, par catégorie |
+| `migrations/20260910000100_activity_log.sql` | Journal d'activité (`activity_log`, écrit par le trigger `log_activity()` seul), `updated_at` qui ne bouge que sur un vrai changement, colonnes figées |
+| `migrations/20260910000200_freeze_created_at.sql` | Fige aussi `id` et `created_at` de `transactions` et `budgets`, pour que la mention « modifié » reste fiable |
+| `migrations/20260911000100_group_management.sql` | `create_shared_group()`, code d'invitation généré en base, `guard_owner_orphan()` : un propriétaire ne quitte pas un groupe qui a d'autres membres |
+| `migrations/20260911000200_fix_guard_owner_orphan_evaluation_order.sql` | Réécrit `guard_owner_orphan()` sans dépendre de l'ordre d'évaluation de `OR`, à comportement égal |
+| `migrations/20260918000100_period_summary_count.sql` | `period_summary()` renvoie aussi le nombre d'opérations |
+| `migrations/20260919000100_account_settings.sql` | Privilèges par colonne sur `users` et `budget_groups`, `owned_groups_with_other_members()`, `delete_own_account()`, refus de rejoindre un groupe sans propriétaire |
+| `migrations/20260919000200_group_overviews.sql` | `group_overviews()` : membres, plafonds mensuels et total engagé de chaque groupe, en une requête |
+| `migrations/20260919000300_ledger.sql` | `daily_totals()` et montants fréquents : totaux par jour de l'historique, suggestions de la saisie |
+| `migrations/20260919000400_envelopes.sql` | Icône des objectifs, `add_to_savings_goal()` et `adjust_budget_amount()` par delta, `budget_totals()` et totaux d'épargne |
+| `migrations/20260919000500_filtered_totals.sql` | `filtered_totals()` : totaux sous les filtres de l'historique, pour le relevé PDF |
+| `migrations/20260921000100_user_avatar.sql` | `users.avatar` (`a01` à `a16`, ou `NULL` pour les initiales) |
 
 ## Application
 
@@ -67,6 +78,15 @@ npx supabase db reset # après l'ajout ou la modification d'une migration
 | `tests/period_summary_test.sql` | Totaux de période, bornes semi-ouvertes, résultat nul pour un non-membre |
 | `tests/category_breakdown_test.sql` | Agrégation par catégorie, tri, exclusion des revenus, résultat vide pour un non-membre |
 | `tests/budgets_rls_test.sql` | Policies de `budgets`, unicité par catégorie, plafond strictement positif |
+| `tests/activity_log_test.sql` | Journal d'activité : entrées écrites par le trigger seul, aucune écriture client, cascades de suppression intactes, colonnes figées |
+| `tests/group_management_rls_test.sql` | `create_shared_group()`, garde anti-orphelin, code d'invitation par défaut |
+| `tests/account_settings_test.sql` | Privilèges par colonne, suppression de son propre compte, refus de rejoindre un groupe sans propriétaire |
+| `tests/group_overviews_test.sql` | Aperçu des groupes : comptes, sommes de plafonds, et ce qu'un non-membre ne voit pas |
+| `tests/ledger_test.sql` | Totaux par jour sous filtres, montants fréquents de l'appelant |
+| `tests/envelopes_test.sql` | Versements sur les objectifs, ajustements de plafond, totaux d'en-tête |
+| `tests/filtered_totals_test.sql` | Totaux du relevé PDF : mêmes lignes que `daily_totals()` |
+| `tests/savings_goals_rls_test.sql` | Objectifs d'épargne personnels, invisibles des autres membres d'un groupe partagé |
+| `tests/user_avatar_test.sql` | Format de l'avatar, écriture sur sa propre ligne, lecture par les membres d'un même groupe |
 
 Si `handle_new_user()` échoue, le client ne reçoit qu'un message opaque, « Database error saving new user ». Toute modification de `users`, `budget_groups` ou `account_memberships` doit donc repasser `npm run test:db`.
 

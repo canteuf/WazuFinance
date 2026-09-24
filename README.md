@@ -123,7 +123,8 @@ src/theme/        jetons de couleur, typographie, espacements
 src/types/        types générés depuis la base (ne pas éditer à la main)
 assets/images/    icônes de l'app, écran de démarrage, favicon
 supabase/         migrations SQL, policies RLS, tests pgTAP
-docs/superpowers/ specs de conception et plans d'implémentation, écran par écran
+docs/superpowers/ specs de conception, écran par écran
+.github/workflows/ sauvegarde nocturne de la base et maintien en activité du projet Supabase
 ```
 
 Principes structurants :
@@ -134,8 +135,18 @@ Principes structurants :
 - **Les sommes sont calculées par Postgres**, qui additionne exactement les montants `numeric(12,2)`, là où JavaScript passerait par des nombres flottants.
 - **La période budgétaire suit le jour de paie** : `period_start_day`, du 1 au 28, est réglé par groupe. Les bornes de période sont calculées côté client.
 - **L'historique est paginé par curseur** sur `(date, id)`, jamais par décalage, pour qu'une opération ajoutée en temps réel ne décale pas les pages.
+- **L'app fonctionne hors ligne** : le cache est conservé sur le téléphone, et les saisies d'opérations sont mises en file d'attente puis envoyées au retour du réseau. Les autres écritures échouent tout de suite avec « Pas de connexion ».
 
 Les règles détaillées et les pièges déjà rencontrés sont dans [CLAUDE.md](CLAUDE.md).
+
+## Sauvegardes (GitHub Actions)
+
+Le plan gratuit de Supabase n'offre pas de sauvegarde téléchargeable et met un projet en pause après 7 jours d'inactivité. Deux workflows y répondent :
+
+- [db-backup.yml](.github/workflows/db-backup.yml), chaque nuit à 02:00 UTC : export complet (rôles, schéma, données), chiffré avec `gpg`, conservé 30 jours comme artefact. La procédure de restauration est en tête du fichier.
+- [db-keepalive.yml](.github/workflows/db-keepalive.yml), tous les deux jours : une vraie requête SQL.
+
+Secrets du dépôt : `SUPABASE_DB_URL`, la chaîne **Session pooler** (dashboard → Connect), encodée en pourcentage, et `BACKUP_PASSPHRASE`, à conserver aussi hors de GitHub : sans elle, les sauvegardes sont illisibles.
 
 ## Maintenance des dépendances
 
@@ -146,6 +157,8 @@ npx expo install --fix
 ```
 
 **Ne jamais lancer `npm audit fix --force`.** npm choisit la première version hors de la plage vulnérable sans tenir compte du SDK : il a déjà rétrogradé `expo` en version 46, et l'application ne démarrait plus. Les alertes modérées restantes viennent de paquets que le SDK apporte lui-même. Elles disparaissent avec les correctifs d'Expo, que `npx expo install --fix` récupère.
+
+Si `npx expo install --fix` échoue sur `EALLOWSCRIPTS` (« --allow-scripts is not allowed in project-scoped installs »), c'est qu'un `~/.npmrc` contient une ligne `allow-scripts`, que npm 11.19 refuse quand Expo lance l'installation. Lancer alors `npx expo install --check`, qui liste les versions attendues, puis les installer avec `npm install <paquet>@<version>`.
 
 ## Licence
 

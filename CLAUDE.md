@@ -40,6 +40,8 @@ Per [AGENTS.md](AGENTS.md): read https://docs.expo.dev/versions/v57.0.0/ before 
 
 **Never run `npm audit fix --force`.** npm resolves an advisory by picking whatever version falls outside the vulnerable range, regardless of the SDK: on 2026-09-10 it downgraded `expo` to 46 and `expo-router` to 5 — eleven majors back — and the app could no longer start. Align versions with `npx expo install --fix` only. The moderate advisories `npm audit` reports come from two packages pulled in by the SDK itself (`decode-uri-component` through react-navigation, `uuid` through Expo's tooling); they have no npm-side fix that keeps SDK 57, and they go away when Expo ships patch releases, which `npx expo install --fix` picks up.
 
+If `npx expo install --fix` fails with `EALLOWSCRIPTS` ("--allow-scripts is not allowed in project-scoped installs"), the user-level `~/.npmrc` holds an `allow-scripts` line that npm 11.19 rejects when Expo spawns the install. Don't edit the user's global config: run `npx expo install --check` and `npm install` the exact versions it lists — same result.
+
 Windows: if `npm ci` or `npm install` fails with `EPERM` on `@unrs/resolver-binding-win32-x64-msvc/*.node`, VS Code's ESLint server has that native module loaded. Run "ESLint: Restart ESLint Server" or move the folder out of `node_modules` — never kill the VS Code extension host, which Claude Code runs inside.
 
 ## Native build (EAS)
@@ -68,7 +70,7 @@ Both read the `SUPABASE_DB_URL` repository secret, which must be the **Session p
 - `android-icon-foreground.png` — the glyph alone on transparency. Android masks the icon to the launcher's shape (circle, squircle, teardrop), so the drawing has to stay inside the central ~66 %: here 560 × 436 on a 1024 canvas. A full-bleed icon used as the foreground gets its corners cut.
 - `android-icon-background.png` — opaque, edge to edge, **no border and no rounded corners**. A hairline border there reads as a stray line once the mask is applied.
 - `android-icon-monochrome.png` — the same silhouette in flat white, for Android 13+ themed icons, which recolour it against the wallpaper.
-- `icon.png` — the flattened squircle, for iOS and the web.
+- `icon.png` — the flattened squircle, for iOS and the web. `app.json` deliberately has no `ios.icon`: the template's value pointed at an Icon Composer bundle (`assets/expo.icon`) holding the Expo logo, which would have shipped as the iOS icon.
 
 **An app icon is judged at 48 dp, not at 1024.** The original artwork put a mid-green glyph on a dark-green field — 3.4:1, which dissolves in the launcher. The shipped background is `#062019`, giving 6.89:1. Any new artwork should be checked by compositing foreground over background, masking to a circle and downsampling to 48 px before it is accepted.
 
