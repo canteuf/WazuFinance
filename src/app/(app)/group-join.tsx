@@ -1,16 +1,17 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { InvitationCodeInput } from '@/components/group/invitation-code-input';
 import { Button } from '@/components/ui/button';
 import { CONTENT_GUTTER, contentColumn } from '@/components/ui/screen';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useGroupMutations } from '@/hooks/use-group-mutations';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { normalizeInvitationCode } from '@/lib/invitation-code';
+import { INVITATION_CODE_LENGTH, normalizeInvitationCode } from '@/lib/invitation-code';
 import { goBackOr } from '@/lib/navigation';
-import { font, radius, spacing, useColors } from '@/theme/tokens';
+import { font, spacing, useColors } from '@/theme/tokens';
 
 /**
  * Rejoindre un groupe par code d'invitation (spec section 1, écran 7).
@@ -26,7 +27,7 @@ export default function GroupJoinScreen() {
   const [touched, setTouched] = useState(false);
   const [errorText, setErrorText] = useState<string>();
 
-  const valid = code.trim() !== '';
+  const valid = code.length === INVITATION_CODE_LENGTH;
 
   function handleSubmit() {
     setTouched(true);
@@ -60,23 +61,25 @@ export default function GroupJoinScreen() {
       </View>
 
       <View style={styles.form}>
-        <TextInput
-          accessibilityLabel="Code d’invitation"
-          placeholder="Code à 8 caractères"
-          placeholderTextColor={colors.textMuted}
+        <Text style={[styles.hint, { color: colors.textMuted }]}>
+          Saisissez ou collez le code à 8 caractères reçu du propriétaire du groupe.
+        </Text>
+
+        <InvitationCodeInput
           value={code}
-          onChangeText={setCode}
-          autoCapitalize="none"
-          autoCorrect={false}
+          onChangeText={(next) => {
+            setCode(next);
+            setErrorText(undefined);
+          }}
+          onSubmitEditing={handleSubmit}
+          invalid={(touched && !valid) || errorText !== undefined}
           autoFocus
-          style={[
-            styles.code,
-            { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text },
-          ]}
         />
 
         {touched && !valid ? (
-          <Text style={[styles.error, { color: colors.danger }]}>Entrez le code reçu.</Text>
+          <Text style={[styles.error, { color: colors.danger }]}>
+            Le code compte 8 caractères.
+          </Text>
         ) : null}
         {errorText ? <Text style={[styles.error, { color: colors.danger }]}>{errorText}</Text> : null}
 
@@ -114,14 +117,10 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     padding: spacing.lg,
   },
-  code: {
-    fontFamily: font.semibold,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-    fontSize: 18,
-    letterSpacing: 2,
+  hint: {
+    fontFamily: font.regular,
+    fontSize: 15,
+    lineHeight: 21,
   },
   error: {
     fontFamily: font.medium,
