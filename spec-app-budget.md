@@ -109,4 +109,4 @@ Un compte personnel privé est modélisé comme un groupe à un seul membre. Cel
 
 ## 7. État
 
-Ce document a servi de base à l'implémentation, et reste la référence du périmètre et du modèle de données. Le périmètre V1 décrit ici est livré : tous les écrans, l'export CSV et PDF, et un build natif installé sur appareil. L'avancement écran par écran est dans [README.md](README.md) ; les règles de code et les pièges rencontrés en chemin, dans [CLAUDE.md](CLAUDE.md).
+Ce document a servi de base à l'implémentation, et reste la référence du périmètre et du modèle de données. Le périmètre V1 décrit ici est livré : tous les écrans, l'export CSV et PDF, et un build natif installé sur appareil. Les fonctionnalités livrées sont décrites dans [README.md](README.md), l'installation et la maintenance dans [docs/developpement.md](docs/developpement.md) ; les règles de code et les pièges rencontrés en chemin, dans [CLAUDE.md](CLAUDE.md).

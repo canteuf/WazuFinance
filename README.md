@@ -1,165 +1,128 @@
 # Wazu Finance
 
-Application mobile de suivi budgétaire à plusieurs. Chaque utilisateur a un compte personnel privé et peut partager un budget commun avec d'autres personnes (couple, famille, colocation).
+**Wazu Finance est une application mobile pour suivre son argent, seul ou à plusieurs.**
 
-La spécification fonctionnelle complète est dans [spec-app-budget.md](spec-app-budget.md).
+Chaque personne dispose d'un compte personnel, visible d'elle seule. Elle peut aussi tenir un budget commun avec d'autres : en couple, en famille ou en colocation. Chacun y note ses dépenses, et tout le monde voit les mêmes chiffres, mis à jour en direct.
 
-## Avancement
+Les montants sont en francs CFA (XAF), sans centimes.
 
-| Écran | État |
-|---|---|
-| 1. Connexion / inscription | Livré |
-| 2. Tableau de bord : solde de la période, comparaison avec la précédente, répartition par catégorie, dernières opérations, accès aux budgets | Livré |
-| 3. Historique des opérations : pagination et filtres par période, catégorie et type | Livré |
-| 4. Ajout et modification d'une opération, en trois appuis depuis l'écran principal | Livré |
-| 5. Budgets par catégorie : alerte à 80 % et à 100 % du plafond | Livré |
-| Journal d'activité : qui a modifié ou supprimé quoi dans un budget partagé | Livré |
-| 6. Objectifs d'épargne | Livré |
-| 7. Gestion du groupe : membres, invitations | Livré |
-| 8. Paramètres du compte | Livré |
-| Export CSV / PDF | Livré |
+## Aperçu
 
-Le périmètre V1 est complet. L'application tourne en build natif : APK installé et vérifié sur Pixel 7 et Galaxy S21 Ultra.
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/screenshots/synthese.png" alt="Écran Synthèse : solde du mois, entrées, sorties et répartition des dépenses par catégorie" width="240"><br><sub><b>Synthèse</b> : le mois en un coup d'œil</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/saisie.png" alt="Formulaire de saisie : montant de 12 500 XAF et catégorie Alimentation sélectionnée" width="240"><br><sub><b>Saisie</b> : montant, catégorie, valider</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/operations.png" alt="Écran Opérations : recherche, filtres et opérations regroupées par jour" width="240"><br><sub><b>Opérations</b> : l'historique, jour par jour</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/budgets.png" alt="Écran Budgets : synthèse des enveloppes et une enveloppe Restaurants en dépassement" width="240"><br><sub><b>Budgets</b> : les enveloppes et leurs alertes</sub></td>
+    <td align="center"><img src="docs/screenshots/epargne.png" alt="Écran Épargne : total mis de côté et progression de chaque objectif" width="240"><br><sub><b>Épargne</b> : la progression des objectifs</sub></td>
+    <td align="center"><img src="docs/screenshots/groupe.png" alt="Détail d'un groupe partagé : membres et code d'invitation" width="240"><br><sub><b>Groupe</b> : un budget partagé à deux</sub></td>
+  </tr>
+</table>
 
-Hors V1, par décision : connexion bancaire, multi-devises, notifications push. Les raisons sont dans la spec, §6.
+<sub>Captures réalisées avec des données fictives.</sub>
 
-## Stack
+## Ce que fait l'application
 
-- **Mobile** : React Native 0.86 + Expo SDK 57, expo-router v6 (routes typées), React 19.2, TypeScript strict
-- **Données** : TanStack Query v5 pour le cache, Supabase pour Postgres, l'authentification, la Row Level Security et le temps réel
-- **Tests** : Jest (modules purs) et pgTAP (base de données)
+### Noter une dépense en trois gestes
 
-## Démarrer
+Depuis l'écran d'accueil, le bouton **Saisie** ouvre le formulaire : on tape le montant, on choisit la catégorie, on valide. La date du jour et la dernière catégorie utilisée sont déjà remplies, et restent modifiables. On peut aussi noter un revenu, ajouter une note, puis corriger ou supprimer une opération plus tard.
 
-Prérequis :
-- Node.js ;
-- un projet Supabase ;
-- Expo Go ou un build de développement sur téléphone ;
-- Docker Desktop, pour les tests de base de données uniquement ;
-- `eas-cli` en global et les platform-tools Android, pour produire et installer un APK.
+### Voir où en est son mois
 
-1. Installer les dépendances :
+L'écran **Synthèse** résume la période en cours :
 
-   ```bash
-   npm install
-   ```
+- le solde, c'est-à-dire les revenus moins les dépenses ;
+- la différence avec la période précédente ;
+- la répartition des dépenses par catégorie, en barres ;
+- les dernières opérations.
 
-2. Créer `.env` à partir de `.env.example` et y mettre l'URL et la clé anon du projet Supabase (Settings > API) :
+Le mois budgétaire n'a pas besoin de commencer le 1er : on choisit le jour qui correspond à sa paie, du 1 au 28.
 
-   ```bash
-   EXPO_PUBLIC_SUPABASE_URL=https://votre-ref.supabase.co
-   EXPO_PUBLIC_SUPABASE_ANON_KEY=votre-cle-anon
-   ```
+### Retrouver une opération
 
-   Ces deux valeurs sont publiques et se retrouvent en clair dans l'application : la sécurité repose sur les policies RLS. **Ne jamais mettre la clé `service_role` dans une variable `EXPO_PUBLIC_`.**
+L'écran **Opérations** liste tout l'historique, jour par jour, avec le total de chaque journée. On peut le filtrer par période, par type (dépense ou revenu) et par catégorie, ou chercher un mot.
 
-3. Appliquer les migrations au projet Supabase :
+### Classer ses dépenses
 
-   ```bash
-   npx supabase link --project-ref <ref>
-   npx supabase db push
-   ```
+L'application propose des catégories courantes, chacune avec son icône : alimentation, logement, transport, loisirs, santé, etc. On peut créer les siennes directement dans le formulaire de saisie.
 
-   Les réglages d'authentification à vérifier sont décrits dans [supabase/README.md](supabase/README.md).
+### Fixer des limites avec les enveloppes
 
-4. Lancer l'application :
+L'écran **Budgets** permet de fixer un plafond de dépenses par catégorie pour le mois (une « enveloppe »). Chaque enveloppe montre ce qui a été dépensé et ce qui reste, et l'application prévient visuellement à deux seuils :
 
-   ```bash
-   npx expo start --clear
-   ```
+- **à 80 %** du plafond, l'enveloppe passe en alerte ;
+- **à 100 %**, elle est signalée comme dépassée.
 
-   `--clear` est nécessaire après toute modification de `.env` : les variables sont intégrées au moment du build.
+Les enveloppes les plus urgentes s'affichent en premier, et une synthèse donne le total dépensé face au total prévu.
 
-## Commandes
+### Mettre de l'argent de côté
 
-| Commande | Rôle |
-|---|---|
-| `npm start` | Serveur de développement Expo |
-| `npm run android` / `npm run web` | Lancer directement sur Android ou dans le navigateur |
-| `npm run lint` | ESLint (`eslint-config-expo`) |
-| `npx tsc --noEmit` | Vérification des types |
-| `npm test` | Tests Jest des modules purs de `src/lib/` |
-| `npx supabase start` | Base locale, toutes migrations appliquées (Docker requis) |
-| `npm run test:db` | Tests pgTAP de `supabase/tests/` contre la base locale |
-| `npx supabase db reset` | Réapplique les migrations à la base locale |
-| `npx supabase migration list --linked` | Compare migrations locales et distantes |
-| `npm run db:types` | Régénère `src/types/database.ts` depuis le projet lié, après une migration |
-| `npx expo export --platform android --output-dir <dossier>` | Vérifie que le bundle se construit, sans appareil |
-| `eas build -p android --profile preview` | APK installable sur un appareil, construit par EAS (`eas-cli` installé globalement) |
+L'écran **Épargne** sert à suivre des objectifs : un voyage, un fonds d'urgence, un équipement. Pour chacun, on fixe le montant visé et, si on le souhaite, une date. On y ajoute des versements au fil du temps, et une barre montre la progression. L'application calcule aussi combien mettre de côté chaque mois pour tenir les échéances.
 
-## Build natif (EAS)
+Les objectifs d'épargne restent personnels, même à l'intérieur d'un budget partagé.
 
-Expo Go suffit pour développer, mais pas pour valider : le partage de fichiers, l'impression PDF et les modules natifs s'y comportent autrement que dans une app installée. Le profil `preview` de [eas.json](eas.json) produit un APK qu'on installe directement sur un appareil, sans passer par le Play Store.
+### Partager un budget
 
-```bash
-npm install -g eas-cli                          # une fois, outil de développement, pas une dépendance du projet
-eas login                                       # une fois, compte expo.dev
-eas init                                        # une fois, crée le projectId dans app.json
-eas env:set --name EXPO_PUBLIC_SUPABASE_URL --value <url> --environment preview --visibility plaintext
-eas env:set --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <cle> --environment preview --visibility plaintext
-eas build -p android --profile preview          # ~10-20 min, QR code à la fin
-```
+On peut créer un groupe et y inviter d'autres personnes avec un **code d'invitation**. Ce code ne sert qu'une fois et expire au bout d'un certain temps ; le créateur du groupe peut en générer un nouveau à tout moment. Dans un groupe partagé :
 
-`eas-cli` s'installe globalement et **ne doit pas figurer dans les dépendances du projet** : EAS exécute `npm ci --include=dev` sur le serveur de build, où ces 344 paquets n'ont rien à faire. La version attendue est verrouillée par le champ `cli.version` de [eas.json](eas.json), pas par une dépendance.
+- chaque membre voit les dépenses des autres **en direct**, sans recharger l'application ;
+- le **journal** indique qui a modifié ou supprimé quoi, et quand ;
+- le créateur du groupe gère les membres et peut en retirer un.
 
-Les deux variables sont indispensables : `.env` n'est pas versionné, donc EAS ne le voit pas, et [src/lib/env.ts](src/lib/env.ts) lève une erreur au démarrage si l'une manque. Elles sont publiques par conception — la sécurité repose sur les policies RLS, jamais sur le secret de la clé anon — d'où `--visibility plaintext`. Ne jamais y mettre la clé `service_role`.
+On passe d'un groupe à l'autre, ou de son compte personnel à un budget commun, depuis l'écran **Mes groupes**.
 
-Le premier build demande un keystore de signature : laisser EAS le générer et le conserver, c'est lui qui servira à toutes les mises à jour de l'app.
+### Exporter ses données
 
-Les trois profils de [eas.json](eas.json) fixent `"node": "22.20.0"`. Ce n'est pas un détail de confort : `@supabase/supabase-js` déclare `engines.node >= 22`, React Native veut `^20.19.4 || ^22.13.0 || ^24.3.0`, et l'intersection commence à 22.13. Sans ce réglage, le serveur de build prend Node 20 et `npm ci` s'arrête sur un conflit de moteur — un échec en quinze secondes, dont le journal ne montre que `npm ci --include=dev exited with non-zero code: 1`.
+Depuis l'écran Opérations, le bouton **Exporter** produit un fichier des opérations affichées :
 
-Installer l'APK sur un appareil demande `adb`, qui vient des [platform-tools Android](https://developer.android.com/tools/releases/platform-tools). Sans lui, le build aboutit mais l'installation automatique échoue sur `spawn adb ENOENT` ; l'APK reste téléchargeable depuis le lien affiché.
+- en **CSV**, pour les ouvrir dans un tableur (Excel, Google Sheets…) ;
+- en **PDF**, pour un relevé lisible, à imprimer ou à partager.
 
-## Architecture
+### Continuer sans réseau
 
-```
-src/app/          routes expo-router : (auth) sans session, (app) avec session
-src/components/   composants d'interface, par domaine
-src/hooks/        accès aux données pour les écrans (TanStack Query)
-src/data/         requêtes Supabase, sans React
-src/lib/          modules purs : montants, dates, erreurs, clés de cache, progression des budgets
-src/providers/    session, groupe actif, cache
-src/theme/        jetons de couleur, typographie, espacements
-src/types/        types générés depuis la base (ne pas éditer à la main)
-assets/images/    icônes de l'app, écran de démarrage, favicon
-supabase/         migrations SQL, policies RLS, tests pgTAP
-docs/superpowers/ specs de conception, écran par écran
-.github/workflows/ sauvegarde nocturne de la base et maintien en activité du projet Supabase
-```
+L'application reste utilisable sans connexion. Elle affiche les derniers chiffres connus, et les dépenses saisies hors ligne sont mises de côté puis envoyées automatiquement au retour du réseau. Un bandeau indique qu'on est hors ligne et combien de saisies attendent leur envoi.
 
-Principes structurants :
+### Régler son compte
 
-- **Les dépendances vont dans un seul sens** : `écrans → hooks → src/data/ → Supabase`. Un écran n'importe jamais le client Supabase.
-- **Un compte personnel est un groupe à un seul membre.** Personnel et partagé passent par les mêmes tables et les mêmes policies.
-- **La sécurité vit en base.** Chaque policy RLS se ramène à « l'appelant est-il membre de ce groupe ? ». Aucun filtre côté client n'en tient lieu.
-- **Les sommes sont calculées par Postgres**, qui additionne exactement les montants `numeric(12,2)`, là où JavaScript passerait par des nombres flottants.
-- **La période budgétaire suit le jour de paie** : `period_start_day`, du 1 au 28, est réglé par groupe. Les bornes de période sont calculées côté client.
-- **L'historique est paginé par curseur** sur `(date, id)`, jamais par décalage, pour qu'une opération ajoutée en temps réel ne décale pas les pages.
-- **L'app fonctionne hors ligne** : le cache est conservé sur le téléphone, et les saisies d'opérations sont mises en file d'attente puis envoyées au retour du réseau. Les autres écritures échouent tout de suite avec « Pas de connexion ».
+Dans les **Paramètres**, on peut :
 
-Les règles détaillées et les pièges déjà rencontrés sont dans [CLAUDE.md](CLAUDE.md).
+- choisir un avatar parmi dix-sept visages, ou garder ses initiales ;
+- changer son nom affiché et son mot de passe ;
+- choisir le thème clair, sombre, ou celui du téléphone ;
+- régler le jour de début du mois budgétaire ;
+- se déconnecter, ou supprimer définitivement son compte.
 
-## Sauvegardes (GitHub Actions)
+L'application suit aussi la taille de texte choisie dans les réglages du téléphone.
 
-Le plan gratuit de Supabase n'offre pas de sauvegarde téléchargeable et met un projet en pause après 7 jours d'inactivité. Deux workflows y répondent :
+## Confidentialité et sécurité
 
-- [db-backup.yml](.github/workflows/db-backup.yml), chaque nuit à 02:00 UTC : export complet (rôles, schéma, données), chiffré avec `gpg`, conservé 30 jours comme artefact. La procédure de restauration est en tête du fichier.
-- [db-keepalive.yml](.github/workflows/db-keepalive.yml), tous les deux jours : une vraie requête SQL.
+- **Ce qui est personnel reste personnel.** Une dépense de votre compte personnel n'est visible par personne d'autre. Dans un groupe partagé, seuls ses membres voient ses opérations.
+- **La protection est assurée par le serveur, pas seulement par l'application.** Même quelqu'un qui contournerait l'application ne pourrait pas lire les données d'un groupe dont il n'est pas membre.
+- **Rien ne reste sur le téléphone après une déconnexion.** Les données gardées pour le mode hors ligne sont effacées.
+- **Les données sont sauvegardées chaque nuit**, et ces sauvegardes sont chiffrées.
 
-Secrets du dépôt : `SUPABASE_DB_URL`, la chaîne **Session pooler** (dashboard → Connect), encodée en pourcentage, et `BACKUP_PASSPHRASE`, à conserver aussi hors de GitHub : sans elle, les sauvegardes sont illisibles.
+## Ce qui n'est pas prévu pour l'instant
 
-## Maintenance des dépendances
+Ces fonctions ont été écartées de la première version, chacune pour une raison précise :
 
-Mettre à jour uniquement avec :
+- **La connexion automatique à sa banque** : elle demande un intermédiaire payant et une mise en conformité réglementaire. Elle sera étudiée une fois l'application validée par l'usage.
+- **Plusieurs devises** : aucun besoin identifié à ce jour, le franc CFA suffit.
+- **Les notifications sur le téléphone** : les alertes visibles dans l'application suffisent pour commencer.
 
-```bash
-npx expo install --fix
-```
+## Version actuelle
 
-**Ne jamais lancer `npm audit fix --force`.** npm choisit la première version hors de la plage vulnérable sans tenir compte du SDK : il a déjà rétrogradé `expo` en version 46, et l'application ne démarrait plus. Les alertes modérées restantes viennent de paquets que le SDK apporte lui-même. Elles disparaissent avec les correctifs d'Expo, que `npx expo install --fix` récupère.
+**Version 1.0.0** : toutes les fonctionnalités ci-dessus sont disponibles. L'application a été installée et testée sur Android (Pixel 7 et Galaxy S21 Ultra).
 
-Si `npx expo install --fix` échoue sur `EALLOWSCRIPTS` (« --allow-scripts is not allowed in project-scoped installs »), c'est qu'un `~/.npmrc` contient une ligne `allow-scripts`, que npm 11.19 refuse quand Expo lance l'installation. Lancer alors `npx expo install --check`, qui liste les versions attendues, puis les installer avec `npm install <paquet>@<version>`.
+## Pour les développeurs
+
+L'application est construite avec React Native et Expo, et ses données sont hébergées sur Supabase.
+
+- Installation, commandes, compilation Android, architecture et sauvegardes : [docs/developpement.md](docs/developpement.md)
+- Spécification fonctionnelle complète : [spec-app-budget.md](spec-app-budget.md)
+- Règles de code et pièges déjà rencontrés : [CLAUDE.md](CLAUDE.md)
 
 ## Licence
 
-MIT — voir [LICENSE](LICENSE).
+MIT, voir [LICENSE](LICENSE).
