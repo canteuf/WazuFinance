@@ -1,6 +1,15 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  AccessibilityInfo,
+  ActivityIndicator,
+  Keyboard,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import { AmountInput } from '@/components/transaction/amount-input';
 import { CategoryCreator } from '@/components/transaction/category-creator';
@@ -72,6 +81,11 @@ export function TransactionForm({
   const [note, setNote] = useState(initialValues?.note ?? '');
   const [occurredOn, setOccurredOn] = useState(initialValues?.occurredOn ?? todayIso());
   const [touched, setTouched] = useState(false);
+  // Date et note repliées par défaut : la saisie courante se fait du jour, sans note, et les montrer d'office repoussait « Enregistrer » sous le clavier. Dépliées d'emblée quand elles portent déjà autre chose que ces valeurs, pour qu'une modification ne cache pas ce qui a été saisi.
+  const [detailsOpen, setDetailsOpen] = useState(
+    Boolean(initialValues?.note) ||
+      (initialValues !== undefined && initialValues.occurredOn !== todayIso())
+  );
   // Deuxième étape de confirmation avant suppression, voir le bloc de rendu plus bas pour la justification de ce choix.
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
@@ -108,6 +122,15 @@ export function TransactionForm({
   function handleSubmit() {
     setTouched(true);
     if (amount === null || categoryId === null) {
+      // Les messages s'affichent loin du bouton touché : un lecteur d'écran ne les trouverait pas seul.
+      AccessibilityInfo.announceForAccessibility(
+        [
+          amount === null ? 'Montant invalide.' : null,
+          categoryId === null ? 'Choisissez une catégorie.' : null,
+        ]
+          .filter(Boolean)
+          .join(' ')
+      );
       return;
     }
     onSubmit({
@@ -142,7 +165,12 @@ export function TransactionForm({
         </Text>
         <AmountInput value={amountText} onChangeText={setAmountText} autoFocus={!initialValues} />
         {amountError ? (
-          <Text style={[styles.error, styles.centered, { color: colors.danger }]}>{amountError}</Text>
+          <Text
+            accessibilityLiveRegion="assertive"
+            style={[styles.error, styles.centered, { color: colors.danger }]}
+          >
+            {amountError}
+          </Text>
         ) : null}
 
         {/* Absents tant que l'utilisateur n'a rien répété : des montants inventés ne correspondraient aux habitudes de personne. En création seulement — en modification, le montant existe déjà. */}
@@ -181,42 +209,30 @@ export function TransactionForm({
         <CategoryPicker
           categories={categories}
           selectedId={categoryId}
-          onSelect={setCategorySelection}
+          onSelect={(selected) => {
+            setCategorySelection(selected);
+            // Le montant tapé, la catégorie choisie : il ne reste qu'à enregistrer. Le clavier resté ouvert cachait le bouton juste en dessous.
+            Keyboard.dismiss();
+          }}
         />
         {categoryError ? (
-          <Text style={[styles.error, { color: colors.danger }]}>{categoryError}</Text>
+          <Text accessibilityLiveRegion="assertive" style={[styles.error, { color: colors.danger }]}>
+            {categoryError}
+          </Text>
         ) : null}
         <CategoryCreator type={type} onCreated={(category) => setCategorySelection(category.id)} />
       </View>
 
-      <View style={styles.field}>
-        <Text style={[styles.eyebrow, { color: colors.textMuted }]}>Date</Text>
-        <DateField
-          value={occurredOn}
-          label={formatOccurredOn(occurredOn)}
-          onChange={setOccurredOn}
-          maximumDate={new Date()}
-        />
-      </View>
+      {errorText ? (
+        <Text accessibilityLiveRegion="assertive" style={[styles.error, { color: colors.danger }]}>
+          {errorText}
+        </Text>
+      ) : null}
 
-      <View style={styles.field}>
-        <Text style={[styles.eyebrow, { color: colors.textMuted }]}>Commerçant ou note (facultatif)</Text>
-        <View style={[styles.note, { backgroundColor: colors.surfaceMuted, borderColor: colors.border }]}>
-          <MaterialCommunityIcons name="storefront-outline" size={20} color={colors.textMuted} />
-          <TextInput
-            accessibilityLabel="Commerçant ou note"
-            placeholder="Ex : Boulangerie, Monoprix, SNCF…"
-            placeholderTextColor={colors.textMuted}
-            value={note}
-            onChangeText={setNote}
-            style={[styles.noteInput, { color: colors.text }]}
-          />
-        </View>
-        {/* Dit dans quel groupe l'opération atterrit : dans un budget partagé, elle sera visible de tous ses membres. */}
-        <Text style={[styles.hint, { color: colors.textMuted }]}>Enregistrée dans « {groupName} »</Text>
-      </View>
-
-      {errorText ? <Text style={[styles.error, { color: colors.danger }]}>{errorText}</Text> : null}
+      {/* Dit dans quel groupe l'opération atterrit, juste avant de valider : dans un budget partagé, elle sera visible de tous ses membres. */}
+      <Text style={[styles.hint, styles.centered, { color: colors.textMuted }]}>
+        Enregistrée dans « {groupName} »
+      </Text>
 
       <Pressable
         accessibilityRole="button"
@@ -238,6 +254,53 @@ export function TransactionForm({
           </>
         )}
       </Pressable>
+
+      {detailsOpen ? (
+        <>
+          <View style={styles.field}>
+            <Text style={[styles.eyebrow, { color: colors.textMuted }]}>Date</Text>
+            <DateField
+              value={occurredOn}
+              label={formatOccurredOn(occurredOn)}
+              onChange={setOccurredOn}
+              maximumDate={new Date()}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={[styles.eyebrow, { color: colors.textMuted }]}>
+              Commerçant ou note (facultatif)
+            </Text>
+            <View
+              style={[styles.note, { backgroundColor: colors.surfaceMuted, borderColor: colors.border }]}
+            >
+              <MaterialCommunityIcons name="storefront-outline" size={20} color={colors.textMuted} />
+              <TextInput
+                accessibilityLabel="Commerçant ou note"
+                placeholder="Ex : marché, taxi, boutique…"
+                placeholderTextColor={colors.textMuted}
+                value={note}
+                onChangeText={setNote}
+                style={[styles.noteInput, { color: colors.text }]}
+              />
+            </View>
+          </View>
+        </>
+      ) : (
+        // Résumé de ce qui s'enregistrera si l'on ne touche à rien : la date du jour, sans note. Le toucher déplie les deux champs.
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Date : ${formatOccurredOn(occurredOn)}. Ajouter une note ou changer la date`}
+          onPress={() => setDetailsOpen(true)}
+          style={[styles.detailsToggle, { borderColor: colors.border }]}
+        >
+          <MaterialCommunityIcons name="calendar-edit" size={20} color={colors.primary} />
+          <Text style={[styles.detailsLabel, { color: colors.text }]}>
+            {formatOccurredOn(occurredOn)} ·{' '}
+            <Text style={{ color: colors.primary }}>Ajouter une note ou changer la date</Text>
+          </Text>
+        </Pressable>
+      )}
 
       {onDelete ? (
         confirmingDelete ? (
@@ -267,7 +330,7 @@ export function TransactionForm({
           >
             <MaterialCommunityIcons name="trash-can-outline" size={18} color={colors.danger} />
             <Text style={[styles.deleteLabel, { color: colors.danger }]}>
-              Supprimer cette écriture
+              Supprimer cette opération
             </Text>
           </Pressable>
         )
@@ -353,6 +416,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md - 2,
     paddingVertical: spacing.sm,
     borderRadius: radius.sm,
+    // Cible tactile d'au moins 44 points, même pour un montant court.
+    minHeight: 44,
+    justifyContent: 'center',
   },
   quickLabel: {
     fontFamily: font.semibold,
@@ -417,12 +483,30 @@ const styles = StyleSheet.create({
     fontFamily: font.bold,
     fontSize: 20,
   },
+  detailsToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderStyle: 'dashed',
+  },
+  detailsLabel: {
+    flex: 1,
+    fontFamily: font.medium,
+    fontSize: 16,
+    lineHeight: 21,
+  },
   deleteLink: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
     alignSelf: 'center',
+    minHeight: 44,
     paddingVertical: spacing.xs,
   },
   deleteLabel: {

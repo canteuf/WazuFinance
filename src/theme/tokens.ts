@@ -63,9 +63,11 @@ const palette: Record<'light' | 'dark', Colors> = {
     border: '#DDE5E2',
     text: '#12201C',
     textMuted: '#5E6E69',
-    primary: '#0EA47A',
+    // #0EA47A d'origine ne tenait que 3,2:1 sous un texte blanc. Celui-ci tient 5,5:1 sous le blanc et 4,9:1 posé comme texte sur `background` (liens, « Réinitialiser ») : AA dans les deux emplois.
+    primary: '#08775A',
     primaryText: '#FFFFFF',
-    positive: '#0B8F6A',
+    // Même valeur que `primary` en clair : #0B8F6A ne donnait que 4,1:1 sur blanc et 3,6:1 sur le fond pour les montants des revenus. Les deux jetons restent distincts, puisqu'ils ne veulent pas dire la même chose et divergent en sombre.
+    positive: '#08775A',
     warning: '#8C5A00',
     danger: '#C4362B',
   },
@@ -120,7 +122,7 @@ const elevation: Record<'light' | 'dark', Elevation> = {
       borderColor: 'transparent',
     },
     floating: {
-      shadowColor: '#0EA47A',
+      shadowColor: '#08775A',
       shadowOpacity: 0.35,
       shadowRadius: 12,
       shadowOffset: { width: 0, height: 6 },

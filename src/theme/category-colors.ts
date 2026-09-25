@@ -104,6 +104,18 @@ const BY_ICON: Record<string, ToneName> = {
   'cash-refund': 'teal', // Remboursement
   gift: 'violet', // Cadeau
   'plus-circle': 'green', // Autres revenus
+  // Catégories de la zone CFA (20260925000300_regional_categories.sql). Douze teintes pour dix-huit dépenses : certaines se partagent une couleur, en choisissant des catégories qui ne se suivent pas dans la grille, triée par nom.
+  'account-group': 'teal', // Tontine
+  'human-male-female-child': 'amber', // Famille
+  'signal-cellular-3': 'cyan', // Crédit & data
+  'transmission-tower': 'blue', // Eau & électricité
+  'bank-transfer-out': 'slate', // Frais mobile money
+  'party-popper': 'pink', // Cérémonies
+  church: 'indigo', // Dons & église
+  'handshake-outline': 'red', // Dettes
+  'storefront-outline': 'green', // Commerce
+  'bank-transfer-in': 'teal', // Transfert reçu
+  'account-cash': 'green', // Tontine reçue
 };
 
 /** djb2, tronqué. Sert seulement à répartir des teintes, jamais à sécuriser. */

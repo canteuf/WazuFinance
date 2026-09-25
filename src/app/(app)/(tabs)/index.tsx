@@ -96,7 +96,7 @@ export default function DashboardScreen() {
             ])}
           >
             <MaterialCommunityIcons name="plus" size={22} color={colors.primaryText} />
-            <Text style={[styles.fabLabel, { color: colors.primaryText }]}>Saisie</Text>
+            <Text style={[styles.fabLabel, { color: colors.primaryText }]}>Ajouter</Text>
           </Pressable>
         </Link>
       }

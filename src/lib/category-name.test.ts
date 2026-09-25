@@ -1,5 +1,6 @@
 import {
   CATEGORY_NAME_MAX_LENGTH,
+  hideShadowedDefaults,
   normalizeCategoryName,
   validateCategoryName,
 } from '@/lib/category-name';
@@ -46,5 +47,30 @@ describe('validateCategoryName', () => {
   it('refuse un homonyme, casse comprise', () => {
     expect(validateCategoryName('ALIMENTATION', existing)).toBe('Une catégorie porte déjà ce nom.');
     expect(validateCategoryName('animaux', existing)).toBe('Une catégorie porte déjà ce nom.');
+  });
+});
+
+describe('hideShadowedDefaults', () => {
+  const tontineDefault = { id: 'd1', group_id: null, name: 'Tontine', type: 'expense' };
+  const tontineIncome = { id: 'd2', group_id: null, name: 'Tontine', type: 'income' };
+  const alimentation = { id: 'd3', group_id: null, name: 'Alimentation', type: 'expense' };
+  const ownTontine = { id: 'g1', group_id: 'g', name: 'tontine', type: 'expense' };
+
+  it('masque la catégorie par défaut quand le groupe a la sienne, casse ignorée', () => {
+    expect(hideShadowedDefaults([alimentation, tontineDefault, ownTontine])).toEqual([
+      alimentation,
+      ownTontine,
+    ]);
+  });
+
+  it('ne masque pas une catégorie par défaut de l’autre type', () => {
+    expect(hideShadowedDefaults([tontineIncome, ownTontine])).toEqual([tontineIncome, ownTontine]);
+  });
+
+  it('laisse la liste intacte sans catégorie du groupe', () => {
+    expect(hideShadowedDefaults([alimentation, tontineDefault])).toEqual([
+      alimentation,
+      tontineDefault,
+    ]);
   });
 });

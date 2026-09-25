@@ -87,7 +87,7 @@ export default function GroupsScreen() {
         <MaterialCommunityIcons name="eye-off-outline" size={22} color={colors.primary} />
         <Text style={[styles.noteText, { color: colors.text }]}>
           Votre compte personnel et vos objectifs d’épargne restent invisibles des autres membres.
-          Seules les opérations et les enveloppes d’un groupe partagé sont vues de tout le groupe.
+          Seuls les opérations et les budgets d’un groupe partagé sont vues de tout le groupe.
         </Text>
       </View>
     </Screen>

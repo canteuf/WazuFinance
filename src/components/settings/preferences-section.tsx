@@ -164,7 +164,7 @@ function CycleBlock() {
       </View>
 
       <Text style={[styles.hint, { color: colors.textMuted }]}>
-        Définit le jour de remise à zéro de vos enveloppes et jauges de dépenses
+        Définit le jour de remise à zéro de vos budgets et jauges de dépenses
         {activeGroup.isPersonal ? '' : ` pour « ${activeGroup.name} »`}.
         {isOwner ? '' : ' Réglé par le propriétaire du groupe.'}
       </Text>
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    minHeight: 42,
+    minHeight: 44,
     borderRadius: radius.sm + 2,
   },
   segmentLabel: {
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: spacing.md - 2,
-    minHeight: 40,
+    minHeight: 44,
     borderRadius: radius.sm + 2,
   },
   pillLabel: {

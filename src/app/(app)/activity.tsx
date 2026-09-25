@@ -182,7 +182,7 @@ export default function ActivityScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <ScreenHeader
-        title="Journal"
+        title="Activité"
         subtitle="Modifications et suppressions"
         onBack={() => goBackOr(router, '/history')}
       />

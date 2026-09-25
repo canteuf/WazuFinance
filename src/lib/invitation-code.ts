@@ -45,3 +45,22 @@ export function daysUntilExpiry(expiresAt: string, now: Date = new Date()): numb
   const remaining = new Date(expiresAt).getTime() - now.getTime();
   return Math.max(Math.ceil(remaining / msPerDay), 0);
 }
+
+/**
+ * Message d'invitation, prêt à envoyer par WhatsApp, SMS ou e-mail depuis la feuille de partage du téléphone.
+ *
+ * Il dit tout ce que l'invité doit faire sans connaître l'app : où aller, quoi taper, et jusqu'à quand. Pas de lien : l'app n'ouvre pas encore de lien direct vers l'écran « Rejoindre ».
+ */
+export function invitationMessage(groupName: string, code: string, daysLeft: number): string {
+  const validity =
+    daysLeft <= 0
+      ? 'aujourd’hui seulement'
+      : daysLeft === 1
+        ? 'jusqu’à demain'
+        : `encore ${daysLeft} jours`;
+  return [
+    `Rejoins le budget « ${groupName} » sur Wazu Finance.`,
+    `Code d’invitation : ${formatInvitationCode(code)} (valable ${validity}, une seule fois).`,
+    'Dans l’app : touche le nom du budget en haut de la Synthèse, puis « Rejoindre ».',
+  ].join('\n');
+}

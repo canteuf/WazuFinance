@@ -63,7 +63,7 @@ function row(item: ExportRow): string {
 
 export function buildTransactionsReportHtml(input: ReportInput): string {
   const { totals } = input;
-  const countLabel = totals.txCount === 1 ? '1 écriture' : `${totals.txCount} écritures`;
+  const countLabel = totals.txCount === 1 ? '1 opération' : `${totals.txCount} opérations`;
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -77,8 +77,8 @@ export function buildTransactionsReportHtml(input: ReportInput): string {
   /* La page fait au moins la hauteur du papier, moins ses marges : c'est ce qui permet à la mention d'édition de descendre en pied de page quand le relevé tient sur une page, au lieu de flotter juste sous la dernière écriture. */
   html, body { min-height: calc(297mm - 32mm); }
   body { margin: 0; display: flex; flex-direction: column; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #12201C; font-size: 11pt; }
-  header { border-bottom: 2px solid #0EA47A; padding-bottom: 10px; margin-bottom: 16px; }
-  .brand { color: #0EA47A; font-weight: 800; letter-spacing: 1.5px; font-size: 9pt; text-transform: uppercase; }
+  header { border-bottom: 2px solid #08775A; padding-bottom: 10px; margin-bottom: 16px; }
+  .brand { color: #08775A; font-weight: 800; letter-spacing: 1.5px; font-size: 9pt; text-transform: uppercase; }
   h1 { font-size: 20pt; margin: 4px 0 2px; }
   .meta { color: #5E6E69; font-size: 10pt; }
   .totals { display: flex; gap: 10px; margin-bottom: 18px; }

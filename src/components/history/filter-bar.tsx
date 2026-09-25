@@ -105,7 +105,8 @@ export function FilterBar({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Effacer la recherche"
-            hitSlop={spacing.sm}
+            // 18 points d'icône et 13 de marge de chaque côté : 44 points de zone tactile.
+            hitSlop={13}
             onPress={() => onChange({ ...state, search: '' })}
           >
             <MaterialCommunityIcons name="close-circle" size={18} color={colors.textMuted} />

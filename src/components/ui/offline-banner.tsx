@@ -6,7 +6,7 @@ import { useIsOnline, usePendingWrites } from '@/hooks/use-offline-status';
 import { font, spacing, useColors } from '@/theme/tokens';
 
 function writes(count: number): string {
-  return count === 1 ? '1 écriture' : `${count} écritures`;
+  return count === 1 ? '1 opération' : `${count} opérations`;
 }
 
 /**

@@ -332,8 +332,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   nav: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
   },
   chip: {
     paddingHorizontal: spacing.md,
-    minHeight: 40,
+    minHeight: 44,
     borderRadius: radius.pill,
     justifyContent: 'center',
   },

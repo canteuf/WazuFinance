@@ -31,9 +31,9 @@ describe('escapeHtml', () => {
 describe('buildTransactionsReportHtml', () => {
   const html = buildTransactionsReportHtml(input);
 
-  it('nomme le groupe, la période et le nombre d’écritures', () => {
+  it('nomme le groupe, la période et le nombre d’opérations', () => {
     expect(html).toContain('<h1>Coloc Gambetta</h1>');
-    expect(html).toContain('Septembre 2026 · 2 écritures');
+    expect(html).toContain('Septembre 2026 · 2 opérations');
   });
 
   it('reprend les totaux tels que fournis, sans les recalculer', () => {
@@ -58,7 +58,7 @@ describe('buildTransactionsReportHtml', () => {
 
   it('ajoute les filtres actifs à la ligne de période', () => {
     const filtered = buildTransactionsReportHtml({ ...input, filtersLabel: 'Dépenses · Alimentation' });
-    expect(filtered).toContain('Septembre 2026 · Dépenses · Alimentation · 2 écritures');
+    expect(filtered).toContain('Septembre 2026 · Dépenses · Alimentation · 2 opérations');
   });
 
   it('n’affiche la case Épargne que s’il y a eu un mouvement', () => {

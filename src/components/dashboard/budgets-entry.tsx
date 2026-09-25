@@ -60,7 +60,7 @@ export function BudgetsEntry() {
       <View style={styles.cardHead}>
         <View style={styles.cardTitle}>
           <MaterialCommunityIcons name="wallet-outline" size={18} color={colors.primary} />
-          <Text style={[styles.heading, { color: colors.text }]}>Enveloppes</Text>
+          <Text style={[styles.heading, { color: colors.text }]}>Budgets</Text>
         </View>
         <Link href="/budgets" asChild>
           <Pressable accessibilityRole="button" accessibilityLabel={`Budgets. ${detail}`}>
@@ -103,7 +103,24 @@ export function BudgetsEntry() {
                   ratio={item.spent === 0 ? 0 : item.ratio}
                   tone={item.status}
                 />
-                <Text style={[styles.percent, { color: colors.textMuted }]}>{percent} %</Text>
+                {/* Le mot et l'icône doublent la couleur de l'ocre et du rouge : un utilisateur daltonien ne distinguait pas un budget à 85 % d'un budget tranquille. */}
+                <View style={styles.percentRow}>
+                  {item.status !== 'ok' ? (
+                    <MaterialCommunityIcons
+                      name={item.status === 'over' ? 'alert-circle' : 'alert'}
+                      size={14}
+                      color={item.status === 'over' ? colors.danger : colors.warning}
+                    />
+                  ) : null}
+                  <Text style={[styles.percent, { color: colors.textMuted }]}>
+                    {percent} %
+                    {item.status === 'over'
+                      ? ' · Dépassé'
+                      : item.status === 'warning'
+                        ? ' · Proche du plafond'
+                        : ''}
+                  </Text>
+                </View>
               </View>
             );
           })}
@@ -165,6 +182,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontVariant: ['tabular-nums'],
     flexShrink: 0,
+  },
+  percentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   percent: {
     fontFamily: font.medium,

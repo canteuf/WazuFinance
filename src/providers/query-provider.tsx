@@ -46,7 +46,7 @@ function createMutationCache(): MutationCache {
   const cache = new MutationCache({
     onError: (error, _variables, _context, mutation) => {
       if (queued.has(mutation)) {
-        Alert.alert('Une écriture n’a pas pu être envoyée', dataErrorMessage(error));
+        Alert.alert('Une opération n’a pas pu être envoyée', dataErrorMessage(error));
       }
     },
   });

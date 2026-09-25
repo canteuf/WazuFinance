@@ -2,7 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Fragment, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -16,7 +16,7 @@ import { useGroupInvitation } from '@/hooks/use-group-invitation';
 import { useGroupMembers } from '@/hooks/use-group-members';
 import { useGroupMutations } from '@/hooks/use-group-mutations';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { daysUntilExpiry, formatInvitationCode } from '@/lib/invitation-code';
+import { daysUntilExpiry, formatInvitationCode, invitationMessage } from '@/lib/invitation-code';
 import { goBackOr } from '@/lib/navigation';
 import { font, radius, spacing, useColors, useIsDark } from '@/theme/tokens';
 
@@ -86,6 +86,26 @@ export default function GroupScreen() {
         onError: (error) => setActionError(dataErrorMessage(error)),
       }
     );
+  }
+
+  /**
+   * Ouvre la feuille de partage du téléphone (WhatsApp, SMS, e-mail…) avec un message complet : l'invité reçoit le code et la marche à suivre, là où il lit déjà ses messages. Copier puis coller dans une conversation demandait trois gestes de plus.
+   */
+  async function handleShare() {
+    if (!invitation) {
+      return;
+    }
+    try {
+      await Share.share({
+        message: invitationMessage(
+          group?.name ?? 'notre budget',
+          invitation.code,
+          daysUntilExpiry(invitation.expiresAt)
+        ),
+      });
+    } catch {
+      // Feuille de partage indisponible (certains navigateurs) : la copie du code reste juste en dessous.
+    }
   }
 
   async function handleCopy() {
@@ -241,19 +261,33 @@ export default function GroupScreen() {
                   </View>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Copier le code d’invitation"
-                    onPress={() => void handleCopy()}
+                    accessibilityLabel="Partager l’invitation par WhatsApp, SMS ou e-mail"
+                    onPress={() => void handleShare()}
                     style={({ pressed }) => [
                       styles.copyButton,
                       { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
                     ]}
                   >
+                    <MaterialCommunityIcons name="share-variant" size={18} color={colors.primaryText} />
+                    <Text style={[styles.copyLabel, { color: colors.primaryText }]}>
+                      Partager l’invitation
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={copied ? 'Code copié' : 'Copier le code d’invitation'}
+                    onPress={() => void handleCopy()}
+                    style={({ pressed }) => [
+                      styles.copyButton,
+                      { borderWidth: 1.5, borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+                    ]}
+                  >
                     <MaterialCommunityIcons
                       name={copied ? 'check' : 'content-copy'}
                       size={18}
-                      color={colors.primaryText}
+                      color={colors.text}
                     />
-                    <Text style={[styles.copyLabel, { color: colors.primaryText }]}>
+                    <Text style={[styles.copyLabel, { color: colors.text }]}>
                       {copied ? 'Code copié' : 'Copier le code'}
                     </Text>
                   </Pressable>
@@ -483,6 +517,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.xs + 2,
     alignSelf: 'center',
+    minHeight: 44,
     paddingVertical: spacing.xs,
   },
   regenerateLabel: {

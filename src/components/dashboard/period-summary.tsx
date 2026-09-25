@@ -64,6 +64,9 @@ export function PeriodSummary() {
           {/* Un solde négatif en cours de période est ordinaire, pas une alerte : il reste en couleur de texte. Seul son signe l'annonce. */}
           <Text
             maxFontSizeMultiplier={MAX_FONT_SCALE}
+            // Un solde à dix chiffres ne tenait pas sur un téléphone de 320 points : il rétrécit plutôt que de déborder ou de passer à la ligne au milieu d'un nombre.
+            numberOfLines={1}
+            adjustsFontSizeToFit
             style={[styles.balance, { color: colors.text }]}
           >
             {formatBalance(summary.balance)}
@@ -211,6 +214,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs + 2,
   },
   balance: {
+    flexShrink: 1,
     fontFamily: font.black,
     fontSize: 40,
     letterSpacing: -1.6,

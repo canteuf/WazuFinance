@@ -42,8 +42,15 @@ export function ProgressBar({
   const width: DimensionValue =
     ratio <= 0 ? 0 : `${Math.min(Math.max(ratio * 100, 2), 100)}%`;
 
+  // Lue par TalkBack et VoiceOver comme une vraie jauge. Le mot du statut double la couleur, qu'un lecteur d'écran ne voit pas.
+  const percent = Math.round(Math.max(ratio, 0) * 100);
+  const statusWord =
+    tone === 'over' ? ', dépassé' : tone === 'warning' ? ', proche du plafond' : '';
+
   return (
     <View
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 0, max: 100, now: Math.min(percent, 100), text: `${percent} %${statusWord}` }}
       style={[
         styles.track,
         size === 'lg' ? styles.trackLg : null,

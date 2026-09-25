@@ -1,4 +1,4 @@
-import { formatInvitationCode, sanitizeInvitationCodeInput } from './invitation-code';
+import { formatInvitationCode, invitationMessage, sanitizeInvitationCodeInput } from './invitation-code';
 
 describe('sanitizeInvitationCodeInput', () => {
   it('garde un code déjà à la forme stockée', () => {
@@ -26,3 +26,17 @@ describe('sanitizeInvitationCodeInput', () => {
   });
 });
 
+
+describe('invitationMessage', () => {
+  it('nomme le groupe, donne le code affiché et dit où le saisir', () => {
+    const message = invitationMessage('Famille Nguema', '7KQ2M9XA', 7);
+    expect(message).toContain('« Famille Nguema »');
+    expect(message).toContain('7KQ2-M9XA');
+    expect(message).toContain('encore 7 jours');
+    expect(message).toContain('« Rejoindre »');
+  });
+
+  it('dit « jusqu’à demain » la veille de l’expiration', () => {
+    expect(invitationMessage('Coloc', '7KQ2M9XA', 1)).toContain('jusqu’à demain');
+  });
+});

@@ -145,7 +145,7 @@ export default function HistoryScreen() {
       format,
       filters: queryFilters,
       // Les libellés viennent d'ici : c'est l'écran qui possède les filtres affichés, et le relevé doit porter les mêmes mots que la barre de filtres.
-      periodLabel: ledgerTitle.replace(/^Livre de comptes,? /, ''),
+      periodLabel: preset.from && preset.to ? formatPeriodLabel(preset.from, preset.to) : 'depuis le début',
       filtersLabel: exportFiltersLabel(filters, categories),
     });
   }
@@ -161,8 +161,8 @@ export default function HistoryScreen() {
   const touchedCount = activeFilterCount(filters);
   const ledgerTitle =
     preset.from && preset.to
-      ? `Livre de comptes ${formatPeriodLabel(preset.from, preset.to)}`
-      : 'Livre de comptes, depuis le début';
+      ? `Opérations ${formatPeriodLabel(preset.from, preset.to)}`
+      : 'Toutes les opérations';
 
   function renderEmpty() {
     // Tant que le groupe actif n'est pas résolu, la requête d'historique est désactivée : `isLoading` reste à `false` et affichait un instant « Aucune opération » avant le premier vrai chargement.
@@ -214,7 +214,7 @@ export default function HistoryScreen() {
         <View style={[styles.footer, styles.endRow]}>
           <MaterialCommunityIcons name="check-circle-outline" size={16} color={colors.textMuted} />
           <Text style={[styles.endLabel, { color: colors.textMuted }]}>
-            Fin des écritures pour cette sélection
+            Fin des opérations pour cette sélection
           </Text>
         </View>
       );
@@ -248,12 +248,12 @@ export default function HistoryScreen() {
         <Link href="/activity" asChild>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Journal du groupe"
+            accessibilityLabel="Activité du groupe"
             hitSlop={spacing.sm}
             // Aplati : <Link asChild> transmet le style par un Slot, qui lève une erreur de rendu en développement s'il reçoit un tableau.
             style={StyleSheet.flatten(styles.journalLink)}
           >
-            <Text style={[styles.headerLinkLabel, { color: colors.primary }]}>Journal</Text>
+            <Text style={[styles.headerLinkLabel, { color: colors.primary }]}>Activité</Text>
           </Pressable>
         </Link>
         <AccountButton />
@@ -369,7 +369,7 @@ export default function HistoryScreen() {
                 {entryCount !== undefined ? (
                   <View style={[styles.countPill, { backgroundColor: colors.surfaceMuted }]}>
                     <Text style={[styles.countLabel, { color: colors.text }]}>
-                      {entryCount === 1 ? '1 écriture' : `${entryCount} écritures`}
+                      {entryCount === 1 ? '1 opération' : `${entryCount} opérations`}
                     </Text>
                   </View>
                 ) : null}
@@ -396,7 +396,7 @@ export default function HistoryScreen() {
           ])}
         >
           <MaterialCommunityIcons name="plus" size={22} color={colors.primaryText} />
-          <Text style={[styles.fabLabel, { color: colors.primaryText }]}>Saisie</Text>
+          <Text style={[styles.fabLabel, { color: colors.primaryText }]}>Ajouter</Text>
         </Pressable>
       </Link>
     </View>
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs + 2,
     paddingHorizontal: spacing.md,
-    minHeight: 40,
+    minHeight: 44,
     borderRadius: radius.pill,
   },
   formatLabel: {

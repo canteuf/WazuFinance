@@ -35,3 +35,22 @@ export function validateCategoryName(
   }
   return undefined;
 }
+
+/**
+ * Retire les catégories par défaut qu'une catégorie du groupe « recouvre » : même nom, casse ignorée, et même type.
+ *
+ * Ce cas ne se produit que pour une catégorie par défaut ajoutée après coup (20260925000300_regional_categories.sql) : un groupe qui avait déjà créé « Tontine » verrait sinon deux tuiles « Tontine ». Celle du groupe l'emporte, puisque c'est elle qui porte ses opérations et ses budgets. La garde en base empêche que le cas se crée dans l'autre sens.
+ */
+export function hideShadowedDefaults<T extends { group_id: string | null; name: string; type: string }>(
+  categories: readonly T[]
+): T[] {
+  const own = new Set(
+    categories
+      .filter((category) => category.group_id !== null)
+      .map((category) => `${category.type}:${category.name.toLowerCase()}`)
+  );
+  return categories.filter(
+    (category) =>
+      category.group_id !== null || !own.has(`${category.type}:${category.name.toLowerCase()}`)
+  );
+}

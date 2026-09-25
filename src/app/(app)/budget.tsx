@@ -112,7 +112,7 @@ export default function BudgetScreen() {
     return (
       <View style={styles.centered}>
         <Text style={[styles.errorTitle, { color: colors.danger }]}>
-          Cette enveloppe n’existe plus.
+          Ce budget n’existe plus.
         </Text>
         <Button title="Retour" variant="ghost" onPress={() => goBackOr(router, '/budgets')} />
       </View>
@@ -157,7 +157,7 @@ export default function BudgetScreen() {
   const title = existing
     ? // `existing.category` peut être `null` : RLS masque la ligne jointe quand le budget pointe une catégorie hors de portée du groupe.
       (existing.category?.name ?? 'Catégorie inconnue')
-    : 'Nouvelle enveloppe';
+    : 'Nouveau budget';
 
   return (
     <View
@@ -182,7 +182,7 @@ export default function BudgetScreen() {
 
       <View style={styles.titleBlock}>
         <Text style={[styles.eyebrow, { color: colors.textMuted }]}>
-          {existing ? 'Ajuster l’enveloppe' : 'Définir un plafond'}
+          {existing ? 'Ajuster le budget' : 'Définir un plafond'}
         </Text>
         <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
           {title}
@@ -233,7 +233,7 @@ export default function BudgetScreen() {
               submitLabel={(mode) =>
                 mode === 'add' ? 'Augmenter le plafond' : 'Réduire le plafond'
               }
-              tooLowMessage="Le plafond doit rester supérieur à zéro. Pour ne plus suivre cette catégorie, supprimez l’enveloppe."
+              tooLowMessage="Le plafond doit rester supérieur à zéro. Pour ne plus suivre cette catégorie, supprimez le budget."
               submitting={adjustBudget.isPending}
               errorText={errorText}
               onSubmit={handleAdjust}
@@ -241,8 +241,8 @@ export default function BudgetScreen() {
 
             {/* Déplacer une enveloppe d'une catégorie à l'autre reviendrait à en supprimer une et à en créer une autre, et buterait sur l'unicité si la cible en a déjà une. Supprimer puis recréer est explicite. */}
             <DeleteAction
-              label="Supprimer cette enveloppe"
-              confirmAccessibilityLabel="Confirmer la suppression définitive de cette enveloppe"
+              label="Supprimer ce budget"
+              confirmAccessibilityLabel="Confirmer la suppression définitive de ce budget"
               deleting={isDeleting}
               disabled={adjustBudget.isPending}
               onConfirm={handleDelete}

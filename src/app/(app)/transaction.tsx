@@ -22,8 +22,10 @@ import { useAuth } from '@/hooks/use-auth';
 import { useIsOnline } from '@/hooks/use-offline-status';
 import { useSheetMaxHeight } from '@/hooks/use-sheet-max-height';
 import { useTransaction } from '@/hooks/use-transaction';
+import { useToast } from '@/hooks/use-toast';
 import { useTransactionMutations } from '@/hooks/use-transaction-mutations';
 import { dataErrorMessage } from '@/lib/data-errors';
+import { formatMoney } from '@/lib/money';
 import { font, spacing, useColors } from '@/theme/tokens';
 import { goBackOr } from '@/lib/navigation';
 
@@ -45,6 +47,7 @@ export default function TransactionScreen() {
   const { createTransaction, updateTransaction, deleteTransaction, isSaving, isDeleting } =
     useTransactionMutations();
   const online = useIsOnline();
+  const toast = useToast();
   const [errorText, setErrorText] = useState<string>();
   // Tiré une fois pour toute la vie de la feuille : un second « Enregistrer » après un échec réseau renvoie la même saisie, que la base reconnaît au lieu de la créer deux fois (voir `create` dans src/data/transactions.ts).
   const [newId] = useState(randomUUID);
@@ -94,27 +97,35 @@ export default function TransactionScreen() {
     );
   }
 
-  const callbacks = {
-    onSuccess: () => goBackOr(router, '/'),
-    onError: (error: Error) => setErrorText(dataErrorMessage(error)),
-  };
+  /** Ferme la feuille sur un message qui dit ce qui vient d'être enregistré : la feuille disparue, rien d'autre ne le confirmerait. */
+  function succeed(message: string) {
+    toast.show(message);
+    goBackOr(router, '/');
+  }
 
-  // Hors ligne, l'écriture se met en file et ne réussira qu'au retour du réseau : attendre ce succès laisserait la feuille ouverte sur un bouton qui tourne. Elle se ferme donc aussitôt, et le bandeau d'état compte l'écriture en attente ; un refus ultérieur de la base s'affiche en alerte (query-provider), puisque la feuille ne sera plus là pour le montrer.
+  const onError = (error: Error) => setErrorText(dataErrorMessage(error));
+
+  // Hors ligne, l'opération se met en file et ne réussira qu'au retour du réseau : attendre ce succès laisserait la feuille ouverte sur un bouton qui tourne. Elle se ferme donc aussitôt, sur un message qui le dit, et le bandeau d'état compte l'opération en attente ; un refus ultérieur de la base s'affiche en alerte (query-provider), puisque la feuille ne sera plus là pour le montrer.
   function closeIfQueued() {
     if (!online) {
+      toast.show('Enregistrée sur le téléphone. Envoi au retour du réseau.', 'info');
       goBackOr(router, '/');
     }
   }
 
   function handleSubmit(values: TransactionFormValues) {
     setErrorText(undefined);
+    const what = `${values.type === 'expense' ? 'Dépense' : 'Revenu'} de ${formatMoney(values.amount)}`;
 
     if (typeof id === 'string') {
-      updateTransaction.mutate({ id, patch: values }, callbacks);
+      updateTransaction.mutate(
+        { id, patch: values },
+        { onSuccess: () => succeed(`${what} modifié${values.type === 'expense' ? 'e' : ''}`), onError }
+      );
     } else {
       createTransaction.mutate(
         { ...values, id: newId, groupId: activeGroupId as string, userId: userId as string },
-        callbacks
+        { onSuccess: () => succeed(`${what} enregistré${values.type === 'expense' ? 'e' : ''}`), onError }
       );
     }
     closeIfQueued();
@@ -124,7 +135,7 @@ export default function TransactionScreen() {
     if (typeof id !== 'string') {
       return;
     }
-    deleteTransaction.mutate(id, callbacks);
+    deleteTransaction.mutate(id, { onSuccess: () => succeed('Opération supprimée'), onError });
     closeIfQueued();
   }
 
@@ -142,24 +153,20 @@ export default function TransactionScreen() {
     // sheetAllowedDetents: 'fitToContents' calcule la hauteur de la feuille à partir de celle du contenu ; flex: 1 empêcherait cette mesure (la vue s'étirerait pour remplir un espace disponible qui n'existe pas encore). maxHeight borne la feuille à une fraction de l'écran : le ScrollView ci-dessous devient alors le seul à défiler, clavier ouvert compris, au lieu que fitToContents mesure un contenu plus haut que l'écran.
     <View style={[styles.sheet, { backgroundColor: colors.background, maxHeight: sheetMaxHeight }]}>
       {/* Une formSheet n'accepte pas de header natif : le titre et la fermeture sont du contenu ordinaire (spec, contrainte Android). Sur le web, la présentation retombe sur un écran plein sans navigation native : ce bouton est la seule sortie hors du retour navigateur. */}
+      {/* Une seule ligne, titre et fermeture : l'en-tête sur trois lignes prenait un quart de la feuille, que le clavier réduit déjà de moitié. */}
       <View style={styles.header}>
+        <Text style={[styles.title, { color: colors.text }]} accessibilityRole="header">
+          {typeof id === 'string' ? 'Modifier l’opération' : 'Nouvelle opération'}
+        </Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Annuler"
+          accessibilityLabel="Fermer sans enregistrer"
           hitSlop={spacing.sm}
           onPress={() => goBackOr(router, '/')}
-          style={styles.cancel}
+          style={styles.close}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color={colors.text} />
-          <Text style={[styles.cancelLabel, { color: colors.text }]}>Annuler</Text>
+          <MaterialCommunityIcons name="close" size={24} color={colors.textMuted} />
         </Pressable>
-      </View>
-
-      <View style={styles.titleBlock}>
-        <Text style={[styles.eyebrow, { color: colors.textMuted }]}>Carnet de comptes</Text>
-        <Text style={[styles.title, { color: colors.text }]}>
-          {typeof id === 'string' ? 'Modifier l’écriture' : 'Nouvelle écriture'}
-        </Text>
       </View>
 
       <ScrollView
@@ -175,7 +182,7 @@ export default function TransactionScreen() {
           groupId={activeGroupId}
           groupName={activeGroup?.name ?? ''}
           initialValues={initialValues}
-          submitLabel="Enregistrer l’écriture"
+          submitLabel="Enregistrer"
           submitting={isSaving}
           deleting={isDeleting}
           errorText={errorText}
@@ -196,30 +203,17 @@ const styles = StyleSheet.create({
     ...contentColumn,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: spacing.lg,
-    paddingHorizontal: CONTENT_GUTTER,
-  },
-  cancel: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: spacing.sm,
+    paddingTop: spacing.lg,
+    paddingHorizontal: CONTENT_GUTTER + spacing.xs,
   },
-  cancelLabel: {
-    fontFamily: font.semibold,
-    fontSize: 18,
-  },
-  titleBlock: {
-    ...contentColumn,
+  close: {
+    // 44 points de zone tactile sans grossir l'icône.
+    minWidth: 44,
+    minHeight: 44,
     alignItems: 'center',
-    gap: spacing.xs,
-    paddingTop: spacing.md,
-    paddingHorizontal: CONTENT_GUTTER,
-  },
-  eyebrow: {
-    fontFamily: font.semibold,
-    fontSize: 14,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
+    justifyContent: 'center',
   },
   scroll: {
     alignSelf: 'stretch',
@@ -237,9 +231,9 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: font.black,
-    fontSize: 28,
-    letterSpacing: -0.7,
-    textAlign: 'center',
+    fontSize: 24,
+    letterSpacing: -0.6,
+    flexShrink: 1,
   },
   errorTitle: {
     fontFamily: font.medium,

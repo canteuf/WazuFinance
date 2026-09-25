@@ -32,7 +32,7 @@ export default function SettingsScreen() {
       header={
         <ScreenHeader
           title="Paramètres du compte"
-          subtitle={`Profil · Préférences · ${activeGroup?.name ?? 'Carnet personnel'}`}
+          subtitle={`Profil · Préférences · ${activeGroup?.name ?? 'Compte personnel'}`}
           onBack={() => goBackOr(router, '/')}
         />
       }

@@ -54,7 +54,7 @@ export function BudgetForm({ availableCategories, submitting, errorText, onSubmi
         <Text style={[styles.eyebrow, { color: colors.textMuted }]}>1. Choisir la catégorie</Text>
         {availableCategories.length === 0 ? (
           <Text style={[styles.hint, { color: colors.textMuted }]}>
-            Toutes les catégories de dépense ont déjà une enveloppe.
+            Toutes les catégories de dépense ont déjà un budget.
           </Text>
         ) : (
           <CategoryPicker
@@ -88,7 +88,7 @@ export function BudgetForm({ availableCategories, submitting, errorText, onSubmi
 
       {errorText ? <Text style={[styles.error, { color: colors.danger }]}>{errorText}</Text> : null}
 
-      <PrimaryAction label="Enregistrer l’enveloppe" loading={submitting} onPress={handleSubmit} />
+      <PrimaryAction label="Enregistrer le budget" loading={submitting} onPress={handleSubmit} />
     </View>
   );
 }

@@ -56,7 +56,11 @@ export function ScreenHeader({
 
         <View style={styles.titleBlock}>
           {typeof title === 'string' ? (
-            <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
+            <Text
+              accessibilityRole="header"
+              style={[styles.title, { color: colors.text }]}
+              numberOfLines={1}
+            >
               {title}
             </Text>
           ) : (

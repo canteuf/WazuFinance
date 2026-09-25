@@ -72,7 +72,7 @@ export default function BudgetsScreen() {
       inTabs
       floatingAlign="center"
       header={
-        <ScreenHeader title="Enveloppes">
+        <ScreenHeader title="Budgets">
           <AccountButton />
         </ScreenHeader>
       }
@@ -90,14 +90,14 @@ export default function BudgetsScreen() {
             ])}
           >
             <MaterialCommunityIcons name="plus" size={22} color={colors.primaryText} />
-            <Text style={[styles.fabLabel, { color: colors.primaryText }]}>Saisie</Text>
+            <Text style={[styles.fabLabel, { color: colors.primaryText }]}>Ajouter</Text>
           </Pressable>
         </Link>
       }
     >
       {items.length > 0 ? (
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-          Triées par urgence, les enveloppes à risque d’abord
+          Triés par urgence, les budgets à risque d’abord
         </Text>
       ) : null}
 
@@ -112,7 +112,7 @@ export default function BudgetsScreen() {
       ) : items.length === 0 ? (
         <View style={[styles.empty, { backgroundColor: colors.surface }, elevation.card]}>
           <MaterialCommunityIcons name="wallet-outline" size={32} color={colors.primary} />
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>Aucune enveloppe pour l’instant</Text>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>Aucun budget pour l’instant</Text>
           <Text style={[styles.message, { color: colors.textMuted }]}>
             Fixez un plafond sur une catégorie : l’app vous alerte à 80 % et au dépassement.
           </Text>
@@ -166,7 +166,7 @@ export default function BudgetsScreen() {
 
           <View style={styles.sectionHead}>
             <Text style={[styles.section, { color: colors.text }]}>
-              Répartition par enveloppe ({visible.length})
+              Répartition par budget ({visible.length})
             </Text>
           </View>
 
@@ -174,8 +174,8 @@ export default function BudgetsScreen() {
             {visible.length === 0 ? (
               <Text style={[styles.message, { color: colors.textMuted }]}>
                 {filter === 'tense'
-                  ? 'Aucune enveloppe en tension. Tout est sous contrôle.'
-                  : 'Aucune enveloppe sous contrôle pour l’instant.'}
+                  ? 'Aucun budget en tension. Tout est sous contrôle.'
+                  : 'Aucun budget sous contrôle pour l’instant.'}
               </Text>
             ) : (
               visible.map((item, index) => (
@@ -225,7 +225,7 @@ function SummaryCard({
       <View style={styles.summaryHead}>
         <View style={styles.summaryTitleBlock}>
           <Text style={[styles.eyebrow, { color: colors.textMuted }]}>Synthèse de la période</Text>
-          <Text style={[styles.summaryTitle, { color: colors.text }]}>Enveloppes {label}</Text>
+          <Text style={[styles.summaryTitle, { color: colors.text }]}>Budgets {label}</Text>
         </View>
         {remainingDays > 0 ? (
           <View style={[styles.daysPill, { backgroundColor: colors.surfaceMuted }]}>
@@ -291,7 +291,7 @@ function NewEnvelopeButton() {
     <Link href="/budget" asChild>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Nouvelle enveloppe"
+        accessibilityLabel="Nouveau budget"
         // Aplati : voir le bouton flottant plus haut.
         style={StyleSheet.flatten([
           styles.newButton,
@@ -300,7 +300,7 @@ function NewEnvelopeButton() {
         ])}
       >
         <MaterialCommunityIcons name="plus-circle-outline" size={22} color={colors.primary} />
-        <Text style={[styles.newLabel, { color: colors.text }]}>Nouvelle enveloppe</Text>
+        <Text style={[styles.newLabel, { color: colors.text }]}>Nouveau budget</Text>
       </Pressable>
     </Link>
   );
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs + 2,
     paddingHorizontal: spacing.md - 2,
-    minHeight: 38,
+    minHeight: 44,
     borderRadius: radius.pill,
     borderWidth: StyleSheet.hairlineWidth * 2,
   },

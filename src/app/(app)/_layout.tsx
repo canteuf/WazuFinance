@@ -8,11 +8,15 @@ import { useSavingsGoalsRealtime } from '@/hooks/use-savings-goals-realtime';
 import { useTransactionsRealtime } from '@/hooks/use-transactions-realtime';
 import { ActiveGroupProvider } from '@/providers/active-group-provider';
 import { StackFrameProvider } from '@/providers/stack-frame-provider';
+import { ToastProvider } from '@/providers/toast-provider';
 
 export default function AppLayout() {
   return (
     <ActiveGroupProvider>
-      <AppStack />
+      {/* Autour de la pile : un message de confirmation doit survivre à la fermeture de la feuille qui l'a déclenché. */}
+      <ToastProvider>
+        <AppStack />
+      </ToastProvider>
     </ActiveGroupProvider>
   );
 }

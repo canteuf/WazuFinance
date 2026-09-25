@@ -168,7 +168,7 @@ select set_config('request.jwt.claims',
 
 SELECT throws_ok(
   $$select public.adjust_budget_amount('00000000-0000-0000-0000-0000000000b1', 10)$$,
-  'P0001', 'Cette enveloppe n''existe plus.',
+  'P0001', 'Ce budget n''existe plus.',
   'Un non-membre ne peut pas ajuster une enveloppe'
 );
 

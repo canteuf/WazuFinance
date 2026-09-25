@@ -1,10 +1,11 @@
+import { hideShadowedDefaults } from '@/lib/category-name';
 import { supabase } from '@/lib/supabase';
 import type { Tables, TransactionType } from '@/types/database';
 
 export type Category = Tables<'categories'>;
 
 /**
- * Catégories utilisables dans un groupe : les catégories par défaut (group_id IS NULL, communes à tous et en lecture seule) et celles créées dans le groupe.
+ * Catégories utilisables dans un groupe : les catégories par défaut (group_id IS NULL, communes à tous et en lecture seule) et celles créées dans le groupe. Une catégorie par défaut recouverte par une catégorie du groupe du même nom n'est pas renvoyée (voir hideShadowedDefaults).
  */
 export async function listForGroup(groupId: string): Promise<Category[]> {
   const { data, error } = await supabase
@@ -17,7 +18,7 @@ export async function listForGroup(groupId: string): Promise<Category[]> {
     throw error;
   }
 
-  return data;
+  return hideShadowedDefaults(data);
 }
 
 export type CreateCategoryInput = {

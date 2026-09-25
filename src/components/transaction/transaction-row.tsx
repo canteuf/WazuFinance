@@ -2,10 +2,12 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Link } from 'expo-router';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
+import { MemberAvatar } from '@/components/ui/member-avatar';
 import type { TransactionWithCategory } from '@/data/transactions';
+import { useTransactionAuthor } from '@/hooks/use-transaction-author';
 import { wasEdited } from '@/lib/activity-format';
 import { formatOccurredOn } from '@/lib/dates';
-import { formatSigned } from '@/lib/money';
+import { formatSigned, spokenAmount } from '@/lib/money';
 import { categoryTone } from '@/theme/category-colors';
 import {
   font,
@@ -30,7 +32,7 @@ export function TransactionRow({
   /** Vrai quand la ligne vit dans une carte partagée avec ses voisines : elle n'a alors ni fond, ni relief, ni rayon propres, c'est la carte qui les porte. */
   inGroup?: boolean;
   /**
-   * Disposition « livre de comptes » de l'historique : le montant passe sous le titre, avec « Débit » ou « Crédit » en regard, et la date disparaît de la ligne puisque l'en-tête de jour la porte déjà.
+   * Disposition de l'historique : le montant passe sous le titre, avec « Dépense » ou « Revenu » en regard, et la date disparaît de la ligne puisque l'en-tête de jour la porte déjà.
    */
   ledger?: boolean;
   /**
@@ -42,6 +44,8 @@ export function TransactionRow({
   const elevation = useElevation();
   const isDark = useIsDark();
   const { fontScale } = useWindowDimensions();
+  // Dans un budget partagé, la première question devant une dépense est « qui l'a faite ? ». `null` dans le compte personnel.
+  const author = useTransactionAuthor(transaction.user_id);
 
   // Au-delà du seuil, le montant passe sous le nom plutôt que de l'écraser.
   const stacked = fontScale >= stackAtFontScale;
@@ -63,12 +67,26 @@ export function TransactionRow({
 
   // « aujourd'hui · modifié ». « modifié » en toutes lettres, jamais une icône seule. Le détail — qui, quoi, avant, après — est dans l'écran Activité.
   const meta = [
+    author?.name ?? null,
     ledger ? null : formatOccurredOn(transaction.occurred_on),
     pending ? 'en attente d’envoi' : edited ? 'modifié' : null,
   ]
     .filter((part): part is string => Boolean(part))
     .join(' · ');
   const income = transaction.type === 'income';
+
+  // Le lecteur d'écran lit cette étiquette à la place des textes de la ligne : tout ce que la ligne montre doit y être, montant compris, sans quoi l'historique n'est qu'une suite de noms. La catégorie y reste énoncée même quand elle n'est plus que dans un badge, et « modifiée » n'existerait sinon que pour qui voit.
+  const spokenLabel = [
+    title,
+    showCategoryBadge ? categoryName : null,
+    `${income ? 'Revenu' : 'Dépense'} de ${spokenAmount(Number(transaction.amount))}`,
+    formatOccurredOn(transaction.occurred_on),
+    author ? `saisie par ${author.name === 'Vous' ? 'vous' : author.name}` : null,
+    pending ? 'en attente d’envoi' : edited ? 'modifiée' : null,
+    savings ? 'se gère depuis l’écran Épargne' : null,
+  ]
+    .filter((part): part is string => Boolean(part))
+    .join(', ');
 
   // Même nœud dans les deux dispositions : sous le nom quand on empile, en bout de ligne sinon.
   const amount = (
@@ -116,17 +134,20 @@ export function TransactionRow({
             </View>
           ) : null}
           {meta ? (
-            <Text numberOfLines={1} style={[styles.note, { color: colors.textMuted }]}>
-              {meta}
-            </Text>
+            <View style={styles.metaText}>
+              {author ? <MemberAvatar name={author.name} avatar={author.avatar} size={18} /> : null}
+              <Text numberOfLines={1} style={[styles.note, { color: colors.textMuted }]}>
+                {meta}
+              </Text>
+            </View>
           ) : null}
         </View>
         {ledger ? (
           <View style={styles.ledgerAmountRow}>
             {amount}
-            {/* Le mot double la couleur du montant : un lecteur daltonien ou d'écran distingue un crédit d'un débit sans comparer deux verts. */}
+            {/* Le mot double la couleur du montant : un lecteur daltonien distingue un revenu d'une dépense sans comparer deux verts. */}
             <Text style={[styles.direction, { color: income ? colors.positive : colors.textMuted }]}>
-              {income ? 'Crédit' : 'Débit'}
+              {income ? 'Revenu' : 'Dépense'}
             </Text>
           </View>
         ) : stacked ? (
@@ -140,11 +161,7 @@ export function TransactionRow({
 
   if (pending || savings) {
     return (
-      <View
-        accessible
-        accessibilityLabel={`${title}${showCategoryBadge ? `, ${categoryName}` : ''}. ${pending ? 'En attente d’envoi' : 'Se gère depuis l’écran Épargne'}`}
-        style={rowStyle}
-      >
+      <View accessible accessibilityLabel={spokenLabel} style={rowStyle}>
         {content}
       </View>
     );
@@ -154,8 +171,8 @@ export function TransactionRow({
     <Link href={`/transaction?id=${transaction.id}`} asChild>
       <Pressable
         accessibilityRole="button"
-        // Le lecteur d'écran lit cette étiquette à la place des textes de la ligne : la catégorie y reste énoncée même quand elle n'est plus le titre, puisqu'elle n'apparaît alors que dans un badge visuel. Sans le suffixe, « modifié » n'existe que pour qui voit.
-        accessibilityLabel={`Modifier ${title}${showCategoryBadge ? `, ${categoryName}` : ''}${edited ? '. Opération modifiée' : ''}`}
+        accessibilityLabel={spokenLabel}
+        accessibilityHint="Ouvre l’opération pour la modifier"
         style={rowStyle}
       >
         {content}
@@ -216,6 +233,12 @@ const styles = StyleSheet.create({
     fontFamily: font.semibold,
     fontSize: 13,
     lineHeight: 17,
+  },
+  metaText: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    flexShrink: 1,
   },
   note: {
     fontFamily: font.regular,
