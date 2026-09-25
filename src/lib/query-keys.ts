@@ -40,6 +40,9 @@ export const queryKeys = {
   budgetTotalsAll: () => ['transactions', 'budgetTotals'] as const,
   budgetTotals: (groupId: string, from: string) =>
     ['transactions', 'budgetTotals', groupId, from] as const,
+  // Sous ['transactions'] : ce qui reste dû se calcule à partir des mouvements, qui sont des opérations. Une saisie, une suppression en cascade ou un événement Realtime sur transactions les rafraîchit sans qu'aucune mutation ait à les connaître.
+  debts: (groupId: string) => ['transactions', 'debts', groupId] as const,
+  debtTotals: (groupId: string) => ['transactions', 'debtTotals', groupId] as const,
   // Hors de ['transactions'] : un modèle récurrent n'est pas dérivé des opérations, et le nicher le rechargerait à chaque saisie. Racine réservée aux invalidations, comme budgetsAll : une confirmation ou un événement Realtime peut arriver après un changement de groupe actif.
   recurringAll: () => ['recurring'] as const,
   recurring: (groupId: string) => ['recurring', groupId] as const,

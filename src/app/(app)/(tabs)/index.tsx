@@ -10,6 +10,7 @@ import {
 
 import { BudgetsEntry } from "@/components/dashboard/budgets-entry";
 import { CategoryBreakdown } from "@/components/dashboard/category-breakdown";
+import { DebtsEntry } from "@/components/dashboard/debts-entry";
 import { DueRecurring } from "@/components/dashboard/due-recurring";
 import { PendingTransactions } from "@/components/dashboard/pending-transactions";
 import { PeriodSummary } from "@/components/dashboard/period-summary";
@@ -117,6 +118,8 @@ export default function DashboardScreen() {
       <BudgetsEntry />
 
       <SavingsEntry />
+
+      <DebtsEntry />
 
       <View style={styles.sectionRow}>
         <Text

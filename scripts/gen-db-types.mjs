@@ -38,6 +38,7 @@ export type BudgetPeriod = Enums<'budget_period'>;
 export type ActivitySubject = Enums<'activity_subject'>;
 export type ActivityAction = Enums<'activity_action'>;
 export type RecurrenceFrequency = Enums<'recurrence_frequency'>;
+export type DebtDirection = Enums<'debt_direction'>;
 `;
 
 // `execSync` et non `execFileSync` : la CLI Supabase n'est pas une dépendance du projet, elle passe par npx, et Node refuse depuis la v20 de lancer un `.cmd` sans shell (EINVAL). La commande est écrite en dur ici, sans aucune entrée extérieure, donc le shell n'ouvre pas d'injection.

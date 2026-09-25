@@ -50,15 +50,25 @@ export function TransactionRow({
   // Au-delà du seuil, le montant passe sous le nom plutôt que de l'écraser.
   const stacked = fontScale >= stackAtFontScale;
 
-  // Un versement ou un retrait d'épargne n'a pas de catégorie : il se reconnaît à sa tirelire, et se gère depuis l'objectif, pas depuis cette ligne (la base refuse de le modifier ici).
+  // Un versement ou un retrait d'épargne n'a pas de catégorie : il se reconnaît à sa tirelire, et se gère depuis l'objectif, pas depuis cette ligne (la base refuse de le modifier ici). Même chose pour un mouvement de prêt ou de dette, qui se gère depuis l'écran Prêts et dettes.
   const savings = transaction.is_savings;
+  const debt = transaction.debt_id !== null;
+  const managedElsewhere = savings || debt;
 
-  const icon = savings ? 'piggy-bank-outline' : (transaction.category?.icon ?? 'tag');
+  const icon = savings
+    ? 'piggy-bank-outline'
+    : debt
+      ? 'handshake-outline'
+      : (transaction.category?.icon ?? 'tag');
   const tone = categoryTone({ id: transaction.category_id ?? transaction.id, icon }, isDark);
 
   const edited = wasEdited(transaction);
 
-  const categoryName = savings ? 'Épargne' : (transaction.category?.name ?? 'Sans catégorie');
+  const categoryName = savings
+    ? 'Épargne'
+    : debt
+      ? 'Prêt ou dette'
+      : (transaction.category?.name ?? 'Sans catégorie');
 
   // La note tient le titre quand elle existe : c'est « Biocoop » qu'on reconnaît d'un coup d'œil dans une liste, pas « Alimentation », qui se répète sur dix lignes. Sans note, la catégorie reprend le titre plutôt que de laisser la ligne sans nom.
   const title = transaction.note?.trim() || categoryName;
@@ -84,6 +94,7 @@ export function TransactionRow({
     author ? `saisie par ${author.name === 'Vous' ? 'vous' : author.name}` : null,
     pending ? 'en attente d’envoi' : edited ? 'modifiée' : null,
     savings ? 'se gère depuis l’écran Épargne' : null,
+    debt ? 'se gère depuis l’écran Prêts et dettes' : null,
   ]
     .filter((part): part is string => Boolean(part))
     .join(', ');
@@ -159,7 +170,7 @@ export function TransactionRow({
     </>
   );
 
-  if (pending || savings) {
+  if (pending || managedElsewhere) {
     return (
       <View accessible accessibilityLabel={spokenLabel} style={rowStyle}>
         {content}

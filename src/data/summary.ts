@@ -8,7 +8,9 @@ export type PeriodSummary = {
   expense: number;
   /** Épargne nette de la période : versements moins retraits. Négative quand on a plus retiré que versé. */
   savings: number;
-  /** Tout ce qui entre moins tout ce qui sort, épargne comprise : `income − expense − savings`, calculé en base. */
+  /** Prêts et dettes de la période, signés comme une entrée : positif quand ils ont fait entrer plus d'argent qu'ils n'en ont fait sortir (emprunt, remboursement reçu). */
+  debts: number;
+  /** Tout ce qui entre moins tout ce qui sort : `income − expense − savings + debts`, calculé en base. */
   balance: number;
   /** Nombre d'écritures de la période, entrées et sorties confondues. */
   txCount: number;
@@ -39,6 +41,7 @@ export async function getPeriodSummary(
     income: Number(data.income),
     expense: Number(data.expense),
     savings: Number(data.savings),
+    debts: Number(data.debts),
     balance: Number(data.balance),
     // count(*) est coulé en integer côté base, donc il arrive déjà en nombre JSON — Number() ne sert ici qu'à ne pas faire d'exception dans la lecture.
     txCount: Number(data.tx_count),
@@ -113,6 +116,7 @@ export async function getFilteredTotals(
     income: Number(data.income),
     expense: Number(data.expense),
     savings: Number(data.savings),
+    debts: Number(data.debts),
     balance: Number(data.balance),
     txCount: Number(data.tx_count),
   };

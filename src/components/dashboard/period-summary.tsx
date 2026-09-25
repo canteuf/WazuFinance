@@ -81,7 +81,11 @@ export function PeriodSummary() {
         </View>
 
         {/* Comparaison de la spec 2.6. Absente tant que la période précédente charge, et surtout tant qu'elle n'a rien contenu : comparer à une période sans aucune opération produirait un écart égal au solde courant, qui se lirait comme une progression alors qu'il n'y a simplement rien eu avant. */}
-        {previous && (previous.income !== 0 || previous.expense !== 0 || previous.savings !== 0) ? (
+        {previous &&
+        (previous.income !== 0 ||
+          previous.expense !== 0 ||
+          previous.savings !== 0 ||
+          previous.debts !== 0) ? (
           (() => {
             const delta = summary.balance - previous.balance;
             const up = delta >= 0;
@@ -187,6 +191,19 @@ export function PeriodSummary() {
           <Text style={[styles.savingsText, { color: colors.textMuted }]}>
             {summary.savings > 0 ? 'Mis de côté en épargne : ' : 'Repris sur l’épargne : '}
             <Text style={{ color: colors.text }}>{formatMoney(Math.abs(summary.savings))}</Text>
+          </Text>
+        </View>
+      ) : null}
+
+      {/* Même principe pour les prêts et dettes : ni dépense ni revenu, mais de l'argent qui a quitté ou rejoint le solde. Le signe dit le sens, en toutes lettres. */}
+      {summary.debts !== 0 ? (
+        <View style={styles.savings}>
+          <View style={[styles.statIcon, { backgroundColor: colors.surfaceMuted }]}>
+            <MaterialCommunityIcons name="handshake-outline" size={13} color={colors.textMuted} />
+          </View>
+          <Text style={[styles.savingsText, { color: colors.textMuted }]}>
+            {summary.debts < 0 ? 'Sorti en prêts et remboursements : ' : 'Entré par prêts et remboursements : '}
+            <Text style={{ color: colors.text }}>{formatMoney(Math.abs(summary.debts))}</Text>
           </Text>
         </View>
       ) : null}

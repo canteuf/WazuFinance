@@ -14,6 +14,8 @@ export type ReportTotals = {
   expense: number;
   /** Épargne nette : versements moins retraits. Ni une entrée ni une sortie, mais déduite du solde. */
   savings: number;
+  /** Prêts et dettes, signés comme une entrée. Ni une entrée ni une sortie, mais comptés dans le solde. */
+  debts: number;
   balance: number;
   txCount: number;
 };
@@ -112,6 +114,7 @@ export function buildTransactionsReportHtml(input: ReportInput): string {
   <div class="total"><div class="label">Entrées</div><div class="value income">${formatSigned(totals.income, 'income')}</div></div>
   <div class="total"><div class="label">Sorties</div><div class="value">${formatSigned(totals.expense, 'expense')}</div></div>
   ${totals.savings !== 0 ? `<div class="total"><div class="label">Épargne</div><div class="value">${formatSigned(Math.abs(totals.savings), totals.savings > 0 ? 'expense' : 'income')}</div></div>` : ''}
+  ${totals.debts !== 0 ? `<div class="total"><div class="label">Prêts et dettes</div><div class="value">${formatSigned(Math.abs(totals.debts), totals.debts > 0 ? 'income' : 'expense')}</div></div>` : ''}
   <div class="total"><div class="label">Solde</div><div class="value">${withCurrency(formatBalance(totals.balance))}</div></div>
 </section>
 <table>

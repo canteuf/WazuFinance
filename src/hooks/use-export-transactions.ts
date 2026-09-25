@@ -52,8 +52,12 @@ export function useExportTransactions() {
         occurredOn: transaction.occurred_on,
         type: transaction.type,
         amount: transaction.amount,
-        // Une opération d'épargne n'a pas de catégorie ; « Sans catégorie » la ferait passer pour un oubli.
-        categoryName: transaction.is_savings ? 'Épargne' : (transaction.category?.name ?? null),
+        // Une opération d'épargne ou de dette n'a pas de catégorie ; « Sans catégorie » la ferait passer pour un oubli.
+        categoryName: transaction.is_savings
+          ? 'Épargne'
+          : transaction.debt_id !== null
+            ? 'Prêt ou dette'
+            : (transaction.category?.name ?? null),
         note: transaction.note,
         authorName: names.get(transaction.user_id) ?? null,
       }));

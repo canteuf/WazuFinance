@@ -262,6 +262,60 @@ export type Database = {
           },
         ]
       }
+      debts: {
+        Row: {
+          amount: number
+          counterparty: string
+          created_at: string
+          direction: Database["public"]["Enums"]["debt_direction"]
+          due_on: string | null
+          group_id: string
+          id: string
+          note: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          counterparty: string
+          created_at?: string
+          direction: Database["public"]["Enums"]["debt_direction"]
+          due_on?: string | null
+          group_id: string
+          id?: string
+          note?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          counterparty?: string
+          created_at?: string
+          direction?: Database["public"]["Enums"]["debt_direction"]
+          due_on?: string | null
+          group_id?: string
+          id?: string
+          note?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "budget_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "debts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_invitations: {
         Row: {
           code: string
@@ -459,6 +513,7 @@ export type Database = {
           amount: number
           category_id: string | null
           created_at: string
+          debt_id: string | null
           group_id: string
           id: string
           is_savings: boolean
@@ -473,6 +528,7 @@ export type Database = {
           amount: number
           category_id?: string | null
           created_at?: string
+          debt_id?: string | null
           group_id: string
           id?: string
           is_savings?: boolean
@@ -487,6 +543,7 @@ export type Database = {
           amount?: number
           category_id?: string | null
           created_at?: string
+          debt_id?: string | null
           group_id?: string
           id?: string
           is_savings?: boolean
@@ -503,6 +560,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_debt_id_fkey"
+            columns: ["debt_id"]
+            isOneToOne: false
+            referencedRelation: "debts"
             referencedColumns: ["id"]
           },
           {
@@ -624,6 +688,7 @@ export type Database = {
           amount: number
           category_id: string | null
           created_at: string
+          debt_id: string | null
           group_id: string
           id: string
           is_savings: boolean
@@ -637,6 +702,37 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "transactions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_debt: {
+        Args: {
+          p_amount: number
+          p_counterparty: string
+          p_direction: Database["public"]["Enums"]["debt_direction"]
+          p_due_on?: string
+          p_group_id: string
+          p_id: string
+          p_note?: string
+          p_occurred_on: string
+          p_transaction_id: string
+        }
+        Returns: {
+          amount: number
+          counterparty: string
+          created_at: string
+          direction: Database["public"]["Enums"]["debt_direction"]
+          due_on: string | null
+          group_id: string
+          id: string
+          note: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "debts"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -657,6 +753,28 @@ export type Database = {
           tx_count: number
         }[]
       }
+      debts_overview: {
+        Args: { p_group_id: string }
+        Returns: {
+          amount: number
+          counterparty: string
+          created_at: string
+          direction: Database["public"]["Enums"]["debt_direction"]
+          due_on: string
+          id: string
+          note: string
+          paid: number
+          remaining: number
+        }[]
+      }
+      debts_totals: {
+        Args: { p_group_id: string }
+        Returns: {
+          open_count: number
+          owed_to_us: number
+          we_owe: number
+        }[]
+      }
       delete_own_account: { Args: never; Returns: undefined }
       filtered_totals: {
         Args: {
@@ -669,6 +787,7 @@ export type Database = {
         }
         Returns: {
           balance: number
+          debts: number
           expense: number
           income: number
           savings: number
@@ -722,11 +841,41 @@ export type Database = {
         Args: { p_from: string; p_group_id: string; p_to: string }
         Returns: {
           balance: number
+          debts: number
           expense: number
           income: number
           savings: number
           tx_count: number
         }[]
+      }
+      record_debt_payment: {
+        Args: {
+          p_amount: number
+          p_debt_id: string
+          p_occurred_on: string
+          p_transaction_id: string
+        }
+        Returns: {
+          amount: number
+          category_id: string | null
+          created_at: string
+          debt_id: string | null
+          group_id: string
+          id: string
+          is_savings: boolean
+          note: string | null
+          occurred_on: string
+          savings_goal_id: string | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "transactions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       savings_overview: {
         Args: { p_today: string }
@@ -752,6 +901,7 @@ export type Database = {
       activity_action: "update" | "delete"
       activity_subject: "transaction" | "budget"
       budget_period: "weekly" | "monthly"
+      debt_direction: "lent" | "borrowed"
       membership_role: "owner" | "member"
       recurrence_frequency: "weekly" | "monthly"
       transaction_type: "expense" | "income"
@@ -888,6 +1038,7 @@ export const Constants = {
       activity_action: ["update", "delete"],
       activity_subject: ["transaction", "budget"],
       budget_period: ["weekly", "monthly"],
+      debt_direction: ["lent", "borrowed"],
       membership_role: ["owner", "member"],
       recurrence_frequency: ["weekly", "monthly"],
       transaction_type: ["expense", "income"],
@@ -902,3 +1053,4 @@ export type BudgetPeriod = Enums<'budget_period'>;
 export type ActivitySubject = Enums<'activity_subject'>;
 export type ActivityAction = Enums<'activity_action'>;
 export type RecurrenceFrequency = Enums<'recurrence_frequency'>;
+export type DebtDirection = Enums<'debt_direction'>;
