@@ -1,5 +1,5 @@
 import type { Session } from '@supabase/supabase-js';
-import { createContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { deleteOwnAccount } from '@/data/account';
 import { CurrentPasswordError } from '@/lib/auth-errors';
@@ -19,6 +19,10 @@ export type AuthState = {
     displayName: string
   ) => Promise<{ needsEmailConfirmation: boolean }>;
   signOut: () => Promise<void>;
+  /** Envoie par email un code de réinitialisation du mot de passe. Réussit aussi pour une adresse inconnue : Supabase ne dit pas si un compte existe. */
+  sendPasswordResetCode: (email: string) => Promise<void>;
+  /** Vérifie le code reçu, puis enregistre le nouveau mot de passe ; l'utilisateur est connecté à la fin. */
+  resetPasswordWithCode: (email: string, code: string, newPassword: string) => Promise<void>;
   /** Lève `CurrentPasswordError` si le mot de passe actuel est faux ; les autres refus (`weak_password`, `same_password`) passent par `authErrorMessage`. */
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   /** Lève `CurrentPasswordError` si le mot de passe est faux ; le refus de la base (groupe partagé encore peuplé) remonte en `P0001`. */
@@ -30,6 +34,8 @@ export const AuthContext = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // Vrai pendant une réinitialisation de mot de passe : voir `resetPasswordWithCode`.
+  const recovering = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -44,6 +50,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Couvre connexion, déconnexion et TOKEN_REFRESHED, y compris depuis un autre onglet ou après expiration.
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (recovering.current) {
+        return;
+      }
       setSession(nextSession);
       setIsLoading(false);
     });
@@ -105,6 +114,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) {
           throw error;
         }
+      },
+      async sendPasswordResetCode(email) {
+        // Pas de `redirectTo` : le modèle d'email « Reset password » du projet envoie le code ({{ .Token }}), pas un lien, et l'app n'a rien à ouvrir depuis le navigateur.
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
+        if (error) {
+          throw error;
+        }
+      },
+      /**
+       * Le code vérifié ouvre aussitôt une session. Transmise telle quelle, elle ferait basculer la garde du layout racine sur (app) et démonterait l'écran avant que le nouveau mot de passe soit enregistré — un refus de `updateUser` ne pourrait plus s'afficher, et l'utilisateur entrerait sans savoir quel mot de passe vaut. `recovering` retient donc la session jusqu'au bout.
+       *
+       * Si `updateUser` échoue, la session ouverte par le code est refermée : l'utilisateur reste sur l'écran, voit l'erreur, et demande un nouveau code (le premier est consommé). `same_password` n'est pas un échec : le mot de passe voulu est déjà le bon.
+       */
+      async resetPasswordWithCode(email, code, newPassword) {
+        recovering.current = true;
+        try {
+          const { error } = await supabase.auth.verifyOtp({
+            email: email.trim(),
+            token: code,
+            type: 'recovery',
+          });
+          if (error) {
+            throw error;
+          }
+          const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+          if (updateError && updateError.code !== 'same_password') {
+            await supabase.auth.signOut({ scope: 'local' });
+            throw updateError;
+          }
+        } finally {
+          recovering.current = false;
+        }
+        const { data } = await supabase.auth.getSession();
+        setSession(data.session);
       },
       async changePassword(currentPassword, newPassword) {
         await verifyPassword(currentPassword);

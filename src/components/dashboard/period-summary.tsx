@@ -78,7 +78,7 @@ export function PeriodSummary() {
         </View>
 
         {/* Comparaison de la spec 2.6. Absente tant que la période précédente charge, et surtout tant qu'elle n'a rien contenu : comparer à une période sans aucune opération produirait un écart égal au solde courant, qui se lirait comme une progression alors qu'il n'y a simplement rien eu avant. */}
-        {previous && (previous.income !== 0 || previous.expense !== 0) ? (
+        {previous && (previous.income !== 0 || previous.expense !== 0 || previous.savings !== 0) ? (
           (() => {
             const delta = summary.balance - previous.balance;
             const up = delta >= 0;
@@ -174,6 +174,19 @@ export function PeriodSummary() {
           </Text>
         </Card>
       </View>
+
+      {/* L'épargne n'est ni une entrée ni une sortie : elle a quitté le solde sans être dépensée. Une ligne à part, seulement quand il y a eu un mouvement, pour que le solde se lise « entrées − sorties − épargne » sans que les versements gonflent les sorties. */}
+      {summary.savings !== 0 ? (
+        <View style={styles.savings}>
+          <View style={[styles.statIcon, { backgroundColor: colors.surfaceMuted }]}>
+            <MaterialCommunityIcons name="piggy-bank-outline" size={13} color={colors.textMuted} />
+          </View>
+          <Text style={[styles.savingsText, { color: colors.textMuted }]}>
+            {summary.savings > 0 ? 'Mis de côté en épargne : ' : 'Repris sur l’épargne : '}
+            <Text style={{ color: colors.text }}>{formatMoney(Math.abs(summary.savings))}</Text>
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -275,6 +288,17 @@ const styles = StyleSheet.create({
   },
   pace: {
     gap: spacing.xs + 2,
+  },
+  savings: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  savingsText: {
+    fontFamily: font.regular,
+    fontSize: 15,
+    fontVariant: ['tabular-nums'],
+    flexShrink: 1,
   },
   paceHead: {
     flexDirection: 'row',

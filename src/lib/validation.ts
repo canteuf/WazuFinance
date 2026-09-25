@@ -30,6 +30,20 @@ export function validatePassword(password: string): string | undefined {
   return undefined;
 }
 
+/** Le code de réinitialisation compte 6 chiffres par défaut ; un projet Supabase peut le régler jusqu'à 10. */
+const RECOVERY_CODE_PATTERN = /^\d{6,10}$/;
+
+export function validateRecoveryCode(code: string): string | undefined {
+  const value = code.trim();
+  if (!value) {
+    return 'Code requis.';
+  }
+  if (!RECOVERY_CODE_PATTERN.test(value)) {
+    return 'Saisissez les chiffres du code reçu par email.';
+  }
+  return undefined;
+}
+
 export function validateDisplayName(displayName: string): string | undefined {
   const value = displayName.trim();
   if (!value) {

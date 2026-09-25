@@ -7,7 +7,7 @@
 create extension if not exists pgtap with schema extensions;
 
 BEGIN;
-SELECT plan(15);
+SELECT plan(20);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures, créées en tant que postgres (RLS contournée)
@@ -158,23 +158,26 @@ select set_config('request.jwt.claims',
   '{"sub":"00000000-0000-0000-0000-0000000000f1","role":"authenticated"}', true);
 
 WITH inv AS (
-  insert into public.group_invitations (group_id, created_by, expires_at)
+  insert into public.group_invitations (group_id, created_by)
   values ('00000000-0000-0000-0000-0000000000f9',
-          '00000000-0000-0000-0000-0000000000f1', now() + interval '7 days')
-  returning code
+          '00000000-0000-0000-0000-0000000000f1')
+  returning code, expires_at
 )
 SELECT ok(
-  (select code ~ '^[0-9a-f]{8}$' from inv),
-  'Le code d''invitation généré par défaut est 8 caractères hexadécimaux'
+  (select code ~ '^[2-9A-HJ-NP-Z]{8}$'
+          and expires_at between now() + interval '7 days' - interval '1 minute'
+                             and now() + interval '7 days' + interval '1 minute'
+     from inv),
+  'Le code généré compte 8 caractères sans I, O, 0 ni 1, et l''invitation expire dans 7 jours'
 );
 
 select set_config('request.jwt.claims',
   '{"sub":"00000000-0000-0000-0000-0000000000f3","role":"authenticated"}', true);
 
 SELECT throws_ok(
-  $$insert into public.group_invitations (group_id, created_by, expires_at)
+  $$insert into public.group_invitations (group_id, created_by)
     values ('00000000-0000-0000-0000-0000000000f9',
-            '00000000-0000-0000-0000-0000000000f3', now() + interval '7 days')$$,
+            '00000000-0000-0000-0000-0000000000f3')$$,
   '42501',
   NULL,
   'Carol, simple membre, ne peut pas créer d''invitation'
@@ -184,12 +187,58 @@ select set_config('request.jwt.claims',
   '{"sub":"00000000-0000-0000-0000-0000000000f1","role":"authenticated"}', true);
 
 SELECT throws_ok(
-  $$insert into public.group_invitations (group_id, created_by, expires_at)
+  $$insert into public.group_invitations (group_id, created_by, code)
     values ('00000000-0000-0000-0000-0000000000f9',
-            '00000000-0000-0000-0000-0000000000f1', now() - interval '1 day')$$,
+            '00000000-0000-0000-0000-0000000000f1', 'AAAAAAAA')$$,
   '42501',
   NULL,
-  'Une invitation avec une échéance passée est refusée'
+  'Le propriétaire ne choisit pas le code de son invitation'
+);
+
+SELECT throws_ok(
+  $$insert into public.group_invitations (group_id, created_by, expires_at)
+    values ('00000000-0000-0000-0000-0000000000f9',
+            '00000000-0000-0000-0000-0000000000f1', now() + interval '100 years')$$,
+  '42501',
+  NULL,
+  'Le propriétaire ne choisit pas l''échéance de son invitation'
+);
+
+SELECT throws_ok(
+  $$update public.group_invitations set used_at = null
+     where group_id = '00000000-0000-0000-0000-0000000000f9'$$,
+  '42501',
+  NULL,
+  'Le propriétaire ne peut pas remettre une invitation utilisée en service'
+);
+
+SELECT lives_ok(
+  $$update public.group_invitations set revoked_at = now()
+     where group_id = '00000000-0000-0000-0000-0000000000f9'$$,
+  'Le propriétaire peut toujours révoquer son invitation'
+);
+
+-- ---------------------------------------------------------------------------
+-- Adhésions : plus aucune insertion ni modification directe, même par le propriétaire
+-- ---------------------------------------------------------------------------
+
+-- Eve n'a jamais rejoint Test retrait : Alice, propriétaire, tentait jusqu'ici de l'y inscrire d'office.
+SELECT throws_ok(
+  $$insert into public.account_memberships (group_id, user_id, role)
+    values ('00000000-0000-0000-0000-0000000000f9',
+            '00000000-0000-0000-0000-0000000000f5', 'owner')$$,
+  '42501',
+  NULL,
+  'Un propriétaire ne peut pas inscrire un autre utilisateur dans son groupe'
+);
+
+SELECT throws_ok(
+  $$update public.account_memberships set role = 'owner'
+     where group_id = '00000000-0000-0000-0000-0000000000f9'
+       and user_id = '00000000-0000-0000-0000-0000000000f3'$$,
+  '42501',
+  NULL,
+  'Un propriétaire ne peut pas changer le rôle d''un membre par un appel direct'
 );
 
 -- ---------------------------------------------------------------------------

@@ -8,6 +8,7 @@ import {
   type CreateSavingsGoalInput,
   type UpdateSavingsGoalInput,
 } from '@/data/savings-goals';
+import { todayIso } from '@/lib/dates';
 import { queryKeys } from '@/lib/query-keys';
 
 /** Création, modification, versement et suppression d'un objectif d'épargne. */
@@ -30,8 +31,13 @@ export function useSavingsGoalMutations() {
   });
 
   const addToGoal = useMutation({
-    mutationFn: ({ id, delta }: { id: string; delta: number }) => addToSavingsGoal(id, delta),
-    onSuccess: invalidate,
+    mutationFn: ({ id, delta }: { id: string; delta: number }) =>
+      addToSavingsGoal(id, delta, todayIso()),
+    onSuccess: () => {
+      invalidate();
+      // Le versement est aussi une opération du compte personnel : solde, historique et totaux en dépendent, tous rangés sous ['transactions'].
+      void queryClient.invalidateQueries({ queryKey: queryKeys.transactions() });
+    },
   });
 
   const deleteGoal = useMutation({

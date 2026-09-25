@@ -91,6 +91,10 @@ export default function SignInScreen() {
         onSubmitEditing={() => void handleSubmit()}
       />
 
+      <Link href="/forgot-password" style={[styles.forgotLink, { color: colors.primary }]}>
+        Mot de passe oublié ?
+      </Link>
+
       {formError ? <Text style={[styles.formError, { color: colors.danger }]}>{formError}</Text> : null}
 
       <Button title="Se connecter" loading={submitting} onPress={() => void handleSubmit()} />
@@ -133,6 +137,13 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: font.regular,
     fontSize: 17,
+  },
+  forgotLink: {
+    alignSelf: 'flex-end',
+    fontFamily: font.semibold,
+    fontSize: 16,
+    // Agrandit la zone tactile d'un lien court, collé au champ du dessus.
+    paddingVertical: spacing.sm,
   },
   formError: {
     fontFamily: font.medium,

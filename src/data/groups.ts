@@ -133,7 +133,7 @@ export async function listGroupMembers(groupId: string): Promise<GroupMember[]> 
 /**
  * Crée un groupe partagé et sa ligne d'adhésion `owner`, de façon atomique.
  *
- * Passe par la RPC `create_shared_group` plutôt qu'un double INSERT direct : `account_memberships_insert_owner` exige déjà `is_group_owner(group_id)`, qui ne peut jamais être vrai pour la toute première ligne d'un groupe.
+ * Passe par la RPC `create_shared_group` plutôt qu'un double INSERT direct : le client n'a aucun droit d'insertion sur `account_memberships` (migration harden_group_access), et ne doit pas en avoir — c'est ce droit qui permettait d'inscrire quelqu'un d'autre d'office.
  */
 export async function createSharedGroup(name: string): Promise<string> {
   const { data, error } = await supabase.rpc('create_shared_group', { name });
@@ -145,12 +145,23 @@ export async function createSharedGroup(name: string): Promise<string> {
   return data;
 }
 
-/** Rejoint un groupe partagé par son code d'invitation. Voir join_group_with_code(). */
+/** Code de l'erreur levée quand la base refuse un code d'invitation ; `data-errors.ts` lui associe son message. */
+export const INVITATION_REJECTED = 'INVITATION_REJECTED';
+
+/**
+ * Rejoint un groupe partagé par son code d'invitation. Voir join_group_with_code().
+ *
+ * La fonction renvoie NULL, et non une erreur, pour un code inconnu, révoqué, utilisé ou expiré : une exception annulerait l'enregistrement de la tentative qui sert à limiter les essais. Le refus devient ici une erreur ordinaire, pour que l'écran le traite comme les autres.
+ */
 export async function joinGroupWithCode(code: string): Promise<string> {
   const { data, error } = await supabase.rpc('join_group_with_code', { invitation_code: code });
 
   if (error) {
     throw error;
+  }
+
+  if (data === null) {
+    throw Object.assign(new Error('Invitation refusée'), { code: INVITATION_REJECTED });
   }
 
   return data;
@@ -219,10 +230,8 @@ export async function getActiveInvitation(groupId: string): Promise<GroupInvitat
   return data ? { id: data.id, code: data.code, expiresAt: data.expires_at } : null;
 }
 
-const INVITATION_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
-
 /**
- * Crée une invitation valide 7 jours. `code` n'est pas fourni : la base le génère (défaut `encode(gen_random_bytes(4), 'hex')`), le client ne doit jamais en inventer un.
+ * Crée une invitation. Le code et l'échéance (7 jours) sont fixés par la base, et le client n'a pas le droit de les fournir : il ne choisit ni un code facile à deviner, ni une invitation sans fin (migration harden_group_access).
  */
 export async function createInvitation(
   groupId: string,
@@ -233,7 +242,6 @@ export async function createInvitation(
     .insert({
       group_id: groupId,
       created_by: createdBy,
-      expires_at: new Date(Date.now() + INVITATION_LIFETIME_MS).toISOString(),
     })
     .select('id, code, expires_at')
     .single();

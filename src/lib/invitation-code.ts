@@ -1,34 +1,37 @@
 /**
- * Code d'invitation affiché : « a3f09b12 » → « A3F0-9B12 ».
- *
- * La base génère huit caractères hexadécimaux en minuscules (`encode(gen_random_bytes(4), 'hex')`). Les couper en deux groupes de quatre, en majuscules, les rend lisibles à voix haute et recopiables sans se perdre au milieu. L'affichage seul change : c'est `normalizeInvitationCode` qui ramène la saisie à la forme stockée.
+ * Symboles d'un code d'invitation : les chiffres 2 à 9 et les lettres sans I ni O, qui se confondent avec 1 et 0 à la lecture ou à la dictée. Même alphabet que `generate_invitation_code()` en base (migration harden_group_access).
  */
-export function formatInvitationCode(code: string): string {
-  const upper = code.toUpperCase();
-  return upper.length === 8 ? `${upper.slice(0, 4)}-${upper.slice(4)}` : upper;
-}
+export const INVITATION_CODE_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 
-/**
- * Ramène un code saisi à la forme stockée : minuscules, sans tiret ni espace.
- *
- * Indispensable dès que l'affichage diffère du stockage : `join_group_with_code()` compare le texte exact, et un invité qui recopie « A3F0-9B12 » tel qu'il le voit serait refusé comme porteur d'un code introuvable.
- */
-export function normalizeInvitationCode(input: string): string {
-  return input.toLowerCase().replace(/[\s-]/g, '');
-}
-
-/** Longueur d'un code d'invitation : quatre octets aléatoires, en hexadécimal. */
+/** Longueur d'un code d'invitation. */
 export const INVITATION_CODE_LENGTH = 8;
 
 /**
- * Filtre la saisie des cases du code : ne garde que les caractères hexadécimaux, en minuscules, et coupe à huit.
+ * Code d'invitation affiché : « 7KQ2M9XA » → « 7KQ2-M9XA ».
  *
- * Tout autre caractère est ignoré plutôt que refusé : un code collé tel qu'il s'affiche chez le propriétaire (« A3F0-9B12 », parfois entouré d'espaces ou suivi d'un retour à la ligne) remplit ainsi les huit cases d'un coup. Le champ ne porte pas de `maxLength` pour la même raison : il couperait le collage à huit caractères tiret compris, avant ce filtre.
+ * Deux groupes de quatre le rendent lisible à voix haute et recopiable sans se perdre au milieu. L'affichage seul change : `normalizeInvitationCode` ramène la saisie à la forme stockée.
+ */
+export function formatInvitationCode(code: string): string {
+  const upper = code.toUpperCase();
+  return upper.length === INVITATION_CODE_LENGTH ? `${upper.slice(0, 4)}-${upper.slice(4)}` : upper;
+}
+
+/**
+ * Ramène un code saisi à la forme stockée : majuscules, sans tiret ni espace. `join_group_with_code()` fait la même normalisation en base ; la faire aussi ici garde l'état de l'écran identique à ce qui sera comparé.
+ */
+export function normalizeInvitationCode(input: string): string {
+  return input.toUpperCase().replace(/[^0-9A-Z]/g, '');
+}
+
+/**
+ * Filtre la saisie des cases du code : ne garde que les symboles de l'alphabet, en majuscules, et coupe à huit.
+ *
+ * Tout autre caractère est ignoré plutôt que refusé : un code collé tel qu'il s'affiche chez le propriétaire (« 7KQ2-M9XA », parfois entouré d'espaces ou suivi d'un retour à la ligne) remplit ainsi les huit cases d'un coup. Le champ ne porte pas de `maxLength` pour la même raison : il couperait le collage à huit caractères tiret compris, avant ce filtre.
  */
 export function sanitizeInvitationCodeInput(input: string): string {
-  return input
-    .toLowerCase()
-    .replace(/[^0-9a-f]/g, '')
+  return [...input.toUpperCase()]
+    .filter((char) => INVITATION_CODE_ALPHABET.includes(char))
+    .join('')
     .slice(0, INVITATION_CODE_LENGTH);
 }
 

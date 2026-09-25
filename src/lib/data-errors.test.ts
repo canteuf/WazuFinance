@@ -25,6 +25,13 @@ describe('dataErrorMessage', () => {
     );
   });
 
+  it("traduit le refus d'une invitation, levé par joinGroupWithCode", () => {
+    const error = Object.assign(new Error('Invitation refusée'), { code: 'INVITATION_REJECTED' });
+    expect(dataErrorMessage(error)).toBe(
+      'Code invalide ou expiré. Demandez un nouveau code au propriétaire du groupe.'
+    );
+  });
+
   it("reconnaît une panne réseau à la forme réellement renvoyée par postgrest-js", () => {
     // Le client installé attrape toute panne de transport et renvoie un objet littéral, pas une Error : code vide, message préfixé par le nom de l'exception JS d'origine.
     expect(

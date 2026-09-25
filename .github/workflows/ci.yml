@@ -1,0 +1,62 @@
+# Contrôles à chaque push et à chaque pull request : typage, lint, tests Jest, et tests pgTAP sur une base neuve construite à partir de toutes les migrations.
+#
+# Deux jobs indépendants, qui tournent en parallèle : une migration cassée n'empêche pas de voir un défaut de typage, et inversement.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: Typage, lint, Jest
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Même version que les builds EAS (eas.json) : les paquets Supabase exigent Node 22 ou plus.
+          node-version: 22.20.0
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typage
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests Jest
+        run: npm test -- --ci
+
+  database:
+    name: Migrations et tests pgTAP
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          # Même version que la CLI du projet (npx supabase --version), comme db-backup.yml.
+          version: 2.117.0
+
+      # Toutes les migrations sont appliquées dans l'ordre sur une base vide : une migration qui ne passe que sur une base déjà migrée échoue ici, avant `db push`. Les services que les tests n'utilisent pas ne sont pas démarrés ; Auth reste, parce que ses propres migrations complètent le schéma auth que handle_new_user() et les tests utilisent.
+      - name: Démarrer la base locale
+        run: supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      - name: Tests pgTAP
+        run: supabase test db

@@ -16,6 +16,8 @@ const MESSAGES: Record<string, string> = {
   validation_failed: 'Vérifiez les informations saisies.',
   signup_disabled: "Les inscriptions sont désactivées sur ce projet.",
   same_password: 'Le nouveau mot de passe doit être différent de l’actuel.',
+  // Supabase renvoie ce même code pour un code faux et pour un code expiré.
+  otp_expired: 'Code invalide ou expiré. Demandez-en un nouveau.',
 };
 
 /**

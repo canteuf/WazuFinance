@@ -57,33 +57,33 @@ select set_config('request.jwt.claims',
   '{"sub":"00000000-0000-0000-0000-0000000000e1","role":"authenticated"}', true);
 
 SELECT is(
-  (select current_amount from public.add_to_savings_goal('00000000-0000-0000-0000-0000000000a1', 150.10)),
-  2000.10::numeric(12,2),
+  (select current_amount from public.add_to_savings_goal('00000000-0000-0000-0000-0000000000a1', 200)),
+  2050.00::numeric(12,2),
   'Un versement s''ajoute au montant présent, exactement'
 );
 
 SELECT is(
-  (select current_amount from public.add_to_savings_goal('00000000-0000-0000-0000-0000000000a1', -0.10)),
+  (select current_amount from public.add_to_savings_goal('00000000-0000-0000-0000-0000000000a1', -50)),
   2000.00::numeric(12,2),
   'Un retrait s''en déduit'
 );
 
 SELECT throws_ok(
-  $$select public.add_to_savings_goal('00000000-0000-0000-0000-0000000000a1', -2000.01)$$,
+  $$select public.add_to_savings_goal('00000000-0000-0000-0000-0000000000a1', -2001)$$,
   'P0001', 'Le retrait dépasse le montant épargné.',
   'Un retrait plus grand que l''épargne est refusé'
 );
 
 SELECT throws_ok(
   $$select public.add_to_savings_goal('00000000-0000-0000-0000-0000000000a1', 0)$$,
-  'P0001', 'Indiquez un montant non nul, au centime près.',
+  'P0001', 'Indiquez un montant entier, différent de zéro.',
   'Un versement nul est refusé'
 );
 
 SELECT throws_ok(
-  $$select public.add_to_savings_goal('00000000-0000-0000-0000-0000000000a1', 1.005)$$,
-  'P0001', 'Indiquez un montant non nul, au centime près.',
-  'Un versement plus fin que le centime est refusé'
+  $$select public.add_to_savings_goal('00000000-0000-0000-0000-0000000000a1', 1.5)$$,
+  'P0001', 'Indiquez un montant entier, différent de zéro.',
+  'Un versement avec des décimales est refusé : le franc CFA n''a pas de centimes'
 );
 
 SELECT throws_ok(

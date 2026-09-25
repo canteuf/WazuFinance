@@ -221,6 +221,10 @@ export default function SavingsGoalScreen() {
               errorText={adjustError}
               onSubmit={handleAdjust}
             />
+            {/* Dit avant d'enregistrer ce que le versement fait au solde : sans cette phrase, voir le solde du compte personnel baisser après un versement ressemblerait à une erreur. */}
+            <Text style={[styles.adjustHint, { color: colors.textMuted }]}>
+              Un versement sort du solde de votre compte personnel, un retrait y revient.
+            </Text>
 
             <Text style={[styles.section, { color: colors.text }]}>Paramètres de l’objectif</Text>
           </>
@@ -318,6 +322,11 @@ const styles = StyleSheet.create({
     fontFamily: font.regular,
     fontSize: 17,
     fontVariant: ['tabular-nums'],
+  },
+  adjustHint: {
+    fontFamily: font.regular,
+    fontSize: 15,
+    lineHeight: 21,
   },
   section: {
     fontFamily: font.bold,

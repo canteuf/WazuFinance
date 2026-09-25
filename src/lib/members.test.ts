@@ -69,7 +69,7 @@ describe('pairMembers', () => {
 
 describe('formatInvitationCode', () => {
   it('coupe le code stocké en deux groupes de quatre, en majuscules', () => {
-    expect(formatInvitationCode('a3f09b12')).toBe('A3F0-9B12');
+    expect(formatInvitationCode('7kq2m9xa')).toBe('7KQ2-M9XA');
   });
 
   it('laisse intact un code d’une autre longueur', () => {
@@ -79,15 +79,15 @@ describe('formatInvitationCode', () => {
 
 describe('normalizeInvitationCode', () => {
   it('ramène le code affiché à la forme stockée', () => {
-    expect(normalizeInvitationCode('A3F0-9B12')).toBe('a3f09b12');
+    expect(normalizeInvitationCode('7KQ2-M9XA')).toBe('7KQ2M9XA');
   });
 
   it('pardonne espaces et tirets saisis à la main', () => {
-    expect(normalizeInvitationCode(' a3f0 9b12 ')).toBe('a3f09b12');
+    expect(normalizeInvitationCode(' 7kq2 m9xa ')).toBe('7KQ2M9XA');
   });
 
   it('fait l’aller-retour avec formatInvitationCode', () => {
-    expect(normalizeInvitationCode(formatInvitationCode('0bcdef12'))).toBe('0bcdef12');
+    expect(normalizeInvitationCode(formatInvitationCode('BCDEF234'))).toBe('BCDEF234');
   });
 });
 

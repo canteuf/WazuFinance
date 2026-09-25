@@ -2,22 +2,27 @@ import { formatInvitationCode, sanitizeInvitationCodeInput } from './invitation-
 
 describe('sanitizeInvitationCodeInput', () => {
   it('garde un code déjà à la forme stockée', () => {
-    expect(sanitizeInvitationCodeInput('a3f09b12')).toBe('a3f09b12');
+    expect(sanitizeInvitationCodeInput('7KQ2M9XA')).toBe('7KQ2M9XA');
   });
 
   it('accepte un code collé tel qu’il s’affiche, tiret et espaces compris', () => {
-    expect(sanitizeInvitationCodeInput(' A3F0-9B12\n')).toBe('a3f09b12');
+    expect(sanitizeInvitationCodeInput(' 7KQ2-M9XA\n')).toBe('7KQ2M9XA');
   });
 
-  it('ignore les caractères hors de l’hexadécimal', () => {
-    expect(sanitizeInvitationCodeInput('a3g!z0')).toBe('a30');
+  it('passe la saisie en majuscules', () => {
+    expect(sanitizeInvitationCodeInput('7kq2m9xa')).toBe('7KQ2M9XA');
+  });
+
+  it('ignore les symboles absents de l’alphabet : 0, 1, I, O et la ponctuation', () => {
+    expect(sanitizeInvitationCodeInput('a0b1cIdO!e')).toBe('ABCDE');
   });
 
   it('coupe à huit caractères', () => {
-    expect(sanitizeInvitationCodeInput('a3f09b12ff')).toBe('a3f09b12');
+    expect(sanitizeInvitationCodeInput('7KQ2M9XAZZ')).toBe('7KQ2M9XA');
   });
 
   it('revient à la forme stockée depuis la forme affichée', () => {
-    expect(sanitizeInvitationCodeInput(formatInvitationCode('a3f09b12'))).toBe('a3f09b12');
+    expect(sanitizeInvitationCodeInput(formatInvitationCode('7KQ2M9XA'))).toBe('7KQ2M9XA');
   });
 });
+

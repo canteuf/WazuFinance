@@ -242,6 +242,11 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# Réinitialisation du mot de passe par code, pas par lien : l'écran « Mot de passe oublié » fait saisir {{ .Token }}. Le projet hébergé doit porter le même modèle (tableau de bord → Authentication → Email Templates → Reset password).
+[auth.email.template.recovery]
+subject = "Votre code Wazu Finance"
+content_path = "./supabase/templates/recovery.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"

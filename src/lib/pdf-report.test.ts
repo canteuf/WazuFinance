@@ -16,7 +16,7 @@ const input: ReportInput = {
   periodLabel: 'Septembre 2026',
   filtersLabel: '',
   generatedAt: '19 septembre 2026 à 21:40',
-  totals: { income: 210000, expense: 12500, balance: 197500, txCount: 2 },
+  totals: { income: 210000, expense: 12500, savings: 0, balance: 197500, txCount: 2 },
   rows: [expense, { ...expense, type: 'income', amount: 210000, categoryName: 'Salaire', note: null }],
 };
 
@@ -59,6 +59,16 @@ describe('buildTransactionsReportHtml', () => {
   it('ajoute les filtres actifs à la ligne de période', () => {
     const filtered = buildTransactionsReportHtml({ ...input, filtersLabel: 'Dépenses · Alimentation' });
     expect(filtered).toContain('Septembre 2026 · Dépenses · Alimentation · 2 écritures');
+  });
+
+  it('n’affiche la case Épargne que s’il y a eu un mouvement', () => {
+    expect(html).not.toContain('>Épargne<');
+    const withSavings = buildTransactionsReportHtml({
+      ...input,
+      totals: { ...input.totals, savings: 50000, balance: 147500 },
+    });
+    expect(withSavings).toContain('>Épargne<');
+    expect(withSavings).toContain(formatSigned(50000, 'expense'));
   });
 
   it('dit qu’il n’y a rien plutôt que de rendre un tableau vide', () => {

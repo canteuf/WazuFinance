@@ -1,4 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { randomUUID } from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -45,6 +46,8 @@ export default function TransactionScreen() {
     useTransactionMutations();
   const online = useIsOnline();
   const [errorText, setErrorText] = useState<string>();
+  // Tiré une fois pour toute la vie de la feuille : un second « Enregistrer » après un échec réseau renvoie la même saisie, que la base reconnaît au lieu de la créer deux fois (voir `create` dans src/data/transactions.ts).
+  const [newId] = useState(randomUUID);
 
   const existing = useTransaction(id);
 
@@ -110,7 +113,7 @@ export default function TransactionScreen() {
       updateTransaction.mutate({ id, patch: values }, callbacks);
     } else {
       createTransaction.mutate(
-        { ...values, groupId: activeGroupId as string, userId: userId as string },
+        { ...values, id: newId, groupId: activeGroupId as string, userId: userId as string },
         callbacks
       );
     }

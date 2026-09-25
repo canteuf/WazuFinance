@@ -11,6 +11,8 @@ const MESSAGES: Record<string, string> = {
   // Formulation neutre : ce code sert désormais aux budgets, dont le triplet (group_id, category_id, period) est unique. Les transactions, elles, n'ont aucune contrainte d'unicité — ce message n'a jamais pu s'y afficher.
   '23505': 'Un enregistrement identique existe déjà.',
   PGRST116: 'Cette opération est introuvable.',
+  // Pas un SQLSTATE : le code `INVITATION_REJECTED` que `joinGroupWithCode` donne au refus d'une invitation, que la base signale par un NULL (voir src/data/groups.ts). Un seul message pour tous les cas, comme la base.
+  INVITATION_REJECTED: 'Code invalide ou expiré. Demandez un nouveau code au propriétaire du groupe.',
 };
 
 const GENERIC = 'Une erreur inattendue est survenue.';

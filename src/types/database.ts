@@ -278,7 +278,7 @@ export type Database = {
           code?: string
           created_at?: string
           created_by: string
-          expires_at: string
+          expires_at?: string
           group_id: string
           id?: string
           revoked_at?: string | null
@@ -314,6 +314,29 @@ export type Database = {
           {
             foreignKeyName: "group_invitations_used_by_fkey"
             columns: ["used_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invitation_attempts: {
+        Row: {
+          attempted_at: string
+          user_id: string
+        }
+        Insert: {
+          attempted_at?: string
+          user_id: string
+        }
+        Update: {
+          attempted_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitation_attempts_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -371,6 +394,7 @@ export type Database = {
           created_at: string
           group_id: string
           id: string
+          is_savings: boolean
           note: string | null
           occurred_on: string
           savings_goal_id: string | null
@@ -384,6 +408,7 @@ export type Database = {
           created_at?: string
           group_id: string
           id?: string
+          is_savings?: boolean
           note?: string | null
           occurred_on?: string
           savings_goal_id?: string | null
@@ -397,6 +422,7 @@ export type Database = {
           created_at?: string
           group_id?: string
           id?: string
+          is_savings?: boolean
           note?: string | null
           occurred_on?: string
           savings_goal_id?: string | null
@@ -465,7 +491,7 @@ export type Database = {
     }
     Functions: {
       add_to_savings_goal: {
-        Args: { p_delta: number; p_goal_id: string }
+        Args: { p_delta: number; p_goal_id: string; p_occurred_on?: string }
         Returns: {
           created_at: string
           current_amount: number
@@ -549,6 +575,7 @@ export type Database = {
           balance: number
           expense: number
           income: number
+          savings: number
           tx_count: number
         }[]
       }
@@ -562,6 +589,7 @@ export type Database = {
           amount: number
         }[]
       }
+      generate_invitation_code: { Args: never; Returns: string }
       group_overviews: {
         Args: never
         Returns: {
@@ -592,6 +620,7 @@ export type Database = {
           balance: number
           expense: number
           income: number
+          savings: number
           tx_count: number
         }[]
       }

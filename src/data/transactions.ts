@@ -53,6 +53,8 @@ export async function getById(id: string): Promise<TransactionWithCategory> {
 }
 
 export type CreateTransactionInput = {
+  /** Identifiant tiré par l'app à l'ouverture du formulaire, pas par la base : c'est lui qui rend la création rejouable sans doublon (voir `create`). */
+  id: string;
   groupId: string;
   userId: string;
   categoryId: string;
@@ -62,31 +64,43 @@ export type CreateTransactionInput = {
   note: string | null;
 };
 
-export type UpdateTransactionInput = Omit<CreateTransactionInput, 'groupId' | 'userId'>;
+export type UpdateTransactionInput = Omit<CreateTransactionInput, 'id' | 'groupId' | 'userId'>;
 
+/**
+ * Crée une opération, sans doublon si la même saisie est envoyée deux fois.
+ *
+ * Une création peut atteindre la base sans que sa réponse revienne : réseau coupé juste après l'envoi, ou app tuée alors qu'une saisie en file partait — relue du disque au démarrage, elle est rejouée. L'utilisateur, de son côté, retouche « Enregistrer » après un « Pas de connexion ». Avec un id tiré par la base, chacun de ces renvois créait une seconde ligne, et la dépense comptait double.
+ *
+ * L'id vient donc de l'app, et l'écriture est un `insert … on conflict (id) do nothing` : un renvoi ne change rien, et la ligne déjà en base est relue pour être renvoyée comme si l'insertion venait d'avoir lieu. `do nothing` et non une fusion : une saisie rejouée des heures plus tard écraserait sinon ce qu'un autre membre a corrigé entre-temps.
+ */
 export async function create(
   input: CreateTransactionInput
 ): Promise<Tables<'transactions'>> {
   const { data, error } = await supabase
     .from('transactions')
-    .insert({
-      group_id: input.groupId,
-      // La policy transactions_insert_member exige user_id = auth.uid() : cette valeur est vérifiée en base, pas seulement ici.
-      user_id: input.userId,
-      category_id: input.categoryId,
-      type: input.type,
-      amount: input.amount,
-      occurred_on: input.occurredOn,
-      note: input.note,
-    })
+    .upsert(
+      {
+        id: input.id,
+        group_id: input.groupId,
+        // La policy transactions_insert_member exige user_id = auth.uid() : cette valeur est vérifiée en base, pas seulement ici.
+        user_id: input.userId,
+        category_id: input.categoryId,
+        type: input.type,
+        amount: input.amount,
+        occurred_on: input.occurredOn,
+        note: input.note,
+      },
+      { onConflict: 'id', ignoreDuplicates: true }
+    )
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     throw error;
   }
 
-  return data;
+  // Aucune ligne renvoyée : l'id existait déjà, la saisie avait été enregistrée par un envoi précédent.
+  return data ?? getById(input.id);
 }
 
 export async function update(

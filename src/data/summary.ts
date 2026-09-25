@@ -2,8 +2,13 @@ import type { TransactionFilters } from '@/data/transactions';
 import { supabase } from '@/lib/supabase';
 
 export type PeriodSummary = {
+  /** Entrées hors retraits d'épargne. */
   income: number;
+  /** Sorties hors versements d'épargne. */
   expense: number;
+  /** Épargne nette de la période : versements moins retraits. Négative quand on a plus retiré que versé. */
+  savings: number;
+  /** Tout ce qui entre moins tout ce qui sort, épargne comprise : `income − expense − savings`, calculé en base. */
   balance: number;
   /** Nombre d'écritures de la période, entrées et sorties confondues. */
   txCount: number;
@@ -33,6 +38,7 @@ export async function getPeriodSummary(
   return {
     income: Number(data.income),
     expense: Number(data.expense),
+    savings: Number(data.savings),
     balance: Number(data.balance),
     // count(*) est coulé en integer côté base, donc il arrive déjà en nombre JSON — Number() ne sert ici qu'à ne pas faire d'exception dans la lecture.
     txCount: Number(data.tx_count),
@@ -106,6 +112,7 @@ export async function getFilteredTotals(
   return {
     income: Number(data.income),
     expense: Number(data.expense),
+    savings: Number(data.savings),
     balance: Number(data.balance),
     txCount: Number(data.tx_count),
   };

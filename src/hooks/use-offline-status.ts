@@ -58,6 +58,7 @@ export function usePendingTransactions(): TransactionWithCategory[] {
         user_id: values.userId,
         category_id: values.categoryId,
         savings_goal_id: null,
+        is_savings: false,
         type: values.type,
         amount: values.amount,
         occurred_on: values.occurredOn,

@@ -10,7 +10,7 @@
 create extension if not exists pgtap with schema extensions;
 
 BEGIN;
-SELECT plan(11);
+SELECT plan(13);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures, créées en tant que postgres (RLS contourné)
@@ -83,6 +83,27 @@ SELECT lives_ok(
             'expense', 10.00,
             (select id from public.categories where group_id is null and name = 'Transport'))$$,
   'Un membre insère dans son groupe'
+);
+
+-- Création rejouable : l'app fournit l'id et écrit `on conflict (id) do nothing` (src/data/transactions.ts). Le second envoi de la même saisie passe sous RLS sans erreur et ne crée rien.
+insert into public.transactions (id, group_id, user_id, type, amount)
+values ('00000000-0000-0000-0000-0000000000e2', '00000000-0000-0000-0000-0000000000d1',
+        '00000000-0000-0000-0000-0000000000c1', 'expense', 15.00)
+on conflict (id) do nothing;
+
+SELECT lives_ok(
+  $$insert into public.transactions (id, group_id, user_id, type, amount)
+    values ('00000000-0000-0000-0000-0000000000e2', '00000000-0000-0000-0000-0000000000d1',
+            '00000000-0000-0000-0000-0000000000c1', 'expense', 15.00)
+    on conflict (id) do nothing$$,
+  'Renvoyer une création déjà enregistrée ne lève pas d''erreur'
+);
+
+SELECT is(
+  (select count(*)::int from public.transactions
+    where id = '00000000-0000-0000-0000-0000000000e2'),
+  1,
+  'Renvoyer une création déjà enregistrée ne crée pas de doublon'
 );
 
 -- user_id est imposé par la policy : on ne peut pas écrire au nom d'un autre.

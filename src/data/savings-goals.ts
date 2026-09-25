@@ -90,10 +90,16 @@ export async function updateSavingsGoal(
  * Verse (`delta` positif) ou retire (`delta` négatif) sur un objectif.
  *
  * L'addition se fait en base, dans un seul update : lire le montant, l'additionner ici et le renvoyer perdrait un versement concurrent, et passerait par des flottants binaires. Les refus (retrait supérieur à l'épargne, objectif disparu) reviennent en P0001 avec leur message français.
+ *
+ * La même fonction enregistre le mouvement comme opération d'épargne du compte personnel, qui sort du solde (migration savings_movements). `today` la date : il vient de l'appareil, le serveur étant en UTC.
  */
-export async function addToSavingsGoal(id: string, delta: number): Promise<SavingsGoal> {
+export async function addToSavingsGoal(
+  id: string,
+  delta: number,
+  today: string
+): Promise<SavingsGoal> {
   const { data, error } = await supabase
-    .rpc('add_to_savings_goal', { p_goal_id: id, p_delta: delta })
+    .rpc('add_to_savings_goal', { p_goal_id: id, p_delta: delta, p_occurred_on: today })
     .single();
 
   if (error) {

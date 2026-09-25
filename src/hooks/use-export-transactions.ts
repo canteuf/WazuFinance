@@ -52,7 +52,8 @@ export function useExportTransactions() {
         occurredOn: transaction.occurred_on,
         type: transaction.type,
         amount: transaction.amount,
-        categoryName: transaction.category?.name ?? null,
+        // Une opération d'épargne n'a pas de catégorie ; « Sans catégorie » la ferait passer pour un oubli.
+        categoryName: transaction.is_savings ? 'Épargne' : (transaction.category?.name ?? null),
         note: transaction.note,
         authorName: names.get(transaction.user_id) ?? null,
       }));

@@ -7,7 +7,7 @@ import { font, radius, spacing, stackAtFontScale, useColors, useElevation } from
 const HALF = INVITATION_CODE_LENGTH / 2;
 
 type InvitationCodeInputProps = {
-  /** Code à la forme stockée : minuscules, sans tiret, huit caractères au plus. */
+  /** Code à la forme stockée : majuscules, sans tiret, huit caractères au plus. */
   value: string;
   onChangeText: (code: string) => void;
   onSubmitEditing?: () => void;
@@ -46,7 +46,7 @@ export const InvitationCodeInput = forwardRef<TextInput, InvitationCodeInputProp
           ]}
         >
           <Text style={[styles.char, { color: colors.text }]}>
-            {value.charAt(index).toUpperCase()}
+            {value.charAt(index)}
           </Text>
         </View>
       );
@@ -67,7 +67,7 @@ export const InvitationCodeInput = forwardRef<TextInput, InvitationCodeInputProp
         <TextInput
           ref={ref}
           accessibilityLabel="Code d’invitation à 8 caractères"
-          accessibilityHint="Chiffres de 0 à 9 et lettres de A à F"
+          accessibilityHint="Chiffres de 2 à 9 et lettres, sans I ni O"
           value={value}
           onChangeText={(text) => onChangeText(sanitizeInvitationCodeInput(text))}
           onSubmitEditing={onSubmitEditing}

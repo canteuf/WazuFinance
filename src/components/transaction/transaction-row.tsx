@@ -46,12 +46,15 @@ export function TransactionRow({
   // Au-delà du seuil, le montant passe sous le nom plutôt que de l'écraser.
   const stacked = fontScale >= stackAtFontScale;
 
-  const icon = transaction.category?.icon ?? 'tag';
+  // Un versement ou un retrait d'épargne n'a pas de catégorie : il se reconnaît à sa tirelire, et se gère depuis l'objectif, pas depuis cette ligne (la base refuse de le modifier ici).
+  const savings = transaction.is_savings;
+
+  const icon = savings ? 'piggy-bank-outline' : (transaction.category?.icon ?? 'tag');
   const tone = categoryTone({ id: transaction.category_id ?? transaction.id, icon }, isDark);
 
   const edited = wasEdited(transaction);
 
-  const categoryName = transaction.category?.name ?? 'Sans catégorie';
+  const categoryName = savings ? 'Épargne' : (transaction.category?.name ?? 'Sans catégorie');
 
   // La note tient le titre quand elle existe : c'est « Biocoop » qu'on reconnaît d'un coup d'œil dans une liste, pas « Alimentation », qui se répète sur dix lignes. Sans note, la catégorie reprend le titre plutôt que de laisser la ligne sans nom.
   const title = transaction.note?.trim() || categoryName;
@@ -135,11 +138,11 @@ export function TransactionRow({
     </>
   );
 
-  if (pending) {
+  if (pending || savings) {
     return (
       <View
         accessible
-        accessibilityLabel={`${title}${showCategoryBadge ? `, ${categoryName}` : ''}. En attente d’envoi`}
+        accessibilityLabel={`${title}${showCategoryBadge ? `, ${categoryName}` : ''}. ${pending ? 'En attente d’envoi' : 'Se gère depuis l’écran Épargne'}`}
         style={rowStyle}
       >
         {content}

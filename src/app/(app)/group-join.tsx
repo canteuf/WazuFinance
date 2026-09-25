@@ -16,7 +16,7 @@ import { font, spacing, useColors } from '@/theme/tokens';
 /**
  * Rejoindre un groupe par code d'invitation (spec section 1, écran 7).
  *
- * `join_group_with_code()` compare le code par égalité stricte, sans normaliser la casse : la saisie passe en minuscules avant l'appel, puisque la base génère toujours du hex minuscule (migration group_management).
+ * Un code refusé — inconnu, révoqué, utilisé ou expiré — reçoit toujours le même message : la base ne dit pas lequel (migration harden_group_access).
  */
 export default function GroupJoinScreen() {
   const colors = useColors();
@@ -35,7 +35,7 @@ export default function GroupJoinScreen() {
     if (!valid) {
       return;
     }
-    // Minuscules et sans tiret : le code s'affiche « A3F0-9B12 » chez le propriétaire, mais la base stocke « a3f09b12 » et compare le texte exact.
+    // Le code s'affiche « 7KQ2-M9XA » chez le propriétaire ; la base stocke « 7KQ2M9XA ».
     joinGroup.mutate(normalizeInvitationCode(code), {
       onSuccess: (groupId) => {
         setActiveGroupId(groupId);
