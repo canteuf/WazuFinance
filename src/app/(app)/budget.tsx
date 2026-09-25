@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -16,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { DeleteAction } from '@/components/ui/form-actions';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { CONTENT_GUTTER, contentColumn } from '@/components/ui/screen';
+import { SheetScrollView } from '@/components/ui/sheet-scroll-view';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useBudgetMutations } from '@/hooks/use-budget-mutations';
 import { useBudgets } from '@/hooks/use-budgets';
@@ -122,7 +122,12 @@ export default function BudgetScreen() {
   function handleCreate(values: BudgetFormValues) {
     setErrorText(undefined);
     createBudget.mutate(
-      { groupId: activeGroupId as string, categoryId: values.categoryId, amount: values.amount },
+      {
+        groupId: activeGroupId as string,
+        categoryId: values.categoryId,
+        amount: values.amount,
+        period: values.period,
+      },
       {
         onSuccess: () => goBackOr(router, '/budgets'),
         onError: (error) => setErrorText(dataErrorMessage(error)),
@@ -189,7 +194,7 @@ export default function BudgetScreen() {
         </Text>
       </View>
 
-      <ScrollView
+      <SheetScrollView
         // La feuille centre ses blocs (`alignItems: 'center'`) : sans cette largeur explicite, le ScrollView se réduirait à la largeur de son contenu, que son propre conteneur exprime en pourcentage de lui — une mesure qui ne converge pas.
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -256,7 +261,7 @@ export default function BudgetScreen() {
             onSubmit={handleCreate}
           />
         )}
-      </ScrollView>
+      </SheetScrollView>
     </View>
   );
 }

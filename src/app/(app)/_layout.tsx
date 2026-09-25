@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { OfflineBanner } from '@/components/ui/offline-banner';
 import { useBudgetsRealtime } from '@/hooks/use-budgets-realtime';
 import { useMembershipsRealtime } from '@/hooks/use-memberships-realtime';
+import { useRecurringRealtime } from '@/hooks/use-recurring-realtime';
 import { useSavingsGoalsRealtime } from '@/hooks/use-savings-goals-realtime';
 import { useTransactionsRealtime } from '@/hooks/use-transactions-realtime';
 import { ActiveGroupProvider } from '@/providers/active-group-provider';
@@ -27,6 +28,7 @@ function AppStack() {
   useBudgetsRealtime();
   useSavingsGoalsRealtime();
   useMembershipsRealtime();
+  useRecurringRealtime();
 
   return (
     <View style={styles.root}>
@@ -77,6 +79,16 @@ function AppStack() {
             }}
           />
           <Stack.Screen name="group" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="recurring-list" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen
+            name="recurring"
+            options={{
+              presentation: 'formSheet',
+              sheetAllowedDetents: 'fitToContents',
+              sheetGrabberVisible: true,
+              sheetCornerRadius: 24,
+            }}
+          />
           <Stack.Screen
             name="transaction"
             options={{

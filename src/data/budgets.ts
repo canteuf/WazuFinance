@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import type { Tables } from '@/types/database';
+import type { BudgetPeriod, Tables } from '@/types/database';
 
 export type BudgetWithCategory = Tables<'budgets'> & {
   // Nullable non pas à cause du schéma mais de RLS : rien n'empêche en base qu'un budget pointe une catégorie hors de portée du groupe (seul le sélecteur du formulaire le filtre côté client), et RLS masque alors la ligne jointe. Même situation que `category` dans src/data/transactions.ts.
@@ -33,20 +33,19 @@ export type CreateBudgetInput = {
   groupId: string;
   categoryId: string;
   amount: number;
+  /**
+   * 'monthly' suit la période budgétaire du groupe (period_start_day), comme le solde ; 'weekly' la semaine du lundi au dimanche (weekBounds()). Pour qui est payé à la journée ou à la semaine, c'est l'horizon qui a du sens.
+   */
+  period: BudgetPeriod;
 };
 
-/**
- * `period` est écrit en dur à 'monthly'.
- *
- * L'enum `budget_period` accepte aussi 'weekly', que la V1 n'expose pas : un budget suit la période budgétaire du groupe (period_start_day), la même que le solde et la répartition. Le jour où l'hebdomadaire arrivera, il faudra une seconde fonction de bornes et une convention de début de semaine — ce n'est pas une valeur à faire remonter dans le formulaire en attendant.
- */
 export async function create(input: CreateBudgetInput): Promise<Tables<'budgets'>> {
   const { data, error } = await supabase
     .from('budgets')
     .insert({
       group_id: input.groupId,
       category_id: input.categoryId,
-      period: 'monthly',
+      period: input.period,
       amount: input.amount,
     })
     .select()

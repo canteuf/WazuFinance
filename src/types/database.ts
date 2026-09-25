@@ -343,6 +343,73 @@ export type Database = {
           },
         ]
       }
+      recurring_transactions: {
+        Row: {
+          amount: number
+          anchor_day: number
+          category_id: string | null
+          created_at: string
+          frequency: Database["public"]["Enums"]["recurrence_frequency"]
+          group_id: string
+          id: string
+          next_due_on: string
+          note: string | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          anchor_day: number
+          category_id?: string | null
+          created_at?: string
+          frequency: Database["public"]["Enums"]["recurrence_frequency"]
+          group_id: string
+          id?: string
+          next_due_on: string
+          note?: string | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          anchor_day?: number
+          category_id?: string | null
+          created_at?: string
+          frequency?: Database["public"]["Enums"]["recurrence_frequency"]
+          group_id?: string
+          id?: string
+          next_due_on?: string
+          note?: string | null
+          type?: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_transactions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_transactions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "budget_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       savings_goals: {
         Row: {
           created_at: string
@@ -545,6 +612,35 @@ export type Database = {
           total: number
         }[]
       }
+      confirm_recurring: {
+        Args: {
+          p_amount?: number
+          p_due_on: string
+          p_id: string
+          p_occurred_on?: string
+          p_transaction_id: string
+        }
+        Returns: {
+          amount: number
+          category_id: string | null
+          created_at: string
+          group_id: string
+          id: string
+          is_savings: boolean
+          note: string | null
+          occurred_on: string
+          savings_goal_id: string | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "transactions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_shared_group: { Args: { name: string }; Returns: string }
       daily_totals: {
         Args: {
@@ -607,6 +703,14 @@ export type Database = {
         Args: { invitation_code: string }
         Returns: string
       }
+      next_recurrence: {
+        Args: {
+          p_anchor_day: number
+          p_due_on: string
+          p_frequency: Database["public"]["Enums"]["recurrence_frequency"]
+        }
+        Returns: string
+      }
       owned_groups_with_other_members: {
         Args: never
         Returns: {
@@ -639,12 +743,17 @@ export type Database = {
         }[]
       }
       shares_group_with: { Args: { other_user_id: string }; Returns: boolean }
+      skip_recurring: {
+        Args: { p_due_on: string; p_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       activity_action: "update" | "delete"
       activity_subject: "transaction" | "budget"
       budget_period: "weekly" | "monthly"
       membership_role: "owner" | "member"
+      recurrence_frequency: "weekly" | "monthly"
       transaction_type: "expense" | "income"
     }
     CompositeTypes: {
@@ -780,6 +889,7 @@ export const Constants = {
       activity_subject: ["transaction", "budget"],
       budget_period: ["weekly", "monthly"],
       membership_role: ["owner", "member"],
+      recurrence_frequency: ["weekly", "monthly"],
       transaction_type: ["expense", "income"],
     },
   },
@@ -791,3 +901,4 @@ export type TransactionType = Enums<'transaction_type'>;
 export type BudgetPeriod = Enums<'budget_period'>;
 export type ActivitySubject = Enums<'activity_subject'>;
 export type ActivityAction = Enums<'activity_action'>;
+export type RecurrenceFrequency = Enums<'recurrence_frequency'>;

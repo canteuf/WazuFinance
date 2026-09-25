@@ -19,6 +19,7 @@ import { CONTENT_GUTTER, contentColumn } from '@/components/ui/screen';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import type { TransactionFilters } from '@/data/transactions';
 import { useActiveGroup } from '@/hooks/use-active-group';
+import { useRecurring } from '@/hooks/use-recurring';
 import { useCategories } from '@/hooks/use-categories';
 import { useDailyTotals } from '@/hooks/use-daily-totals';
 import { useExportTransactions, type ExportFormat } from '@/hooks/use-export-transactions';
@@ -138,6 +139,7 @@ export default function HistoryScreen() {
 
   // Le menu de format n'est ouvert que le temps du choix : refermé dès l'export lancé, il ne reste pas à traîner sous l'en-tête.
   const [formatMenuOpen, setFormatMenuOpen] = useState(false);
+  const recurringCount = useRecurring().recurring.length;
 
   function handleExport(format: ExportFormat) {
     setFormatMenuOpen(false);
@@ -361,6 +363,22 @@ export default function HistoryScreen() {
               ) : null}
               {/* Hors des filtres et des totaux par jour, comme sur le tableau de bord : ces saisies n'existent pas encore en base, et ne rejoignent le livre qu'à leur envoi. */}
               <PendingTransactions />
+              {/* L'entrée permanente vers les opérations récurrentes : le bloc « À confirmer » de la Synthèse n'apparaît qu'à l'échéance. Absente tant qu'il n'y en a aucune, pour ne pas encombrer l'en-tête. */}
+              {recurringCount > 0 ? (
+                <Link href="/recurring-list" asChild>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Opérations récurrentes, ${recurringCount}`}
+                    style={StyleSheet.flatten([styles.recurringLink, { borderColor: colors.border }])}
+                  >
+                    <MaterialCommunityIcons name="calendar-sync" size={20} color={colors.primary} />
+                    <Text style={[styles.recurringLabel, { color: colors.text }]}>
+                      Opérations récurrentes ({recurringCount})
+                    </Text>
+                    <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textMuted} />
+                  </Pressable>
+                </Link>
+              ) : null}
               <View style={styles.ledgerHead}>
                 <MaterialCommunityIcons name="book-open-variant" size={18} color={colors.primary} />
                 <Text style={[styles.ledgerTitle, { color: colors.text }]} numberOfLines={1}>
@@ -477,6 +495,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     paddingTop: spacing.sm,
+  },
+  recurringLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+  },
+  recurringLabel: {
+    flex: 1,
+    fontFamily: font.semibold,
+    fontSize: 16,
   },
   ledgerTitle: {
     flex: 1,

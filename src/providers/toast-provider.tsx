@@ -15,10 +15,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CONTENT_GUTTER } from '@/components/ui/screen';
 import { font, radius, spacing, useColors } from '@/theme/tokens';
 
-export type ToastTone = 'success' | 'info';
+export type ToastTone = 'success' | 'info' | 'error';
 
 export type ToastApi = {
-  /** Affiche un message bref en bas de l'écran, l'annonce au lecteur d'écran, et fait vibrer pour un succès. */
+  /** Affiche un message bref en bas de l'écran, l'annonce au lecteur d'écran, et fait vibrer pour un succès ou une erreur. */
   show: (message: string, tone?: ToastTone) => void;
 };
 
@@ -76,9 +76,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
       // Le message visuel ne suffit pas : il apparaît loin du dernier élément touché, et un lecteur d'écran ne le lirait pas de lui-même.
       AccessibilityInfo.announceForAccessibility(message);
-      if (tone === 'success' && Platform.OS !== 'web') {
+      if (tone !== 'info' && Platform.OS !== 'web') {
         // La vibration ne conditionne rien : un appareil sans moteur de vibration, ou un build sans le module, ne doit pas faire échouer la saisie.
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+        Haptics.notificationAsync(
+          tone === 'error'
+            ? Haptics.NotificationFeedbackType.Error
+            : Haptics.NotificationFeedbackType.Success
+        ).catch(() => undefined);
       }
     },
     [opacity]
@@ -103,7 +107,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             style={[styles.toast, { backgroundColor: colors.text, opacity }]}
           >
             <MaterialCommunityIcons
-              name={toast.tone === 'success' ? 'check-circle' : 'cloud-upload-outline'}
+              name={
+                toast.tone === 'success'
+                  ? 'check-circle'
+                  : toast.tone === 'error'
+                    ? 'alert-circle'
+                    : 'cloud-upload-outline'
+              }
               size={20}
               color={colors.background}
             />

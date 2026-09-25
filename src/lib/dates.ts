@@ -79,6 +79,22 @@ export function periodBounds(today: string, startDay: number): { from: string; t
 }
 
 /**
+ * Bornes de la semaine en cours, du lundi au lundi suivant exclu, pour les budgets hebdomadaires.
+ *
+ * Le lundi, comme le calendrier en usage en Afrique centrale et la norme ISO 8601. Calculée sur l'appareil, pour la même raison que periodBounds() : le serveur est en UTC.
+ */
+export function weekBounds(today: string): { from: string; to: string } {
+  const date = isoToDate(today);
+  // getDay() : 0 pour dimanche, 1 pour lundi. Le dimanche est le septième jour de la semaine, pas le premier.
+  const sinceMonday = (date.getDay() + 6) % 7;
+  const monday = new Date(date.getFullYear(), date.getMonth(), date.getDate() - sinceMonday);
+  return {
+    from: dateToIso(monday),
+    to: dateToIso(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 7)),
+  };
+}
+
+/**
  * Libellé d'une période, à placer derrière un nom : « Solde » + ce libellé.
  *
  * Démarrage le 1er : la période est un mois calendaire et se nomme par son mois. Sinon elle chevauche deux mois, et seul l'intervalle est exact. `to` étant exclue, la date affichée en fin de période est la veille.

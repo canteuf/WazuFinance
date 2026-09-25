@@ -74,7 +74,9 @@ export function BudgetsEntry() {
       ) : (
         <View style={styles.rows}>
           {preview.map((item) => {
-            const name = item.budget.category?.name ?? 'Catégorie inconnue';
+            const categoryName = item.budget.category?.name ?? 'Catégorie inconnue';
+            // Ses chiffres ne portent que sur la semaine : sans la mention, ils se liraient comme ceux de la période.
+            const name = item.budget.period === 'weekly' ? `${categoryName} (semaine)` : categoryName;
             const percent = Math.round(item.ratio * 100);
 
             return (

@@ -16,6 +16,7 @@ import { CategoryCreator } from '@/components/transaction/category-creator';
 import { CategoryPicker } from '@/components/transaction/category-picker';
 import { DateField } from '@/components/transaction/date-field';
 import { Button } from '@/components/ui/button';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { CONTENT_GUTTER } from '@/components/ui/screen';
 import { useCategories } from '@/hooks/use-categories';
 import { useFrequentAmounts } from '@/hooks/use-frequent-amounts';
@@ -23,8 +24,9 @@ import { dataErrorMessage } from '@/lib/data-errors';
 import { formatOccurredOn, todayIso } from '@/lib/dates';
 import { readLastCategory } from '@/lib/last-used';
 import { formatMoney, parseAmount, spokenAmount, toAmountInput } from '@/lib/money';
+import { anchorFor, describeRecurrence } from '@/lib/recurrence';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
-import type { TransactionType } from '@/types/database';
+import type { RecurrenceFrequency, TransactionType } from '@/types/database';
 
 export type TransactionFormValues = {
   type: TransactionType;
@@ -32,7 +34,11 @@ export type TransactionFormValues = {
   categoryId: string;
   occurredOn: string;
   note: string | null;
+  /** Répéter cette opération : `null` pour une fois seulement. Toujours `null` en modification. */
+  repeat: RecurrenceFrequency | null;
 };
+
+type RepeatChoice = 'once' | RecurrenceFrequency;
 
 type TransactionFormProps = {
   groupId: string;
@@ -47,6 +53,10 @@ type TransactionFormProps = {
   errorText?: string;
   onSubmit: (values: TransactionFormValues) => void;
   onDelete?: () => void;
+  /**
+   * Propose de répéter l'opération. Faux en modification, où la question ne se pose plus, et hors ligne : la récurrence se crée sur le serveur et ne patiente pas en file, contrairement à la saisie.
+   */
+  allowRepeat?: boolean;
 };
 
 /**
@@ -64,6 +74,7 @@ export function TransactionForm({
   errorText,
   onSubmit,
   onDelete,
+  allowRepeat = false,
 }: TransactionFormProps) {
   const colors = useColors();
   const elevation = useElevation();
@@ -86,6 +97,7 @@ export function TransactionForm({
     Boolean(initialValues?.note) ||
       (initialValues !== undefined && initialValues.occurredOn !== todayIso())
   );
+  const [repeat, setRepeat] = useState<RepeatChoice>('once');
   // Deuxième étape de confirmation avant suppression, voir le bloc de rendu plus bas pour la justification de ce choix.
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
@@ -139,6 +151,7 @@ export function TransactionForm({
       categoryId,
       occurredOn,
       note: note.trim() === '' ? null : note.trim(),
+      repeat: allowRepeat && repeat !== 'once' ? repeat : null,
     });
   }
 
@@ -285,6 +298,28 @@ export function TransactionForm({
               />
             </View>
           </View>
+
+          {allowRepeat ? (
+            <View style={styles.field}>
+              <Text style={[styles.eyebrow, { color: colors.textMuted }]}>Répéter</Text>
+              <SegmentedControl<RepeatChoice>
+                options={[
+                  { value: 'once', label: 'Une fois', icon: 'numeric-1-circle-outline' },
+                  { value: 'monthly', label: 'Mois', icon: 'calendar-month-outline' },
+                  { value: 'weekly', label: 'Semaine', icon: 'calendar-week' },
+                ]}
+                value={repeat}
+                onChange={setRepeat}
+              />
+              {/* Dit le jour retenu, qui peut différer de la date saisie (un 30 revient le 28), et que rien n'entrera au solde sans accord. */}
+              {repeat !== 'once' ? (
+                <Text style={[styles.hint, { color: colors.textMuted }]}>
+                  {describeRecurrence(repeat, anchorFor(repeat, occurredOn))}. L’app vous la proposera
+                  à chaque échéance, à confirmer d’un geste.
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
         </>
       ) : (
         // Résumé de ce qui s'enregistrera si l'on ne touche à rien : la date du jour, sans note. Le toucher déplie les deux champs.

@@ -10,6 +10,7 @@ import {
 
 import { BudgetsEntry } from "@/components/dashboard/budgets-entry";
 import { CategoryBreakdown } from "@/components/dashboard/category-breakdown";
+import { DueRecurring } from "@/components/dashboard/due-recurring";
 import { PendingTransactions } from "@/components/dashboard/pending-transactions";
 import { PeriodSummary } from "@/components/dashboard/period-summary";
 import { RecentTransactions } from "@/components/dashboard/recent-transactions";
@@ -103,6 +104,9 @@ export default function DashboardScreen() {
     >
       {/* La carte porte ses propres états de chargement et d'erreur : un résumé en échec ne doit pas emporter la liste, qui a pu aboutir. */}
       <PeriodSummary />
+
+      {/* Les échéances récurrentes arrivées, juste sous le solde qu'elles vont modifier, et avant les saisies en attente : une échéance demande une décision, une saisie en attente seulement du réseau. Ne rend rien quand rien n'est dû. */}
+      <DueRecurring />
 
       {/* Juste sous le solde, que ces saisies ne comptent pas encore : c'est là que l'œil les cherche en revenant de la feuille, et la liste des dernières opérations est souvent sous la ligne de flottaison. Ne rend rien quand rien n'attend. */}
       <PendingTransactions />

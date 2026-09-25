@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { getCategoryBreakdown, type CategorySlice } from '@/data/summary';
 import { useActiveGroup } from '@/hooks/use-active-group';
-import { periodBounds, todayIso } from '@/lib/dates';
+import { periodBounds, todayIso, weekBounds } from '@/lib/dates';
 import { queryKeys } from '@/lib/query-keys';
 
 /** Repli quand le groupe actif n'est pas encore résolu : le mois calendaire. */
@@ -12,8 +12,13 @@ const DEFAULT_START_DAY = 1;
  * Répartition des dépenses de la période en cours, la plus grosse part d'abord.
  *
  * Mêmes bornes que `usePeriodSummary` : les deux doivent parler de la même période, sans quoi le total affiché et la somme des parts se contrediraient à l'écran.
+ *
+ * `scope: 'week'` lit la semaine en cours à la place, pour les budgets hebdomadaires ; `enabled: false` évite la lecture quand aucun n'existe.
  */
-export function useCategoryBreakdown(): {
+export function useCategoryBreakdown({
+  scope = 'period',
+  enabled = true,
+}: { scope?: 'period' | 'week'; enabled?: boolean } = {}): {
   slices: CategorySlice[];
   isLoading: boolean;
   error: unknown;
@@ -21,15 +26,16 @@ export function useCategoryBreakdown(): {
   isLoadingError: boolean;
 } {
   const { activeGroupId, activeGroup } = useActiveGroup();
-  const { from, to } = periodBounds(
-    todayIso(),
-    activeGroup?.periodStartDay ?? DEFAULT_START_DAY
-  );
+  const today = todayIso();
+  const { from, to } =
+    scope === 'week'
+      ? weekBounds(today)
+      : periodBounds(today, activeGroup?.periodStartDay ?? DEFAULT_START_DAY);
 
   const { data, isLoading, error, isLoadingError } = useQuery({
-    queryKey: queryKeys.categoryBreakdown(activeGroupId ?? '', from),
+    queryKey: queryKeys.categoryBreakdown(activeGroupId ?? '', from, to),
     queryFn: () => getCategoryBreakdown(activeGroupId as string, from, to),
-    enabled: activeGroupId !== null,
+    enabled: enabled && activeGroupId !== null,
   });
 
   return { slices: data ?? [], isLoading, error, isLoadingError };

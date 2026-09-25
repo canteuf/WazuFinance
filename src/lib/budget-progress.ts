@@ -39,22 +39,25 @@ export function statusFor(ratio: number): BudgetStatus {
 }
 
 /**
- * Rapproche chaque budget de la dépense de sa catégorie sur la période.
+ * Rapproche chaque budget de la dépense de sa catégorie sur sa période : la période budgétaire du groupe pour un budget mensuel, la semaine en cours pour un budget hebdomadaire (`weekSlices`, vide tant qu'aucun n'existe).
  *
- * Les deux ensembles viennent de deux requêtes portant les mêmes bornes : `listForGroup` pour les plafonds, `category_breakdown` pour les dépenses. La somme des montants a déjà été faite par Postgres sur du numeric(12,2) ; il ne reste ici qu'une correspondance par identifiant et une division de deux valeurs exactes. Additionner des montants ici, en revanche, passerait par des flottants binaires — ne pas le faire.
+ * Les ensembles viennent de requêtes portant les mêmes bornes que le reste de l'écran : `listForGroup` pour les plafonds, `category_breakdown` pour les dépenses. La somme des montants a déjà été faite par Postgres sur du numeric(12,2) ; il ne reste ici qu'une correspondance par identifiant et une division de deux valeurs exactes. Additionner des montants ici, en revanche, passerait par des flottants binaires — ne pas le faire.
  *
  * `budget.amount > 0` est garanti par la contrainte `check (amount > 0)` de la table : pas de garde contre la division par zéro, elle serait du code mort.
  */
 export function budgetProgress(
   budgets: BudgetWithCategory[],
-  slices: CategorySlice[]
+  slices: CategorySlice[],
+  weekSlices: CategorySlice[] = []
 ): BudgetProgress[] {
   const spentByCategory = new Map(slices.map((slice) => [slice.categoryId, slice.total]));
+  const spentThisWeek = new Map(weekSlices.map((slice) => [slice.categoryId, slice.total]));
 
   return budgets
     .map((budget) => {
       // Absente de la répartition : la jointure interne de category_breakdown écarte les catégories sans dépense, elle ne les rend pas à zéro.
-      const spent = spentByCategory.get(budget.category_id) ?? 0;
+      const spent =
+        (budget.period === 'weekly' ? spentThisWeek : spentByCategory).get(budget.category_id) ?? 0;
       const limit = budget.amount;
       const ratio = spent / limit;
 

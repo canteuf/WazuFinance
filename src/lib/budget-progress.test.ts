@@ -2,12 +2,17 @@ import { budgetProgress, WARNING_RATIO } from '@/lib/budget-progress';
 import type { BudgetWithCategory } from '@/data/budgets';
 import type { CategorySlice } from '@/data/summary';
 
-function budget(categoryId: string, amount: number, name = 'Catégorie'): BudgetWithCategory {
+function budget(
+  categoryId: string,
+  amount: number,
+  name = 'Catégorie',
+  period: BudgetWithCategory['period'] = 'monthly'
+): BudgetWithCategory {
   return {
     id: `budget-${categoryId}`,
     group_id: 'group-1',
     category_id: categoryId,
-    period: 'monthly',
+    period,
     amount,
     created_at: '2026-09-01T00:00:00Z',
     updated_at: '2026-09-01T00:00:00Z',
@@ -20,6 +25,20 @@ function slice(categoryId: string, total: number): CategorySlice {
 }
 
 describe('budgetProgress', () => {
+  it('compare un budget hebdomadaire à la dépense de la semaine, pas de la période', () => {
+    const rows = budgetProgress(
+      [budget('cat-1', 200, 'Transport', 'weekly'), budget('cat-2', 200, 'Alimentation')],
+      [slice('cat-1', 900), slice('cat-2', 50)],
+      [slice('cat-1', 30), slice('cat-2', 10)]
+    );
+    const weekly = rows.find((row) => row.budget.category_id === 'cat-1');
+    const monthly = rows.find((row) => row.budget.category_id === 'cat-2');
+
+    expect(weekly?.spent).toBe(30);
+    expect(weekly?.status).toBe('ok');
+    expect(monthly?.spent).toBe(50);
+  });
+
   it('rapproche un budget de sa dépense par catégorie', () => {
     const [row] = budgetProgress([budget('cat-1', 200)], [slice('cat-1', 50)]);
 

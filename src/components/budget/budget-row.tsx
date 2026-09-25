@@ -17,16 +17,17 @@ import {
   useIsDark,
 } from '@/theme/tokens';
 
-/** Sous le nom : ce qui reste, ou de combien le plafond est dépassé. Le texte dit ce que la couleur dit, pour qui ne la distingue pas. */
+/** Sous le nom : ce qui reste, ou de combien le plafond est dépassé. Le texte dit ce que la couleur dit, pour qui ne la distingue pas. Un budget hebdomadaire le précise : ses chiffres ne portent que sur la semaine, pas sur la période du reste de l'écran. */
 function statusText(item: BudgetProgress): string {
+  const scope = item.budget.period === 'weekly' ? ' cette semaine' : '';
   if (item.status === 'over') {
     // À exactement 100 %, rien n'est dépassé : « Dépassé de 0 XAF » disait faux. Le statut reste `over` — le budget est épuisé, la prochaine dépense le dépassera —, seul le texte change.
     if (item.remaining === 0) {
-      return 'Plafond atteint';
+      return `Plafond atteint${scope}`;
     }
-    return `Dépassement de ${formatMoney(Math.abs(item.remaining))}`;
+    return `Dépassement de ${formatMoney(Math.abs(item.remaining))}${scope}`;
   }
-  return `Reste ${formatMoney(item.remaining)}`;
+  return `Reste ${formatMoney(item.remaining)}${scope}`;
 }
 
 /** La pastille qualifie l'état en quelques mots, d'après la maquette : « Seuil d'alerte (84 %) », « Sous contrôle (57 %) ». */

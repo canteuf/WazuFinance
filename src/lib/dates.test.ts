@@ -1,5 +1,6 @@
 import {
   dateToIso,
+  weekBounds,
   formatMonthYear,
   formatOccurredOn,
   formatPeriodLabel,
@@ -147,5 +148,25 @@ describe('periodStartDayLabel', () => {
 describe('formatMonthYear', () => {
   it('donne le mois en toutes lettres, capitalisé, avec l’année', () => {
     expect(formatMonthYear('2026-12-31')).toBe('Décembre 2026');
+  });
+});
+
+describe('weekBounds', () => {
+  it('commence le lundi et finit le lundi suivant, exclu', () => {
+    // Vendredi 25 septembre 2026.
+    expect(weekBounds('2026-09-25')).toEqual({ from: '2026-09-21', to: '2026-09-28' });
+  });
+
+  it('rattache le dimanche à la semaine qui s’achève', () => {
+    expect(weekBounds('2026-09-27')).toEqual({ from: '2026-09-21', to: '2026-09-28' });
+  });
+
+  it('garde le lundi lui-même comme début', () => {
+    expect(weekBounds('2026-09-28')).toEqual({ from: '2026-09-28', to: '2026-10-05' });
+  });
+
+  it('franchit un changement de mois et d’année', () => {
+    // Jeudi 31 décembre 2026.
+    expect(weekBounds('2026-12-31')).toEqual({ from: '2026-12-28', to: '2027-01-04' });
   });
 });

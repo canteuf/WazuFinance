@@ -22,18 +22,21 @@ export function useBudgetProgress(): {
 } {
   const budgets = useBudgets();
   const breakdown = useCategoryBreakdown();
+  // La semaine n'est lue que si un budget hebdomadaire existe : la plupart des groupes n'en ont aucun.
+  const hasWeekly = budgets.budgets.some((budget) => budget.period === 'weekly');
+  const week = useCategoryBreakdown({ scope: 'week', enabled: hasWeekly });
 
   const items = useMemo(
-    () => budgetProgress(budgets.budgets, breakdown.slices),
-    [budgets.budgets, breakdown.slices]
+    () => budgetProgress(budgets.budgets, breakdown.slices, week.slices),
+    [budgets.budgets, breakdown.slices, week.slices]
   );
 
   return {
     items,
     // Les deux comptent : afficher des plafonds sans leur consommation montrerait un instant chaque budget à 0 %, donc tous « ok ».
-    isLoading: budgets.isLoading || breakdown.isLoading,
-    error: budgets.error ?? breakdown.error,
+    isLoading: budgets.isLoading || breakdown.isLoading || (hasWeekly && week.isLoading),
+    error: budgets.error ?? breakdown.error ?? week.error,
     // Les deux, pour la même raison : des plafonds chargés sans leur consommation se liraient tous à 0 %, donc tous « ok ».
-    isEmptyError: budgets.isLoadingError || breakdown.isLoadingError,
+    isEmptyError: budgets.isLoadingError || breakdown.isLoadingError || week.isLoadingError,
   };
 }

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -18,6 +17,7 @@ import { AmountAdjuster } from '@/components/ui/amount-adjuster';
 import { Button } from '@/components/ui/button';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { CONTENT_GUTTER, contentColumn } from '@/components/ui/screen';
+import { SheetScrollView } from '@/components/ui/sheet-scroll-view';
 import { useAuth } from '@/hooks/use-auth';
 import { useSavingsGoalMutations } from '@/hooks/use-savings-goal-mutations';
 import { useSavingsGoals } from '@/hooks/use-savings-goals';
@@ -172,7 +172,7 @@ export default function SavingsGoalScreen() {
         </Text>
       </View>
 
-      <ScrollView
+      <SheetScrollView
         // La feuille centre ses blocs (`alignItems: 'center'`) : sans cette largeur explicite, le ScrollView se réduirait à la largeur de son contenu, que son propre conteneur exprime en pourcentage de lui — une mesure qui ne converge pas.
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -248,7 +248,7 @@ export default function SavingsGoalScreen() {
           onSubmit={handleSubmit}
           onDelete={existing ? handleDelete : undefined}
         />
-      </ScrollView>
+      </SheetScrollView>
     </View>
   );
 }

@@ -5,14 +5,17 @@ import { AmountInput } from '@/components/transaction/amount-input';
 import { CategoryCreator } from '@/components/transaction/category-creator';
 import { CategoryPicker } from '@/components/transaction/category-picker';
 import { PrimaryAction } from '@/components/ui/form-actions';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import type { Category } from '@/data/categories';
 import { WARNING_RATIO } from '@/lib/budget-progress';
 import { formatMoney, parseAmount } from '@/lib/money';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
+import type { BudgetPeriod } from '@/types/database';
 
 export type BudgetFormValues = {
   categoryId: string;
   amount: number;
+  period: BudgetPeriod;
 };
 
 type BudgetFormProps = {
@@ -34,6 +37,8 @@ export function BudgetForm({ availableCategories, submitting, errorText, onSubmi
 
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [amountText, setAmountText] = useState('');
+  // Par mois d'office : c'est la période du solde et de la synthèse. Par semaine pour qui reçoit son argent à la semaine ou à la journée.
+  const [period, setPeriod] = useState<BudgetPeriod>('monthly');
   const [touched, setTouched] = useState(false);
 
   const amount = parseAmount(amountText);
@@ -45,7 +50,7 @@ export function BudgetForm({ availableCategories, submitting, errorText, onSubmi
     if (!valid) {
       return;
     }
-    onSubmit({ categoryId: categoryId as string, amount: amount as number });
+    onSubmit({ categoryId: categoryId as string, amount: amount as number, period });
   }
 
   return (
@@ -68,12 +73,21 @@ export function BudgetForm({ availableCategories, submitting, errorText, onSubmi
       </View>
 
       <View style={styles.field}>
-        <Text style={[styles.eyebrow, { color: colors.textMuted }]}>2. Plafond de la période</Text>
+        <Text style={[styles.eyebrow, { color: colors.textMuted }]}>2. Plafond</Text>
+        <SegmentedControl
+          options={[
+            { value: 'monthly', label: 'Par mois', icon: 'calendar-month-outline' },
+            { value: 'weekly', label: 'Par semaine', icon: 'calendar-week' },
+          ]}
+          value={period}
+          onChange={setPeriod}
+        />
         <View style={[styles.card, { backgroundColor: colors.surface }, elevation.card]}>
           <AmountInput value={amountText} onChangeText={setAmountText} />
         </View>
         {/* Une multiplication pour l'affichage, pas une somme : le seuil que budgetProgress() appliquera au même plafond. */}
         <Text style={[styles.hint, { color: colors.textMuted }]}>
+          {period === 'weekly' ? 'Remis à zéro chaque lundi. ' : ''}
           {amount !== null
             ? `L’alerte s’affichera à ${Math.round(WARNING_RATIO * 100)} % du plafond, soit ${formatMoney(amount * WARNING_RATIO)}.`
             : `L’alerte s’affichera à ${Math.round(WARNING_RATIO * 100)} % du plafond.`}

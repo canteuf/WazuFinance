@@ -5,7 +5,6 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -17,15 +16,18 @@ import {
 } from '@/components/transaction/transaction-form';
 import { Button } from '@/components/ui/button';
 import { CONTENT_GUTTER, contentColumn } from '@/components/ui/screen';
+import { SheetScrollView } from '@/components/ui/sheet-scroll-view';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useAuth } from '@/hooks/use-auth';
 import { useIsOnline } from '@/hooks/use-offline-status';
+import { useRecurringMutations } from '@/hooks/use-recurring-mutations';
 import { useSheetMaxHeight } from '@/hooks/use-sheet-max-height';
 import { useTransaction } from '@/hooks/use-transaction';
 import { useToast } from '@/hooks/use-toast';
 import { useTransactionMutations } from '@/hooks/use-transaction-mutations';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { formatMoney } from '@/lib/money';
+import { anchorFor, describeRecurrence, nextDueAfter } from '@/lib/recurrence';
 import { font, spacing, useColors } from '@/theme/tokens';
 import { goBackOr } from '@/lib/navigation';
 
@@ -48,6 +50,7 @@ export default function TransactionScreen() {
     useTransactionMutations();
   const online = useIsOnline();
   const toast = useToast();
+  const recurringMutations = useRecurringMutations();
   const [errorText, setErrorText] = useState<string>();
   // Tiré une fois pour toute la vie de la feuille : un second « Enregistrer » après un échec réseau renvoie la même saisie, que la base reconnaît au lieu de la créer deux fois (voir `create` dans src/data/transactions.ts).
   const [newId] = useState(randomUUID);
@@ -118,14 +121,49 @@ export default function TransactionScreen() {
     const what = `${values.type === 'expense' ? 'Dépense' : 'Revenu'} de ${formatMoney(values.amount)}`;
 
     if (typeof id === 'string') {
+      // `repeat` n'a pas de sens en modification, et ne doit pas partir dans les variables de la mutation, qui sont gardées sur le disque hors ligne.
+      const { repeat: _repeat, ...patch } = values;
       updateTransaction.mutate(
-        { id, patch: values },
+        { id, patch },
         { onSuccess: () => succeed(`${what} modifié${values.type === 'expense' ? 'e' : ''}`), onError }
       );
     } else {
+      const { repeat, ...entry } = values;
+      const saved = `${what} enregistré${values.type === 'expense' ? 'e' : ''}`;
       createTransaction.mutate(
-        { ...values, id: newId, groupId: activeGroupId as string, userId: userId as string },
-        { onSuccess: () => succeed(`${what} enregistré${values.type === 'expense' ? 'e' : ''}`), onError }
+        { ...entry, id: newId, groupId: activeGroupId as string, userId: userId as string },
+        {
+          onSuccess: () => {
+            if (!repeat) {
+              succeed(saved);
+              return;
+            }
+            // L'opération saisie est la première occurrence ; la récurrence propose la suivante. Si sa création échoue, la feuille reste ouverte sur l'erreur : un nouvel « Enregistrer » renvoie la même saisie (même id, sans doublon) puis retente la récurrence.
+            const anchorDay = anchorFor(repeat, entry.occurredOn);
+            recurringMutations.create.mutate(
+              {
+                groupId: activeGroupId as string,
+                userId: userId as string,
+                categoryId: entry.categoryId,
+                type: entry.type,
+                amount: entry.amount,
+                note: entry.note,
+                frequency: repeat,
+                anchorDay,
+                nextDueOn: nextDueAfter(repeat, anchorDay, entry.occurredOn),
+              },
+              {
+                onSuccess: () =>
+                  succeed(`${saved} · ${describeRecurrence(repeat, anchorDay).toLowerCase()}`),
+                onError: (error) =>
+                  setErrorText(
+                    `Opération enregistrée, mais la répétition n’a pas pu être créée : ${dataErrorMessage(error)}`
+                  ),
+              }
+            );
+          },
+          onError,
+        }
       );
     }
     closeIfQueued();
@@ -146,6 +184,7 @@ export default function TransactionScreen() {
         categoryId: existing.data.category_id ?? '',
         occurredOn: existing.data.occurred_on,
         note: existing.data.note,
+        repeat: null,
       }
     : undefined;
 
@@ -169,7 +208,7 @@ export default function TransactionScreen() {
         </Pressable>
       </View>
 
-      <ScrollView
+      <SheetScrollView
         // La feuille centre ses blocs (`alignItems: 'center'`) : sans cette largeur explicite, le ScrollView se réduirait à la largeur de son contenu, que son propre conteneur exprime en pourcentage de lui — une mesure qui ne converge pas.
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -188,8 +227,9 @@ export default function TransactionScreen() {
           errorText={errorText}
           onSubmit={handleSubmit}
           onDelete={typeof id === 'string' ? handleDelete : undefined}
+          allowRepeat={typeof id !== 'string' && online}
         />
-      </ScrollView>
+      </SheetScrollView>
     </View>
   );
 }
