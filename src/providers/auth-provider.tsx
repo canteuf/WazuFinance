@@ -18,7 +18,8 @@ export type AuthState = {
     password: string,
     displayName: string
   ) => Promise<{ needsEmailConfirmation: boolean }>;
-  signOut: () => Promise<void>;
+  /** `local` : efface la session de ce téléphone seulement, sans appel réseau — pour le verrouillage de l'app, qui doit pouvoir déconnecter hors ligne. */
+  signOut: (options?: { local?: boolean }) => Promise<void>;
   /** Envoie par email un code de réinitialisation du mot de passe. Réussit aussi pour une adresse inconnue : Supabase ne dit pas si un compte existe. */
   sendPasswordResetCode: (email: string) => Promise<void>;
   /** Vérifie le code reçu, puis enregistre le nouveau mot de passe ; l'utilisateur est connecté à la fin. */
@@ -109,8 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         return { needsEmailConfirmation: data.session === null };
       },
-      async signOut() {
-        const { error } = await supabase.auth.signOut();
+      async signOut(options) {
+        const { error } = await supabase.auth.signOut(options?.local ? { scope: 'local' } : undefined);
         if (error) {
           throw error;
         }

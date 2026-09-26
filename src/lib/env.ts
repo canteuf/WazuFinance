@@ -8,6 +8,8 @@
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+// Facultative : sans elle, le suivi des plantages reste simplement éteint (voir monitoring.ts). Le DSN est public par conception, comme la clé anon : il permet d'envoyer des erreurs, pas de les lire.
+const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
 
 function required(value: string | undefined, name: string): string {
   if (!value) {
@@ -23,4 +25,5 @@ function required(value: string | undefined, name: string): string {
 export const env = {
   supabaseUrl: required(supabaseUrl, 'EXPO_PUBLIC_SUPABASE_URL'),
   supabaseAnonKey: required(supabaseAnonKey, 'EXPO_PUBLIC_SUPABASE_ANON_KEY'),
+  sentryDsn: sentryDsn || null,
 } as const;

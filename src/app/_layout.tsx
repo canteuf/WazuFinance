@@ -13,14 +13,19 @@ import { useColorScheme } from 'react-native';
 
 import { useAuth } from '@/hooks/use-auth';
 import { usePersistedQueryCache } from '@/hooks/use-persisted-query-cache';
+import { initMonitoring, setMonitoringUser, wrapRoot } from '@/lib/monitoring';
 import { applyThemePreference, readThemePreference } from '@/lib/theme-preference';
 import { AuthProvider } from '@/providers/auth-provider';
 import { QueryProvider } from '@/providers/query-provider';
 import { ThemeTransitionProvider } from '@/providers/theme-transition-provider';
 
 SplashScreen.preventAutoHideAsync();
+// Au chargement du module, avant tout rendu : une erreur au premier écran doit déjà remonter.
+initMonitoring();
 
-export default function RootLayout() {
+export default wrapRoot(RootLayout);
+
+function RootLayout() {
   const scheme = useColorScheme();
 
   return (
@@ -42,6 +47,10 @@ export default function RootLayout() {
 function RootNavigator() {
   const { session, isLoading } = useAuth();
   const cacheRestored = usePersistedQueryCache();
+  const userId = session?.user.id ?? null;
+  useEffect(() => {
+    setMonitoringUser(userId);
+  }, [userId]);
   // React Native n'a pas de police de repli par famille : tant que Bricolage Grotesque n'est pas chargée, chaque écran s'afficherait dans la police système puis se recomposerait. On garde donc le splash sur les deux attentes à la fois.
   const [fontsLoaded, fontError] = useFonts({
     BricolageGrotesque_400Regular,

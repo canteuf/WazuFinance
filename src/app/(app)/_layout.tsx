@@ -9,17 +9,21 @@ import { useSavingsGoalsRealtime } from '@/hooks/use-savings-goals-realtime';
 import { useTransactionsRealtime } from '@/hooks/use-transactions-realtime';
 import { useWalletsRealtime } from '@/hooks/use-wallets-realtime';
 import { ActiveGroupProvider } from '@/providers/active-group-provider';
+import { AppLockProvider } from '@/providers/app-lock-provider';
 import { StackFrameProvider } from '@/providers/stack-frame-provider';
 import { ToastProvider } from '@/providers/toast-provider';
 
 export default function AppLayout() {
   return (
-    <ActiveGroupProvider>
-      {/* Autour de la pile : un message de confirmation doit survivre à la fermeture de la feuille qui l'a déclenché. */}
-      <ToastProvider>
-        <AppStack />
-      </ToastProvider>
-    </ActiveGroupProvider>
+    // Tout en dehors : le verrou couvre l'app entière, feuilles ouvertes comprises (voir AppLockProvider).
+    <AppLockProvider>
+      <ActiveGroupProvider>
+        {/* Autour de la pile : un message de confirmation doit survivre à la fermeture de la feuille qui l'a déclenché. */}
+        <ToastProvider>
+          <AppStack />
+        </ToastProvider>
+      </ActiveGroupProvider>
+    </AppLockProvider>
   );
 }
 
@@ -43,6 +47,7 @@ function AppStack() {
           {/* `slide_from_right` explicite sur les écrans pleins : `default` laisse chaque plateforme choisir sa propre animation (poussée iOS, fondu ou glissement Android selon la version), l'app ne se comportait donc pas de la même façon d'un appareil à l'autre. */}
           <Stack.Screen name="activity" options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="settings" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="app-lock-setup" options={{ animation: 'slide_from_right' }} />
           <Stack.Screen
             name="budget"
             options={{

@@ -24,6 +24,7 @@ npx supabase migration list --linked  # compare local vs remote migration state
 npm run db:types                    # regenerate src/types/database.ts from the linked project
 
 eas build -p android --profile preview   # installable APK, built by EAS (global eas-cli)
+eas update --channel preview --message "…"   # ship JS-only changes to installed preview APKs
 ```
 
 The project is linked to Supabase ref `ozwltxywsqvgmefuqvfv`. Migration files must keep the CLI's `<14-digit timestamp>_name.sql` naming or `db push` skips them.
@@ -38,7 +39,7 @@ Requires `.env` (copy from `.env.example`) with `EXPO_PUBLIC_SUPABASE_URL` and `
 
 ## Expo version discipline
 
-Per [AGENTS.md](AGENTS.md): read https://docs.expo.dev/versions/v57.0.0/ before writing Expo code. SDK 57 / expo-router v6 / React 19.2 APIs differ from older tutorials — notably `Stack.Protected guard={…}` for route guarding.
+Per [AGENTS.md](AGENTS.md): read <https://docs.expo.dev/versions/v57.0.0/> before writing Expo code. SDK 57 / expo-router v6 / React 19.2 APIs differ from older tutorials — notably `Stack.Protected guard={…}` for route guarding.
 
 **Never run `npm audit fix --force`.** npm resolves an advisory by picking whatever version falls outside the vulnerable range, regardless of the SDK: on 2026-09-10 it downgraded `expo` to 46 and `expo-router` to 5 — eleven majors back — and the app could no longer start. Align versions with `npx expo install --fix` only. The moderate advisories `npm audit` reports come from two packages pulled in by the SDK itself (`decode-uri-component` through react-navigation, `uuid` through Expo's tooling); they have no npm-side fix that keeps SDK 57, and they go away when Expo ships patch releases, which `npx expo install --fix` picks up.
 
@@ -82,7 +83,7 @@ The splash screen shares that background colour; `imageWidth` is 140 because the
 
 Routes live under `src/app/` (expo-router, `src/` root configured via `tsconfig` path alias `@/*`).
 
-```
+```text
 src/app/_layout.tsx        AuthProvider + Stack.Protected session guard
 src/app/(auth)/            sign-in, sign-up  — reachable only when session === null
 src/app/(app)/             reachable only when session !== null
@@ -124,6 +125,16 @@ Tables: `users`, `budget_groups`, `account_memberships`, `categories` (`group_id
 The images are generated once by `scripts/gen-avatars.mjs` (DiceBear Avataaars rasterised to PNG by resvg). DiceBear and resvg are deliberately not dependencies: EAS runs `npm ci --include=dev`, and the script only matters when adding an avatar. Each preset fixes every visible attribute instead of a seed, so an id keeps drawing the same face whatever the library version does, and skin tones are spread on purpose. **Ids are append-only** — an id is stored in profiles, and editing a preset would change someone's face under their eyes. To add one: a `PRESETS` line, regenerate, then `AVATAR_IDS` in `src/lib/avatars.ts` and `AVATAR_SOURCES` in `src/components/ui/avatar-sources.ts` (`tsc` fails if the two disagree; a Jest case checks every id has its file).
 
 The database constrains the format (`users_avatar_format`, `^a[0-9]{2}$`), not the list, so adding an avatar needs no migration. The column has its own `grant update (avatar)`, like `display_name`. Other members read it through `users_select_self_or_covisible`, which is what puts faces on the member stacks. `group_overviews()` returns `member_avatars` as an array parallel to `member_names` — same join, order and limit — and `pairMembers()` zips them; an avatar-less member is a `NULL` in the array, not a gap.
+
+## Security & monitoring
+
+**The Supabase session lives in SecureStore** (`src/lib/secure-session-storage.ts`, Keystore on Android, Keychain on iOS), split into 500-character chunks plus a `.count` key because Android caps a SecureStore value around 2 KB and a session exceeds it; the count is written last so a read never sees a truncated mix. A session left in clear in AsyncStorage by an older build is copied over once, then deleted, so updating signs nobody out. The value is cached in memory after the first read: supabase-js reads storage before every request. **Don't reintroduce `expo-crypto`'s AES for this**: it was tried and dropped — on Android `AESSealedData.fromCombined()` throws on the base64 string its docs accept, and decryption returned extra bytes, which corrupted the session and signed the user out on every launch. `android.allowBackup` is `false`, so neither AsyncStorage (query cache included) nor SecureStore reaches Google backups; the query cache itself stays in clear inside the app sandbox.
+
+**App lock** (`AppLockProvider`, mounted in `(app)/_layout.tsx` outside every other provider): off by default, turned on from Paramètres → « Verrouillage de l'app ». A 4-digit code, stored only as a salted SHA-256 in SecureStore under `app_lock_<userId>` (per account, per device, never synced), plus fingerprint/face through `expo-local-authentication` when the phone has one enrolled. It locks on cold start and when the app returns after `LOCK_AFTER_MS` (one minute) in the background; `inactive` doesn't count. The lock screen is an RN `Modal`, not a view over the stack, because a `formSheet` is presented above the stack and would stay visible. Failures persist across restarts: free for four, then 30 s / 1 min / 5 min / 15 min, and the tenth signs out locally and clears the lock (`src/lib/app-lock.ts`, Jest). « Code oublié » does the same after a confirmation — the account password is the way back. Changing or disabling the code re-asks the current one through the same `checkPin` counter, otherwise the setup screen would be a guessing oracle. `signOut({ local: true })` exists for these paths, which must work offline.
+
+**Crash reporting** (`src/lib/monitoring.ts`, Sentry): on only outside `__DEV__` and when `EXPO_PUBLIC_SENTRY_DSN` is set — for EAS builds, as an EAS environment variable, since `.env` is not uploaded. It sends the error, the device and the user id (never the email), with `sendDefaultPii: false`; touch and console breadcrumbs are dropped (accessibility labels carry amounts) and request URLs lose their query string (note search and filters travel there). `reportError()` is for errors the app recovers from silently. The Sentry Expo config plugin is deliberately **not** in `app.json`: it uploads source maps at build time and needs `SENTRY_AUTH_TOKEN`; without the plugin, native and JS crashes are still reported, with minified JS stacks. Adding it later means the plugin entry plus that secret in EAS.
+
+**Over-the-air updates** (`expo-updates`, EAS Update): each build profile has a `channel` in `eas.json`; `runtimeVersion` follows `appVersion`, so **any change to native code (a new native module, an `app.json` plugin) needs `version` bumped in `app.json` and a new build** — otherwise an update would load JS expecting a native module the APK lacks. Updates download in the background at launch and apply at the next cold start. Expo Go ignores them.
 
 ## Data access layers
 
@@ -235,6 +246,7 @@ On the app side, `queryKeys.activity(groupId)` sits outside `['transactions']` a
 In: manual transaction entry, per-category budgets with in-app visual alerts, savings goals, CSV/PDF export (after the main screens, before notifications).
 
 Out, with reasons:
+
 - **Bank connection** — needs an aggregator (Plaid / Powens), PSD2 compliance, recurring API cost. Separate project after V1 is validated by usage.
 - **Multi-currency** — no identified need (the single currency is XAF, see Core data model); adding a `currency` column to `transactions` and `budgets` later is cheap, so don't complicate the schema now.
 - **Push notifications** — needs Expo Notifications, iOS/Android permissions, and a Supabase edge function checking thresholds. In-app alerts suffice for V1.
