@@ -9,6 +9,7 @@ import { FadeInRow } from '@/components/ui/fade-in-row';
 import { Screen } from '@/components/ui/screen';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { useActiveGroup } from '@/hooks/use-active-group';
+import { useCanWrite } from '@/hooks/use-can-write';
 import { useSavingsGoals } from '@/hooks/use-savings-goals';
 import { useSavingsOverview } from '@/hooks/use-savings-overview';
 import { dataErrorMessage } from '@/lib/data-errors';
@@ -32,6 +33,7 @@ export default function SavingsGoalsScreen() {
   const { goals, isLoading, error, isLoadingError } = useSavingsGoals();
   const { overview } = useSavingsOverview();
   const { activeGroup } = useActiveGroup();
+  const canWrite = useCanWrite();
 
   const items = useMemo(() => goals.map(savingsProgress), [goals]);
   const active = items.filter((item) => item.status === 'in_progress');
@@ -62,22 +64,24 @@ export default function SavingsGoalsScreen() {
         </ScreenHeader>
       }
       floatingAction={
-        // La saisie en trois taps reste à portée depuis chaque onglet, comme sur la maquette.
-        <Link href="/transaction" asChild>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Ajouter une opération"
-            // Aplati : <Link asChild> transmet le style à son enfant via un Slot, qui lève une erreur de rendu en développement s'il reçoit un tableau.
-            style={StyleSheet.flatten([
-              styles.fab,
-              elevation.floating,
-              { backgroundColor: colors.primary },
-            ])}
-          >
-            <MaterialCommunityIcons name="plus" size={22} color={colors.primaryText} />
-            <Text style={[styles.fabLabel, { color: colors.primaryText }]}>Ajouter</Text>
-          </Pressable>
-        </Link>
+        // La saisie en trois taps reste à portée depuis chaque onglet, comme sur la maquette. Elle vise le groupe actif, où un lecteur n'a rien à saisir ; ses objectifs, personnels, restent à lui.
+        canWrite ? (
+          <Link href="/transaction" asChild>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Ajouter une opération"
+              // Aplati : <Link asChild> transmet le style à son enfant via un Slot, qui lève une erreur de rendu en développement s'il reçoit un tableau.
+              style={StyleSheet.flatten([
+                styles.fab,
+                elevation.floating,
+                { backgroundColor: colors.primary },
+              ])}
+            >
+              <MaterialCommunityIcons name="plus" size={22} color={colors.primaryText} />
+              <Text style={[styles.fabLabel, { color: colors.primaryText }]}>Ajouter</Text>
+            </Pressable>
+          </Link>
+        ) : undefined
       }
     >
       <View style={styles.titleRow}>

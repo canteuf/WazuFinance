@@ -9,6 +9,7 @@ import { Screen } from '@/components/ui/screen';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import type { DebtOverview } from '@/data/debts';
 import { useActiveGroup } from '@/hooks/use-active-group';
+import { useCanWrite } from '@/hooks/use-can-write';
 import { useDebts, useDebtTotals } from '@/hooks/use-debts';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { formatOccurredOn, todayIso } from '@/lib/dates';
@@ -27,6 +28,7 @@ export default function DebtsScreen() {
   const { activeGroup } = useActiveGroup();
   const { debts, isLoading, error } = useDebts();
   const { totals } = useDebtTotals();
+  const canWrite = useCanWrite();
 
   const lent = debts.filter((debt) => debt.direction === 'lent' && debt.remaining > 0);
   const borrowed = debts.filter((debt) => debt.direction === 'borrowed' && debt.remaining > 0);
@@ -37,7 +39,7 @@ export default function DebtsScreen() {
       align="top"
       header={<ScreenHeader title="Prêts et dettes" onBack={() => goBackOr(router, '/')} />}
       floatingAlign="center"
-      floatingAction={<NewDebtButton />}
+      floatingAction={canWrite ? <NewDebtButton /> : undefined}
     >
       <Text style={[styles.subtitle, { color: colors.textMuted }]}>
         Dans « {activeGroup?.name ?? '…'} ». Un prêt fait baisser le solde, son remboursement le
@@ -61,7 +63,9 @@ export default function DebtsScreen() {
             <MaterialCommunityIcons name="handshake-outline" size={32} color={colors.primary} />
             <Text style={[styles.emptyTitle, { color: colors.text }]}>Aucun prêt ni dette</Text>
             <Text style={[styles.message, { color: colors.textMuted }]}>
-              Touchez « Ajouter » pour noter l’argent prêté à un proche ou emprunté.
+              {canWrite
+                ? 'Touchez « Ajouter » pour noter l’argent prêté à un proche ou emprunté.'
+                : 'Aucun prêt ni dette n’est noté dans ce groupe.'}
             </Text>
           </View>
         </Card>
@@ -120,6 +124,7 @@ function DebtSection({ title, debts }: { title: string; debts: DebtOverview[] })
 
 function DebtRow({ debt }: { debt: DebtOverview }) {
   const colors = useColors();
+  const canWrite = useCanWrite();
   const settled = debt.remaining === 0;
   const late = !settled && debt.dueOn !== null && debt.dueOn < todayIso();
 
@@ -129,39 +134,54 @@ function DebtRow({ debt }: { debt: DebtOverview }) {
   const due =
     debt.dueOn && !settled ? `${late ? 'En retard · ' : 'Échéance '}${formatOccurredOn(debt.dueOn)}` : null;
 
+  const label = [
+    debt.counterparty,
+    settled ? 'soldé' : `reste ${spokenAmount(debt.remaining)} sur ${spokenAmount(debt.amount)}`,
+    due,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
+  const content = (
+    <>
+      <View style={styles.rowHead}>
+        <Text numberOfLines={1} style={[styles.name, { color: colors.text }]}>
+          {debt.counterparty}
+        </Text>
+        <Text style={[styles.detail, { color: settled ? colors.textMuted : colors.text }]}>
+          {detail}
+        </Text>
+      </View>
+      <ProgressBar ratio={debt.paid / debt.amount} tone={settled ? 'muted' : 'positive'} />
+      {due || debt.note ? (
+        <Text
+          numberOfLines={1}
+          style={[styles.meta, { color: late ? colors.warning : colors.textMuted }]}
+        >
+          {[due, debt.note].filter(Boolean).join(' · ')}
+        </Text>
+      ) : null}
+    </>
+  );
+
+  // Un lecteur suit les dettes sans pouvoir enregistrer de remboursement : la ligne ne s'ouvre pas.
+  if (!canWrite) {
+    return (
+      <View accessible accessibilityLabel={label} style={styles.row}>
+        {content}
+      </View>
+    );
+  }
+
   return (
     <Link href={`/debt?id=${debt.id}`} asChild>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={[
-          debt.counterparty,
-          settled
-            ? 'soldé'
-            : `reste ${spokenAmount(debt.remaining)} sur ${spokenAmount(debt.amount)}`,
-          due,
-        ]
-          .filter(Boolean)
-          .join(', ')}
+        accessibilityLabel={label}
         accessibilityHint="Ouvre la dette pour enregistrer un remboursement"
         style={StyleSheet.flatten(styles.row)}
       >
-        <View style={styles.rowHead}>
-          <Text numberOfLines={1} style={[styles.name, { color: colors.text }]}>
-            {debt.counterparty}
-          </Text>
-          <Text style={[styles.detail, { color: settled ? colors.textMuted : colors.text }]}>
-            {detail}
-          </Text>
-        </View>
-        <ProgressBar ratio={debt.paid / debt.amount} tone={settled ? 'muted' : 'positive'} />
-        {due || debt.note ? (
-          <Text
-            numberOfLines={1}
-            style={[styles.meta, { color: late ? colors.warning : colors.textMuted }]}
-          >
-            {[due, debt.note].filter(Boolean).join(' · ')}
-          </Text>
-        ) : null}
+        {content}
       </Pressable>
     </Link>
   );

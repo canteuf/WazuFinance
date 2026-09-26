@@ -52,7 +52,8 @@ export function BudgetRow({
   onPress,
 }: {
   item: BudgetProgress;
-  onPress: () => void;
+  /** Absent pour un lecteur : la carte se lit, elle ne s'ouvre pas. */
+  onPress?: () => void;
 }) {
   const colors = useColors();
   const elevation = useElevation();
@@ -89,8 +90,9 @@ export function BudgetRow({
 
   return (
     <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${categoryName}, ${spokenAmount(item.spent)} sur ${spokenAmount(item.budget.amount)}, ${percent} %. ${statusText(item)}${edited ? '. Plafond modifié' : ''}. Toucher pour ajuster le plafond.`}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={`${categoryName}, ${spokenAmount(item.spent)} sur ${spokenAmount(item.budget.amount)}, ${percent} %. ${statusText(item)}${edited ? '. Plafond modifié' : ''}${onPress ? '. Toucher pour ajuster le plafond.' : '.'}`}
+      disabled={!onPress}
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,

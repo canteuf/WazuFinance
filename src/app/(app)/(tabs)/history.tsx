@@ -19,6 +19,7 @@ import { CONTENT_GUTTER, contentColumn } from '@/components/ui/screen';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import type { TransactionFilters } from '@/data/transactions';
 import { useActiveGroup } from '@/hooks/use-active-group';
+import { useCanWrite } from '@/hooks/use-can-write';
 import { useRecurring } from '@/hooks/use-recurring';
 import { useCategories } from '@/hooks/use-categories';
 import { useDailyTotals } from '@/hooks/use-daily-totals';
@@ -84,6 +85,7 @@ function exportErrorMessage(error: unknown): string {
  */
 export default function HistoryScreen() {
   const colors = useColors();
+  const canWrite = useCanWrite();
   const elevation = useElevation();
   const insets = useSafeAreaInsets();
   const { activeGroup, isLoading: groupLoading } = useActiveGroup();
@@ -364,7 +366,7 @@ export default function HistoryScreen() {
               {/* Hors des filtres et des totaux par jour, comme sur le tableau de bord : ces saisies n'existent pas encore en base, et ne rejoignent le livre qu'à leur envoi. */}
               <PendingTransactions />
               {/* L'entrée permanente vers les opérations récurrentes : le bloc « À confirmer » de la Synthèse n'apparaît qu'à l'échéance. Absente tant qu'il n'y en a aucune, pour ne pas encombrer l'en-tête. */}
-              {recurringCount > 0 ? (
+              {recurringCount > 0 && canWrite ? (
                 <Link href="/recurring-list" asChild>
                   <Pressable
                     accessibilityRole="button"
@@ -402,21 +404,23 @@ export default function HistoryScreen() {
         />
       )}
 
-      {/* La spec 4.3 impose la saisie en trois taps depuis l'écran principal, mais l'historique est l'endroit où l'on constate un oubli : obliger à revenir en arrière irait contre la contrainte. Pilule centrée, comme sur la maquette. */}
-      <Link href="/transaction" asChild>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Ajouter une opération"
-          style={StyleSheet.flatten([
-            styles.fab,
-            elevation.floating,
-            { backgroundColor: colors.primary },
-          ])}
-        >
-          <MaterialCommunityIcons name="plus" size={22} color={colors.primaryText} />
-          <Text style={[styles.fabLabel, { color: colors.primaryText }]}>Ajouter</Text>
-        </Pressable>
-      </Link>
+      {/* La spec 4.3 impose la saisie en trois taps depuis l'écran principal, mais l'historique est l'endroit où l'on constate un oubli : obliger à revenir en arrière irait contre la contrainte. Pilule centrée, comme sur la maquette. Absente pour un lecteur. */}
+      {canWrite ? (
+        <Link href="/transaction" asChild>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Ajouter une opération"
+            style={StyleSheet.flatten([
+              styles.fab,
+              elevation.floating,
+              { backgroundColor: colors.primary },
+            ])}
+          >
+            <MaterialCommunityIcons name="plus" size={22} color={colors.primaryText} />
+            <Text style={[styles.fabLabel, { color: colors.primaryText }]}>Ajouter</Text>
+          </Pressable>
+        </Link>
+      ) : null}
     </View>
   );
 }

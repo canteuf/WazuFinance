@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-na
 
 import { Card } from '@/components/ui/card';
 import type { RecurringWithCategory } from '@/data/recurring';
+import { useCanWrite } from '@/hooks/use-can-write';
 import { useRecurring } from '@/hooks/use-recurring';
 import { useRecurringMutations } from '@/hooks/use-recurring-mutations';
 import { useRequestIds } from '@/hooks/use-request-ids';
@@ -34,8 +35,10 @@ export function DueRecurring() {
   const toast = useToast();
   // Un identifiant par échéance, pas par toucher : après une réponse perdue, le second « Enregistrer » retrouve l'opération créée par le premier. Un nouvel identifiant à chaque toucher faisait lire « déjà traitée par un autre membre » à celui qui venait de la traiter.
   const transactionIdFor = useRequestIds();
+  const canWrite = useCanWrite();
 
-  if (due.length === 0) {
+  // Confirmer ou passer une échéance est une écriture : un lecteur n'a pas de décision à prendre ici.
+  if (due.length === 0 || !canWrite) {
     return null;
   }
 

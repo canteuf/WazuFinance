@@ -3,7 +3,19 @@ import {
   formatInvitationCode,
   normalizeInvitationCode,
 } from '@/lib/invitation-code';
-import { departedAuthorName, initials, pairMembers, toneIndex } from '@/lib/members';
+import { departedAuthorName, initials, pairMembers, roleLabel, toneIndex } from '@/lib/members';
+
+describe('roleLabel', () => {
+  it('nomme les trois rôles', () => {
+    expect(roleLabel('owner')).toBe('Propriétaire');
+    expect(roleLabel('member')).toBe('Membre');
+    expect(roleLabel('viewer')).toBe('Lecteur');
+  });
+
+  it('lit un rôle inconnu comme « Membre »', () => {
+    expect(roleLabel('treasurer')).toBe('Membre');
+  });
+});
 
 describe('departedAuthorName', () => {
   it('garde le nom figé au départ, marqué comme ancien membre', () => {

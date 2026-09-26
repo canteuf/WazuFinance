@@ -8,6 +8,7 @@ import { Screen } from '@/components/ui/screen';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { WALLET_KINDS, walletIcon } from '@/components/wallet/wallet-kinds';
 import { useActiveGroup } from '@/hooks/use-active-group';
+import { useCanWrite } from '@/hooks/use-can-write';
 import { useRecentTransfers, useWallets } from '@/hooks/use-wallets';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { formatOccurredOn } from '@/lib/dates';
@@ -24,6 +25,7 @@ export default function WalletsScreen() {
   const colors = useColors();
   const router = useRouter();
   const { activeGroup } = useActiveGroup();
+  const canWrite = useCanWrite();
   const { wallets, isLoading, error } = useWallets();
   const { transfers } = useRecentTransfers();
   const names = new Map(wallets.map((wallet) => [wallet.id, wallet.name]));
@@ -39,12 +41,15 @@ export default function WalletsScreen() {
       </Text>
 
       {/* Un transfert demande deux portefeuilles : avant cela, le bouton n'apparaît pas du tout. Grisé, il restait une pastille muette qui posait la question sans y répondre. */}
-      <View style={styles.actions}>
-        {wallets.length >= 2 ? (
-          <ActionButton href="/wallet-transfer" icon="swap-horizontal" label="Transférer" primary />
-        ) : null}
-        <ActionButton href="/wallet" icon="plus" label="Nouveau portefeuille" />
-      </View>
+      {/* Rien à créer ni à transférer pour un lecteur. */}
+      {canWrite ? (
+        <View style={styles.actions}>
+          {wallets.length >= 2 ? (
+            <ActionButton href="/wallet-transfer" icon="swap-horizontal" label="Transférer" primary />
+          ) : null}
+          <ActionButton href="/wallet" icon="plus" label="Nouveau portefeuille" />
+        </View>
+      ) : null}
 
       {isLoading ? (
         <ActivityIndicator color={colors.primary} />
@@ -57,9 +62,12 @@ export default function WalletsScreen() {
               {index > 0 ? <View style={[styles.divider, { backgroundColor: colors.border }]} /> : null}
               <Link href={`/wallet?id=${wallet.id}`} asChild>
                 <Pressable
-                  accessibilityRole="button"
+                  accessibilityRole={canWrite ? 'button' : undefined}
                   accessibilityLabel={`${wallet.name}, ${spokenAmount(wallet.balance)}${wallet.isDefault ? ', portefeuille par défaut' : ''}`}
-                  accessibilityHint="Ouvre le portefeuille pour le renommer ou ajuster son solde"
+                  accessibilityHint={
+                    canWrite ? 'Ouvre le portefeuille pour le renommer ou ajuster son solde' : undefined
+                  }
+                  disabled={!canWrite}
                   style={StyleSheet.flatten(styles.row)}
                 >
                   <View style={[styles.glyph, { backgroundColor: colors.surfaceMuted }]}>

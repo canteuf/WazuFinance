@@ -2,7 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Fragment, useState } from 'react';
-import { ActivityIndicator, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { AvatarStack, MemberAvatar } from '@/components/ui/member-avatar';
 import { Screen } from '@/components/ui/screen';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import { StatusBadge } from '@/components/ui/status-badge';
+import type { GroupMember, InvitationRole } from '@/data/groups';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useAuth } from '@/hooks/use-auth';
 import { useGroupInvitation } from '@/hooks/use-group-invitation';
@@ -17,6 +18,8 @@ import { useGroupMembers } from '@/hooks/use-group-members';
 import { useGroupMutations } from '@/hooks/use-group-mutations';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { daysUntilExpiry, formatInvitationCode, invitationMessage } from '@/lib/invitation-code';
+import { invitationLink } from '@/lib/join-link';
+import { roleLabel } from '@/lib/members';
 import { goBackOr } from '@/lib/navigation';
 import { font, radius, spacing, useColors, useIsDark } from '@/theme/tokens';
 
@@ -28,7 +31,9 @@ const HEADER_AVATARS = 3;
  *
  * Le nom du groupe vient de useActiveGroup().groups, déjà chargée : cet écran n'ouvre de requête que pour les membres et l'invitation.
  *
- * Écarts assumés avec la maquette : pas de menu « ⋮ », qui n'aurait rien à proposer ; pas de badge « Gérant » en plus de « Propriétaire », qui dirait deux fois la même chose ; et la phrase sous « Quitter le groupe » ne promet plus de transmission automatique — elle n'existe pas, un propriétaire doit d'abord exclure les autres membres.
+ * Écarts assumés avec la maquette : pas de menu « ⋮ », qui n'aurait rien à proposer ; pas de badge « Gérant » en plus de « Propriétaire », qui dirait deux fois la même chose ; et la phrase sous « Quitter le groupe » ne promet pas de transmission automatique — un propriétaire passe la main lui-même, en touchant le nom d'un membre.
+ *
+ * Trois rôles (migration group_roles) : propriétaire, membre, lecteur. Le propriétaire choisit le rôle des invités avant de partager le lien, change celui d'un membre, ou lui confie le groupe.
  */
 export default function GroupScreen() {
   const colors = useColors();
@@ -55,15 +60,75 @@ export default function GroupScreen() {
     regenerate,
     isGenerating,
   } = useGroupInvitation(id, userId);
-  const { removeGroupMember, isRemoving } = useGroupMutations();
+  const { removeGroupMember, isRemoving, setRole, handOver, isChangingRole } = useGroupMutations();
   const [copied, setCopied] = useState(false);
   const [actionError, setActionError] = useState<string>();
+  // Rôle des prochains invités, tant qu'aucun code n'existe ; ensuite, c'est celui du code affiché.
+  const [draftRole, setDraftRole] = useState<InvitationRole>('member');
+  const inviteRole = invitation?.role ?? draftRole;
 
   const me = members.find((member) => member.userId === userId);
   const isOwner = me?.role === 'owner';
   const hasOtherMembers = members.length > 1;
 
   const blockingError: unknown = isLoadingError ? membersError : null;
+
+  /**
+   * Ce que le propriétaire peut faire d'un autre membre, hors exclusion qui garde son bouton sur la ligne : changer son rôle, ou lui confier le groupe. Une alerte plutôt qu'un menu : trois choix au plus, et Android n'en affiche pas davantage.
+   */
+  function handleMemberActions(member: GroupMember) {
+    const toViewer = member.role !== 'viewer';
+    Alert.alert(member.displayName, `Rôle actuel : ${roleLabel(member.role).toLowerCase()}.`, [
+      { text: 'Annuler', style: 'cancel' },
+      {
+        text: toViewer ? 'Rendre lecteur' : 'Rendre membre',
+        onPress: () => {
+          setActionError(undefined);
+          setRole.mutate(
+            { groupId: id, userId: member.userId, role: toViewer ? 'viewer' : 'member' },
+            { onError: (error) => setActionError(dataErrorMessage(error)) }
+          );
+        },
+      },
+      { text: 'Passer la main', onPress: () => confirmHandOver(member) },
+    ]);
+  }
+
+  function confirmHandOver(member: GroupMember) {
+    Alert.alert(
+      `Confier le groupe à ${member.displayName} ?`,
+      `${member.displayName} devient propriétaire : il gère les membres, les rôles et les invitations. Vous devenez simple membre, et pourrez ensuite quitter le groupe.`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Passer la main',
+          style: 'destructive',
+          onPress: () => {
+            setActionError(undefined);
+            handOver.mutate(
+              { groupId: id, userId: member.userId },
+              { onError: (error) => setActionError(dataErrorMessage(error)) }
+            );
+          },
+        },
+      ]
+    );
+  }
+
+  function handleInviteRole(role: InvitationRole) {
+    if (role === inviteRole) {
+      return;
+    }
+    setDraftRole(role);
+    // Un code porte son rôle : en changer, c'est en tirer un autre, et l'ancien cesse de servir.
+    if (invitation) {
+      setActionError(undefined);
+      regenerate.mutate(
+        { activeInvitationId: invitation.id, role },
+        { onError: (error) => setActionError(dataErrorMessage(error)) }
+      );
+    }
+  }
 
   function handleExclude(targetUserId: string) {
     setActionError(undefined);
@@ -100,7 +165,9 @@ export default function GroupScreen() {
         message: invitationMessage(
           group?.name ?? 'notre budget',
           invitation.code,
-          daysUntilExpiry(invitation.expiresAt)
+          daysUntilExpiry(invitation.expiresAt),
+          invitationLink(invitation.code),
+          invitation.role === 'viewer'
         ),
       });
     } catch {
@@ -182,12 +249,21 @@ export default function GroupScreen() {
               {members.map((member, index) => {
                 const isMe = member.userId === userId;
                 const owner = member.role === 'owner';
+                // Le propriétaire touche un autre membre pour changer son rôle ou lui confier le groupe.
+                const manageable = isOwner && !isMe;
                 return (
                   <Fragment key={member.userId}>
                     {index > 0 ? (
                       <View style={[styles.divider, { backgroundColor: colors.border }]} />
                     ) : null}
-                    <View style={styles.memberRow}>
+                    <Pressable
+                      style={styles.memberRow}
+                      disabled={!manageable || isChangingRole}
+                      accessibilityRole={manageable ? 'button' : undefined}
+                      accessibilityLabel={`${member.displayName}, ${roleLabel(member.role)}${isMe ? ', vous' : ''}`}
+                      accessibilityHint={manageable ? 'Changer son rôle ou lui confier le groupe' : undefined}
+                      onPress={() => handleMemberActions(member)}
+                    >
                       <MemberAvatar name={member.displayName} avatar={member.avatar} size={44} />
                       <View style={styles.memberInfo}>
                         <Text style={[styles.memberName, { color: colors.text }]} numberOfLines={1}>
@@ -211,7 +287,7 @@ export default function GroupScreen() {
                               { color: owner ? colors.positive : colors.text },
                             ]}
                           >
-                            {owner ? 'Propriétaire' : 'Membre'}
+                            {roleLabel(member.role)}
                           </Text>
                         </View>
                       </View>
@@ -226,7 +302,7 @@ export default function GroupScreen() {
                           <Text style={[styles.exclude, { color: colors.danger }]}>Exclure</Text>
                         </Pressable>
                       ) : null}
-                    </View>
+                    </Pressable>
                   </Fragment>
                 );
               })}
@@ -240,9 +316,51 @@ export default function GroupScreen() {
             </View>
             <Card style={styles.invitation}>
               <Text style={[styles.body, { color: colors.text }]}>
-                Partagez ce code pour inviter quelqu’un à rejoindre le budget commun. Il ne sert
-                qu’une fois.
+                Partagez ce lien pour inviter vos proches : il sert à toutes les personnes qui le
+                reçoivent, pendant 7 jours.
               </Text>
+
+              {/* Le rôle des invités, choisi avant de partager : une tontine invite ses membres en lecteurs, et la trésorière reste seule à tenir la caisse. */}
+              {isOwner ? (
+                <View style={styles.roleChoice} accessibilityRole="radiogroup">
+                  {(['member', 'viewer'] as const).map((role) => {
+                    const selected = inviteRole === role;
+                    return (
+                      <Pressable
+                        key={role}
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected, disabled: isGenerating }}
+                        disabled={isGenerating}
+                        onPress={() => handleInviteRole(role)}
+                        style={[
+                          styles.roleOption,
+                          {
+                            backgroundColor: selected ? colors.text : colors.surface,
+                            borderColor: selected ? colors.text : colors.border,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.roleOptionLabel,
+                            { color: selected ? colors.background : colors.text },
+                          ]}
+                        >
+                          {role === 'member' ? 'Membres' : 'Lecteurs'}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.roleOptionHint,
+                            { color: selected ? colors.background : colors.textMuted },
+                          ]}
+                        >
+                          {role === 'member' ? 'saisissent et modifient' : 'voient tout, sans modifier'}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : null}
 
               {invitationLoading ? (
                 <ActivityIndicator color={colors.primary} />
@@ -256,6 +374,7 @@ export default function GroupScreen() {
                       {formatInvitationCode(invitation.code)}
                     </Text>
                     <Text style={[styles.caption, { color: colors.textMuted }]}>
+                      {invitation.role === 'viewer' ? 'Pour des lecteurs · ' : ''}
                       {expiryLabel(daysUntilExpiry(invitation.expiresAt))}
                     </Text>
                   </View>
@@ -297,9 +416,10 @@ export default function GroupScreen() {
                       disabled={isGenerating}
                       onPress={() => {
                         setActionError(undefined);
-                        regenerate.mutate(invitation.id, {
-                          onError: (error) => setActionError(dataErrorMessage(error)),
-                        });
+                        regenerate.mutate(
+                          { activeInvitationId: invitation.id, role: invitation.role },
+                          { onError: (error) => setActionError(dataErrorMessage(error)) }
+                        );
                       }}
                       style={styles.regenerate}
                     >
@@ -316,7 +436,7 @@ export default function GroupScreen() {
                   loading={isGenerating}
                   onPress={() => {
                     setActionError(undefined);
-                    generate.mutate(undefined, {
+                    generate.mutate(inviteRole, {
                       onError: (error) => setActionError(dataErrorMessage(error)),
                     });
                   }}
@@ -358,11 +478,11 @@ export default function GroupScreen() {
                 </>
               )}
             </Pressable>
-            {/* Une action impossible est expliquée, pas simplement désactivée — et la phrase dit la vraie règle : il n'existe aucune transmission automatique du groupe. */}
+            {/* Une action impossible est expliquée, pas simplement désactivée — et la phrase dit comment la rendre possible. */}
             <Text style={[styles.leaveHint, { color: colors.textMuted }]}>
               {isOwner && hasOtherMembers
-                ? 'En tant que propriétaire, excluez d’abord les autres membres pour pouvoir quitter ce groupe.'
-                : 'Vos opérations restent dans le groupe après votre départ.'}
+                ? 'En tant que propriétaire, confiez d’abord le groupe à un membre : touchez son nom, puis « Passer la main ».'
+                : 'Vos opérations restent dans le groupe après votre départ, à votre nom.'}
             </Text>
           </View>
         </>
@@ -474,6 +594,29 @@ const styles = StyleSheet.create({
   },
   invitation: {
     gap: spacing.md,
+  },
+  roleChoice: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  roleOption: {
+    flexGrow: 1,
+    flexBasis: 140,
+    minHeight: 56,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+  },
+  roleOptionLabel: {
+    fontFamily: font.bold,
+    fontSize: 16,
+  },
+  roleOptionHint: {
+    fontFamily: font.regular,
+    fontSize: 13.5,
   },
   body: {
     fontFamily: font.regular,

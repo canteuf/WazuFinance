@@ -1,5 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -9,21 +9,29 @@ import { CONTENT_GUTTER, contentColumn } from '@/components/ui/screen';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useGroupMutations } from '@/hooks/use-group-mutations';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { INVITATION_CODE_LENGTH, normalizeInvitationCode } from '@/lib/invitation-code';
+import {
+  INVITATION_CODE_LENGTH,
+  normalizeInvitationCode,
+  sanitizeInvitationCodeInput,
+} from '@/lib/invitation-code';
 import { goBackOr } from '@/lib/navigation';
 import { font, spacing, useColors } from '@/theme/tokens';
 
 /**
  * Rejoindre un groupe par code d'invitation (spec section 1, écran 7).
  *
- * Un code refusé — inconnu, révoqué, utilisé ou expiré — reçoit toujours le même message : la base ne dit pas lequel (migration harden_group_access).
+ * Un code refusé — inconnu, révoqué ou expiré — reçoit toujours le même message : la base ne dit pas lequel (migration harden_group_access).
  */
 export default function GroupJoinScreen() {
   const colors = useColors();
   const router = useRouter();
+  // Présent quand l'écran s'ouvre depuis un lien d'invitation (usePendingInvite) : le code est déjà là, il ne reste qu'à confirmer.
+  const { code: linkedCode } = useLocalSearchParams<{ code?: string }>();
   const { setActiveGroupId } = useActiveGroup();
   const { joinGroup, isJoining } = useGroupMutations();
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState(() =>
+    typeof linkedCode === 'string' ? sanitizeInvitationCodeInput(linkedCode) : ''
+  );
   const [touched, setTouched] = useState(false);
   const [errorText, setErrorText] = useState<string>();
 

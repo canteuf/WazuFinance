@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { listGroupMembers } from '@/data/groups';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useAuth } from '@/hooks/use-auth';
+import { useFormerMembers } from '@/hooks/use-former-members';
 import { departedAuthorName } from '@/lib/members';
 import { queryKeys } from '@/lib/query-keys';
 
@@ -13,9 +14,9 @@ export type TransactionAuthor = {
 };
 
 /**
- * Qui a saisi une opération, pour l'afficher sur sa ligne dans un budget partagé. `null` dans le compte personnel, où la question ne se pose pas, et pour un membre parti du groupe : `users_select_self_or_covisible` ne montre que les membres actuels.
+ * Qui a saisi une opération, pour l'afficher sur sa ligne dans un budget partagé. `null` dans le compte personnel, où la question ne se pose pas.
  *
- * Un compte supprimé, lui, a laissé son nom sur la ligne (`author_name`, `user_id` à NULL) : la ligne le nomme comme ancien membre.
+ * Un membre parti du groupe n'est plus visible dans `users` : son nom vient de `former_members`, figé à son départ. Un compte supprimé a laissé son nom sur la ligne (`author_name`, `user_id` à NULL). Dans les deux cas, la ligne le nomme comme ancien membre.
  *
  * Même clé que useGroupMembers(), donc le même cache, mais sans son `refetchOnMount: 'always'` : chaque ligne d'une liste monte ce hook, et chacune rechargerait la liste des membres. useMembershipsRealtime() invalide déjà la clé quand un membre arrive ou part.
  */
@@ -33,6 +34,7 @@ export function useTransactionAuthor(
     queryFn: () => listGroupMembers(groupId),
     enabled: shared,
   });
+  const former = useFormerMembers(groupId, shared);
 
   if (!shared) {
     return null;
@@ -45,5 +47,10 @@ export function useTransactionAuthor(
     return { name: 'Vous', avatar: self?.avatar ?? null };
   }
   const member = data?.find((candidate) => candidate.userId === userId);
-  return member ? { name: member.displayName, avatar: member.avatar } : null;
+  if (member) {
+    return { name: member.displayName, avatar: member.avatar };
+  }
+  // Parti du groupe : son nom au moment du départ (former_members).
+  const gone = former.find((candidate) => candidate.userId === userId);
+  return gone ? { name: departedAuthorName(gone.displayName), avatar: gone.avatar } : null;
 }

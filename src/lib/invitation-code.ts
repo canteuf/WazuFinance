@@ -49,9 +49,15 @@ export function daysUntilExpiry(expiresAt: string, now: Date = new Date()): numb
 /**
  * Message d'invitation, prêt à envoyer par WhatsApp, SMS ou e-mail depuis la feuille de partage du téléphone.
  *
- * Il dit tout ce que l'invité doit faire sans connaître l'app : où aller, quoi taper, et jusqu'à quand. Pas de lien : l'app n'ouvre pas encore de lien direct vers l'écran « Rejoindre ».
+ * Le lien d'abord : le toucher ouvre l'app sur « Rejoindre », code déjà saisi, ou mène au Play Store. Le code et la marche à suivre ensuite, pour qui ne peut pas ouvrir le lien — il sert alors tel quel. Le lecteur est prévenu de son rôle : il ne doit pas découvrir en arrivant qu'il ne peut rien saisir.
  */
-export function invitationMessage(groupName: string, code: string, daysLeft: number): string {
+export function invitationMessage(
+  groupName: string,
+  code: string,
+  daysLeft: number,
+  link: string,
+  asViewer = false
+): string {
   const validity =
     daysLeft <= 0
       ? 'aujourd’hui seulement'
@@ -59,8 +65,10 @@ export function invitationMessage(groupName: string, code: string, daysLeft: num
         ? 'jusqu’à demain'
         : `encore ${daysLeft} jours`;
   return [
-    `Rejoins le budget « ${groupName} » sur Wazu Finance.`,
-    `Code d’invitation : ${formatInvitationCode(code)} (valable ${validity}, une seule fois).`,
-    'Dans l’app : touche le nom du budget en haut de la Synthèse, puis « Rejoindre ».',
+    asViewer
+      ? `Suis le budget « ${groupName} » sur Wazu Finance, en lecture : tu verras tout, sans rien modifier.`
+      : `Rejoins le budget « ${groupName} » sur Wazu Finance.`,
+    link,
+    `Ou dans l’app : touche le nom du budget en haut de la Synthèse, puis « Rejoindre », et saisis le code ${formatInvitationCode(code)} (valable ${validity}).`,
   ].join('\n');
 }

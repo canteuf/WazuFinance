@@ -100,7 +100,7 @@ export type Database = {
           id: string
           new_values: Json | null
           occurred_at: string
-          old_values: Json
+          old_values: Json | null
           subject: Database["public"]["Enums"]["activity_subject"]
           subject_id: string
         }
@@ -113,7 +113,7 @@ export type Database = {
           id?: string
           new_values?: Json | null
           occurred_at?: string
-          old_values: Json
+          old_values?: Json | null
           subject: Database["public"]["Enums"]["activity_subject"]
           subject_id: string
         }
@@ -126,7 +126,7 @@ export type Database = {
           id?: string
           new_values?: Json | null
           occurred_at?: string
-          old_values?: Json
+          old_values?: Json | null
           subject?: Database["public"]["Enums"]["activity_subject"]
           subject_id?: string
         }
@@ -345,6 +345,38 @@ export type Database = {
           },
         ]
       }
+      former_members: {
+        Row: {
+          avatar: string | null
+          display_name: string
+          group_id: string
+          left_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar?: string | null
+          display_name: string
+          group_id: string
+          left_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar?: string | null
+          display_name?: string
+          group_id?: string
+          left_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "former_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "budget_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_invitations: {
         Row: {
           code: string
@@ -354,6 +386,7 @@ export type Database = {
           group_id: string
           id: string
           revoked_at: string | null
+          role: Database["public"]["Enums"]["membership_role"]
           used_at: string | null
           used_by: string | null
         }
@@ -365,6 +398,7 @@ export type Database = {
           group_id: string
           id?: string
           revoked_at?: string | null
+          role?: Database["public"]["Enums"]["membership_role"]
           used_at?: string | null
           used_by?: string | null
         }
@@ -376,6 +410,7 @@ export type Database = {
           group_id?: string
           id?: string
           revoked_at?: string | null
+          role?: Database["public"]["Enums"]["membership_role"]
           used_at?: string | null
           used_by?: string | null
         }
@@ -999,6 +1034,7 @@ export type Database = {
       }
       is_group_member: { Args: { gid: string }; Returns: boolean }
       is_group_owner: { Args: { gid: string }; Returns: boolean }
+      is_group_viewer: { Args: { p_group_id: string }; Returns: boolean }
       join_group_with_code: {
         Args: { invitation_code: string }
         Returns: string
@@ -1074,6 +1110,14 @@ export type Database = {
           monthly_rhythm: number
         }[]
       }
+      set_member_role: {
+        Args: {
+          p_group_id: string
+          p_role: Database["public"]["Enums"]["membership_role"]
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       shares_group_with: { Args: { other_user_id: string }; Returns: boolean }
       skip_recurring: {
         Args: { p_due_on: string; p_id: string }
@@ -1110,6 +1154,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      transfer_ownership: {
+        Args: { p_group_id: string; p_new_owner: string }
+        Returns: undefined
+      }
       wallets_overview: {
         Args: { p_group_id: string }
         Returns: {
@@ -1123,11 +1171,17 @@ export type Database = {
       }
     }
     Enums: {
-      activity_action: "update" | "delete"
-      activity_subject: "transaction" | "budget"
+      activity_action: "update" | "delete" | "insert"
+      activity_subject:
+        | "transaction"
+        | "budget"
+        | "debt"
+        | "wallet"
+        | "transfer"
+        | "membership"
       budget_period: "weekly" | "monthly"
       debt_direction: "lent" | "borrowed"
-      membership_role: "owner" | "member"
+      membership_role: "owner" | "member" | "viewer"
       recurrence_frequency: "weekly" | "monthly"
       transaction_type: "expense" | "income"
       wallet_kind: "cash" | "mobile_money" | "bank" | "other"
@@ -1261,11 +1315,18 @@ export const Constants = {
   },
   public: {
     Enums: {
-      activity_action: ["update", "delete"],
-      activity_subject: ["transaction", "budget"],
+      activity_action: ["update", "delete", "insert"],
+      activity_subject: [
+        "transaction",
+        "budget",
+        "debt",
+        "wallet",
+        "transfer",
+        "membership",
+      ],
       budget_period: ["weekly", "monthly"],
       debt_direction: ["lent", "borrowed"],
-      membership_role: ["owner", "member"],
+      membership_role: ["owner", "member", "viewer"],
       recurrence_frequency: ["weekly", "monthly"],
       transaction_type: ["expense", "income"],
       wallet_kind: ["cash", "mobile_money", "bank", "other"],

@@ -45,3 +45,22 @@ export async function listActivityPage(
 
   return data;
 }
+
+/** Le plafond de lignes par requête de PostgREST sur Supabase, comme pour l'export des opérations. */
+const EXPORT_PAGE_SIZE = 1000;
+
+/** Tout le journal du groupe, pour l'export : la même requête que l'écran, parcourue avec le même curseur jusqu'au bout. */
+export async function listAllActivity(groupId: string): Promise<ActivityEntry[]> {
+  const entries: ActivityEntry[] = [];
+  let cursor: ActivityCursor | null = null;
+
+  for (;;) {
+    const page = await listActivityPage(groupId, cursor, EXPORT_PAGE_SIZE);
+    entries.push(...page);
+    if (page.length < EXPORT_PAGE_SIZE) {
+      return entries;
+    }
+    const last = page[page.length - 1];
+    cursor = { occurredAt: last.occurred_at, id: last.id };
+  }
+}

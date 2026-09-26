@@ -12,7 +12,8 @@ export type ActivityLogRow = {
   action: ActivityAction;
   actor_id: string | null;
   actor_name: string | null;
-  old_values: Json;
+  /** `null` pour une création. */
+  old_values: Json | null;
   new_values: Json | null;
   changed_fields: string[];
 };
@@ -89,9 +90,24 @@ function categoryLabel(categoryId: string | null, categories: readonly CategoryN
   return categories.find((category) => category.id === categoryId)?.name ?? DELETED_CATEGORY;
 }
 
-function actorAndVerb(entry: ActivityLogRow, currentUserId: string | null): string {
-  const verb = entry.action === 'update' ? 'modifié' : 'supprimé';
-  if (entry.actor_id !== null && entry.actor_id === currentUserId) {
+function defaultVerb(action: ActivityAction): string {
+  if (action === 'insert') {
+    return 'ajouté';
+  }
+  return action === 'update' ? 'modifié' : 'supprimé';
+}
+
+function isCurrentUser(userId: string | null, currentUserId: string | null): boolean {
+  return userId !== null && userId === currentUserId;
+}
+
+/** « Vous avez ajouté », « Marie a supprimé ». */
+function actorAndVerb(
+  entry: ActivityLogRow,
+  currentUserId: string | null,
+  verb: string = defaultVerb(entry.action)
+): string {
+  if (isCurrentUser(entry.actor_id, currentUserId)) {
     return `Vous avez ${verb}`;
   }
   return `${entry.actor_name ?? UNKNOWN_ACTOR} a ${verb}`;
@@ -105,10 +121,18 @@ function amountChange(before: JsonObject, after: JsonObject): string | null {
 
 /**
  * Nom d'une opération : le même que dans la liste, sa catégorie — celle d'avant le changement, puisque c'est sous ce nom que les membres la connaissaient —, suivie de la note comme sur la ligne d'information de TransactionRow.
+ *
+ * Un mouvement d'épargne ou de prêt n'a pas de catégorie : il se nomme comme sur sa ligne, « Épargne » ou sa note (« Remboursement de Cousin »), plutôt que « Sans catégorie ».
  */
 function transactionLabel(before: JsonObject, categories: readonly CategoryName[]): string {
-  const name = categoryLabel(readString(before, 'category_id'), categories);
   const note = readString(before, 'note');
+  if (before.is_savings === true) {
+    return note ? `Épargne · ${note}` : 'Épargne';
+  }
+  if (readString(before, 'debt_id') !== null && note) {
+    return note;
+  }
+  const name = categoryLabel(readString(before, 'category_id'), categories);
   return note ? `${name} · ${note}` : name;
 }
 
@@ -155,42 +179,222 @@ function transactionChanges(
 }
 
 /**
+ * Ce que le journal ne porte pas lui-même et que l'écran connaît : le nom des personnes (membres actuels et anciens, par identifiant) et celui des portefeuilles. Une entrée qui cite un inconnu garde sa phrase, avec un nom générique.
+ */
+export type ActivityContext = {
+  names?: ReadonlyMap<string, string>;
+  wallets?: readonly { id: string; name: string }[];
+};
+
+/** « 10 000 XAF » entre parenthèses, ou rien quand le montant manque. */
+function amountTail(values: JsonObject): string {
+  const amount = readNumber(values, 'amount');
+  return amount === null ? '' : ` (${formatMoney(amount)})`;
+}
+
+function formatTransaction(
+  entry: ActivityLogRow,
+  currentUserId: string | null,
+  categories: readonly CategoryName[],
+  before: JsonObject,
+  after: JsonObject
+): string {
+  const actor = actorAndVerb(entry, currentUserId);
+
+  if (entry.action === 'insert' || entry.action === 'delete') {
+    const values = entry.action === 'insert' ? after : before;
+    const label = transactionLabel(values, categories);
+    const amount = readNumber(values, 'amount');
+    const day = formatDay(readString(values, 'occurred_on'));
+    const tail = amount !== null && day !== null ? `, ${formatMoney(amount)} du ${day}` : '';
+    return `${actor} ${label}${tail}`;
+  }
+
+  const label = transactionLabel(before, categories);
+  const parts = transactionChanges(entry, before, after, categories);
+  return parts.length === 0 ? `${actor} ${label}` : `${actor} ${label} : ${parts.join(', ')}`;
+}
+
+function formatBudget(
+  entry: ActivityLogRow,
+  currentUserId: string | null,
+  categories: readonly CategoryName[],
+  before: JsonObject,
+  after: JsonObject
+): string {
+  if (entry.action === 'insert') {
+    const name = categoryLabel(readString(after, 'category_id'), categories);
+    return `${actorAndVerb(entry, currentUserId, 'créé')} le budget ${name}${amountTail(after)}`;
+  }
+
+  const actor = actorAndVerb(entry, currentUserId);
+  const name = categoryLabel(readString(before, 'category_id'), categories);
+
+  if (entry.action === 'delete') {
+    return `${actor} le budget ${name}${amountTail(before)}`;
+  }
+
+  const change = entry.changed_fields.includes('amount') ? amountChange(before, after) : null;
+  return change === null ? `${actor} le budget ${name}` : `${actor} le plafond ${name} : ${change}`;
+}
+
+/** « le prêt à Cousin », « l'emprunt à Tante Awa ». */
+function debtLabel(values: JsonObject): string {
+  const counterparty = readString(values, 'counterparty') ?? 'un proche';
+  return readString(values, 'direction') === 'borrowed'
+    ? `l’emprunt à ${counterparty}`
+    : `le prêt à ${counterparty}`;
+}
+
+function formatDebt(
+  entry: ActivityLogRow,
+  currentUserId: string | null,
+  before: JsonObject,
+  after: JsonObject
+): string {
+  if (entry.action === 'insert') {
+    return `${actorAndVerb(entry, currentUserId, 'noté')} ${debtLabel(after)}${amountTail(after)}`;
+  }
+  if (entry.action === 'delete') {
+    return `${actorAndVerb(entry, currentUserId)} ${debtLabel(before)}${amountTail(before)}`;
+  }
+
+  const parts: string[] = [];
+  if (entry.changed_fields.includes('counterparty')) {
+    parts.push(`nom → ${readString(after, 'counterparty') ?? '…'}`);
+  }
+  if (entry.changed_fields.includes('due_on')) {
+    parts.push(`échéance → ${formatDay(readString(after, 'due_on')) ?? 'aucune'}`);
+  }
+  if (entry.changed_fields.includes('note')) {
+    parts.push(`note ${quoteNote(readString(before, 'note'))} → ${quoteNote(readString(after, 'note'))}`);
+  }
+  const head = `${actorAndVerb(entry, currentUserId)} ${debtLabel(before)}`;
+  return parts.length === 0 ? head : `${head} : ${parts.join(', ')}`;
+}
+
+function formatWallet(
+  entry: ActivityLogRow,
+  currentUserId: string | null,
+  before: JsonObject,
+  after: JsonObject
+): string {
+  if (entry.action === 'insert') {
+    return `${actorAndVerb(entry, currentUserId, 'créé')} le portefeuille ${readString(after, 'name') ?? '…'}`;
+  }
+
+  const name = readString(before, 'name') ?? '…';
+  if (entry.action === 'delete') {
+    return `${actorAndVerb(entry, currentUserId)} le portefeuille ${name}`;
+  }
+
+  const parts: string[] = [];
+  if (entry.changed_fields.includes('name')) {
+    parts.push(`nom → ${readString(after, 'name') ?? '…'}`);
+  }
+  if (entry.changed_fields.includes('opening_balance')) {
+    const from = readNumber(before, 'opening_balance');
+    const to = readNumber(after, 'opening_balance');
+    if (from !== null && to !== null) {
+      parts.push(`solde de départ ${formatMoney(from)} → ${formatMoney(to)}`);
+    }
+  }
+  const head = `${actorAndVerb(entry, currentUserId)} le portefeuille ${name}`;
+  return parts.length === 0 ? head : `${head} : ${parts.join(', ')}`;
+}
+
+function formatTransfer(
+  entry: ActivityLogRow,
+  currentUserId: string | null,
+  after: JsonObject,
+  context: ActivityContext
+): string {
+  const walletName = (key: string) =>
+    context.wallets?.find((wallet) => wallet.id === readString(after, key))?.name ?? 'un portefeuille';
+  const amount = readNumber(after, 'amount');
+  return `${actorAndVerb(entry, currentUserId, 'transféré')} ${amount === null ? 'de l’argent' : formatMoney(amount)} de ${walletName('from_wallet_id')} vers ${walletName('to_wallet_id')}`;
+}
+
+/**
+ * Arrivées, départs, exclusions, changements de rôle. La personne concernée est `user_id` de l'adhésion ; son nom vient du contexte, puisque le journal ne garde que celui de l'auteur.
+ */
+function formatMembership(
+  entry: ActivityLogRow,
+  currentUserId: string | null,
+  before: JsonObject,
+  after: JsonObject,
+  context: ActivityContext
+): string {
+  const values = entry.action === 'insert' ? after : before;
+  const targetId = readString(values, 'user_id');
+  const targetIsMe = isCurrentUser(targetId, currentUserId);
+  const targetName = targetIsMe
+    ? 'vous'
+    : ((targetId !== null ? context.names?.get(targetId) : undefined) ?? 'un membre');
+  const Target = targetIsMe ? 'Vous' : targetName;
+  // L'auteur est la personne concernée : elle a rejoint ou quitté d'elle-même. Un auteur absent (compte supprimé, cascade) vaut aussi pour un départ de soi.
+  const selfAction = entry.actor_id === targetId || entry.actor_id === null;
+
+  if (entry.action === 'insert') {
+    const asViewer = readString(after, 'role') === 'viewer' ? ' en lecteur' : '';
+    if (selfAction) {
+      return targetIsMe ? `Vous avez rejoint le groupe${asViewer}` : `${Target} a rejoint le groupe${asViewer}`;
+    }
+    return `${actorAndVerb(entry, currentUserId, 'ajouté')} ${targetName}${asViewer}`;
+  }
+
+  if (entry.action === 'delete') {
+    if (selfAction) {
+      return targetIsMe ? 'Vous avez quitté le groupe' : `${Target} a quitté le groupe`;
+    }
+    return `${actorAndVerb(entry, currentUserId, 'exclu')} ${targetName}`;
+  }
+
+  const from = readString(before, 'role');
+  const to = readString(after, 'role');
+  if (to === 'owner') {
+    return `${actorAndVerb(entry, currentUserId, 'confié le groupe à')} ${targetName}`;
+  }
+  const change = `${roleWord(from)} → ${roleWord(to)}`;
+  if (entry.actor_id === targetId) {
+    return `${actorAndVerb(entry, currentUserId, 'changé son rôle')} : ${change}`;
+  }
+  return `${actorAndVerb(entry, currentUserId, 'changé le rôle de')} ${targetName} : ${change}`;
+}
+
+function roleWord(role: string | null): string {
+  if (role === 'owner') {
+    return 'propriétaire';
+  }
+  return role === 'viewer' ? 'lecteur' : 'membre';
+}
+
+/**
  * Une phrase par entrée. Une entrée sans détail affichable garde sa phrase courte (« Marie a modifié Restaurants ») : un journal de confiance ne cache pas d'entrée.
  */
 export function formatActivity(
   entry: ActivityLogRow,
   currentUserId: string | null,
-  categories: readonly CategoryName[]
+  categories: readonly CategoryName[],
+  context: ActivityContext = {}
 ): string {
-  const actor = actorAndVerb(entry, currentUserId);
   const before = asObject(entry.old_values);
   const after = asObject(entry.new_values);
 
-  if (entry.subject === 'budget') {
-    const name = categoryLabel(readString(before, 'category_id'), categories);
-
-    if (entry.action === 'delete') {
-      const amount = readNumber(before, 'amount');
-      return amount === null
-        ? `${actor} le budget ${name}`
-        : `${actor} le budget ${name} (${formatMoney(amount)})`;
-    }
-
-    const change = entry.changed_fields.includes('amount') ? amountChange(before, after) : null;
-    return change === null ? `${actor} le budget ${name}` : `${actor} le plafond ${name} : ${change}`;
+  switch (entry.subject) {
+    case 'budget':
+      return formatBudget(entry, currentUserId, categories, before, after);
+    case 'debt':
+      return formatDebt(entry, currentUserId, before, after);
+    case 'wallet':
+      return formatWallet(entry, currentUserId, before, after);
+    case 'transfer':
+      return formatTransfer(entry, currentUserId, after, context);
+    case 'membership':
+      return formatMembership(entry, currentUserId, before, after, context);
+    default:
+      return formatTransaction(entry, currentUserId, categories, before, after);
   }
-
-  const label = transactionLabel(before, categories);
-
-  if (entry.action === 'delete') {
-    const amount = readNumber(before, 'amount');
-    const day = formatDay(readString(before, 'occurred_on'));
-    const tail = amount !== null && day !== null ? `, ${formatMoney(amount)} du ${day}` : '';
-    return `${actor} ${label}${tail}`;
-  }
-
-  const parts = transactionChanges(entry, before, after, categories);
-  return parts.length === 0 ? `${actor} ${label}` : `${actor} ${label} : ${parts.join(', ')}`;
 }
 
 /** « Aujourd'hui, 14:32 », « Hier, 09:05 », « 8 sept., 09:05 », « 8 sept. 2025, 09:05 ». */
@@ -210,6 +414,12 @@ export function formatActivityTime(occurredAt: string, now: Date = new Date()): 
 
   const formatter = date.getFullYear() === now.getFullYear() ? dayFormatter : dayWithYearFormatter;
   return `${formatter.format(date)}, ${time}`;
+}
+
+/** « 8 sept. 2026, 09:05 » : la date complète, pour un document relu hors de l'app, où « Hier » ne voudrait plus rien dire. */
+export function formatActivityDate(occurredAt: string): string {
+  const date = new Date(parseTimestamp(occurredAt));
+  return `${dayWithYearFormatter.format(date)}, ${timeFormatter.format(date)}`;
 }
 
 /**

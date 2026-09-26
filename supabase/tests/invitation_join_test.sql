@@ -40,12 +40,18 @@ select set_config('request.jwt.claims',
 SELECT is(public.join_group_with_code('ZZZZZZZZ'), NULL, 'Un code inconnu renvoie NULL');
 SELECT is(public.join_group_with_code('REVOKED2'), NULL, 'Un code révoqué renvoie NULL, comme un code inconnu');
 SELECT is(public.join_group_with_code('EXPIRED2'), NULL, 'Un code expiré renvoie NULL, comme un code inconnu');
-SELECT is(public.join_group_with_code('USEDUSED'), NULL, 'Un code déjà utilisé renvoie NULL, comme un code inconnu');
+-- Un code sert à plusieurs personnes jusqu'à son échéance (20260927000200_group_roles.sql) : déjà utilisé par quelqu'un d'autre, il reste valable.
+SELECT is(
+  public.join_group_with_code('USEDUSED'),
+  '00000000-0000-0000-0000-0000000001b1'::uuid,
+  'Un code déjà utilisé par un autre reste valable jusqu''à son échéance'
+);
 
 -- ---------------------------------------------------------------------------
 -- Saisie normalisée : minuscules, tiret et espaces acceptés
 -- ---------------------------------------------------------------------------
 
+-- Bob est déjà membre par le code précédent : la fonction rend le groupe sans rien changer.
 SELECT is(
   public.join_group_with_code(' 7kq2-m9xa '),
   '00000000-0000-0000-0000-0000000001b1'::uuid,

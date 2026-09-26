@@ -23,7 +23,9 @@ import {
   headerTitleStyle,
   ScreenHeader,
 } from "@/components/ui/screen-header";
+import { ViewerNotice } from "@/components/ui/viewer-notice";
 import { useActiveGroup } from "@/hooks/use-active-group";
+import { useCanWrite } from "@/hooks/use-can-write";
 import { useRecentTransactions } from "@/hooks/use-recent-transactions";
 import { dataErrorMessage } from "@/lib/data-errors";
 import { font, radius, spacing, useColors, useElevation } from "@/theme/tokens";
@@ -37,6 +39,7 @@ export default function DashboardScreen() {
   const colors = useColors();
   const elevation = useElevation();
   const { activeGroup, error: groupError } = useActiveGroup();
+  const canWrite = useCanWrite();
   const {
     transactions,
     isLoading: transactionsLoading,
@@ -86,24 +89,28 @@ export default function DashboardScreen() {
       }
       floatingAlign="center"
       floatingAction={
-        // La saisie en trois taps reste à portée depuis chaque onglet, comme sur la maquette.
-        <Link href="/transaction" asChild>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Ajouter une opération"
-            // Aplati : <Link asChild> transmet le style à son enfant et avertit s'il reçoit un tableau.
-            style={StyleSheet.flatten([
-              styles.fab,
-              elevation.floating,
-              { backgroundColor: colors.primary },
-            ])}
-          >
-            <MaterialCommunityIcons name="plus" size={22} color={colors.primaryText} />
-            <Text style={[styles.fabLabel, { color: colors.primaryText }]}>Ajouter</Text>
-          </Pressable>
-        </Link>
+        // La saisie en trois taps reste à portée depuis chaque onglet, comme sur la maquette. Un lecteur n'a rien à saisir dans ce groupe.
+        canWrite ? (
+          <Link href="/transaction" asChild>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Ajouter une opération"
+              // Aplati : <Link asChild> transmet le style à son enfant et avertit s'il reçoit un tableau.
+              style={StyleSheet.flatten([
+                styles.fab,
+                elevation.floating,
+                { backgroundColor: colors.primary },
+              ])}
+            >
+              <MaterialCommunityIcons name="plus" size={22} color={colors.primaryText} />
+              <Text style={[styles.fabLabel, { color: colors.primaryText }]}>Ajouter</Text>
+            </Pressable>
+          </Link>
+        ) : undefined
       }
     >
+      {canWrite ? null : <ViewerNotice />}
+
       {/* La carte porte ses propres états de chargement et d'erreur : un résumé en échec ne doit pas emporter la liste, qui a pu aboutir. */}
       <PeriodSummary />
 

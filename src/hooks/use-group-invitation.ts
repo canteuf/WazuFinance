@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { createInvitation, getActiveInvitation, revokeInvitation } from '@/data/groups';
+import {
+  createInvitation,
+  getActiveInvitation,
+  revokeInvitation,
+  type InvitationRole,
+} from '@/data/groups';
 import { queryKeys } from '@/lib/query-keys';
 
 /**
@@ -22,15 +27,15 @@ export function useGroupInvitation(groupId: string, createdBy: string | undefine
   }
 
   const generate = useMutation({
-    mutationFn: () => createInvitation(groupId, createdBy as string),
+    mutationFn: (role: InvitationRole) => createInvitation(groupId, createdBy as string, role),
     onSuccess: invalidate,
   });
 
-  // Régénérer révoque l'invitation active avant d'en créer une nouvelle : deux appels séparés. Si le second échoue après que le premier a réussi, le code révoqué resterait affiché comme actif sans onSettled — invalider ici même en cas d'échec partiel, contrairement à generate ci-dessus qui n'a pas cet état intermédiaire.
+  // Régénérer révoque l'invitation active avant d'en créer une nouvelle : deux appels séparés. Si le second échoue après que le premier a réussi, le code révoqué resterait affiché comme actif sans onSettled — invalider ici même en cas d'échec partiel, contrairement à generate ci-dessus qui n'a pas cet état intermédiaire. Changer le rôle des invités passe aussi par là : un code porte son rôle, un autre rôle est un autre code.
   const regenerate = useMutation({
-    mutationFn: async (activeInvitationId: string) => {
+    mutationFn: async ({ activeInvitationId, role }: { activeInvitationId: string; role: InvitationRole }) => {
       await revokeInvitation(activeInvitationId);
-      return createInvitation(groupId, createdBy as string);
+      return createInvitation(groupId, createdBy as string, role);
     },
     onSettled: invalidate,
   });

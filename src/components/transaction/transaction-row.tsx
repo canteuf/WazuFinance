@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-na
 
 import { MemberAvatar } from '@/components/ui/member-avatar';
 import type { TransactionWithCategory } from '@/data/transactions';
+import { useCanWrite } from '@/hooks/use-can-write';
 import { useTransactionAuthor } from '@/hooks/use-transaction-author';
 import { useWallets } from '@/hooks/use-wallets';
 import { wasEdited } from '@/lib/activity-format';
@@ -47,6 +48,7 @@ export function TransactionRow({
   const { fontScale } = useWindowDimensions();
   // Dans un budget partagé, la première question devant une dépense est « qui l'a faite ? ». `null` dans le compte personnel.
   const author = useTransactionAuthor(transaction.user_id, transaction.author_name);
+  const canWrite = useCanWrite();
   // Le portefeuille n'est nommé que s'il y a un choix : avec le seul « Principal », la mention répéterait le même mot sur chaque ligne.
   const { wallets } = useWallets();
   const walletName =
@@ -177,7 +179,8 @@ export function TransactionRow({
     </>
   );
 
-  if (pending || managedElsewhere) {
+  // Un lecteur lit la ligne, il ne l'ouvre pas : la feuille qu'elle ouvrirait est un formulaire de modification.
+  if (pending || managedElsewhere || !canWrite) {
     return (
       <View accessible accessibilityLabel={spokenLabel} style={rowStyle}>
         {content}

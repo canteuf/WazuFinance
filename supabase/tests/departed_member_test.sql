@@ -148,9 +148,10 @@ SELECT ok(
 );
 
 SELECT is(
-  (select count(*)::integer from public.activity_log where group_id = '00000000-0000-0000-0000-0000000001c1'),
+  (select count(*)::integer from public.activity_log
+    where group_id = '00000000-0000-0000-0000-0000000001c1' and action = 'update'),
   0,
-  'Le départ n''écrit rien au journal'
+  'Le départ ne journalise aucune modification des lignes de Bob'
 );
 
 SELECT is(

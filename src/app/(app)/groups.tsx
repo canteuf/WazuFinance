@@ -11,6 +11,7 @@ import type { GroupOverview, MembershipSummary } from '@/data/groups';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useGroupOverviews } from '@/hooks/use-group-overviews';
 import { dataErrorMessage } from '@/lib/data-errors';
+import { roleLabel } from '@/lib/members';
 import { formatMoney } from '@/lib/money';
 import { goBackOr } from '@/lib/navigation';
 import { font, radius, spacing, useColors, useElevation, useIsDark } from '@/theme/tokens';
@@ -255,7 +256,7 @@ function GroupCard({
             <View />
           )}
           <View style={styles.groupTags}>
-            <RoleTag owner={group.role === 'owner'} />
+            <RoleTag role={group.role} />
             {group.isPersonal ? (
               <Text style={[styles.groupSide, { color: colors.textMuted }]}>Personnel</Text>
             ) : null}
@@ -277,10 +278,11 @@ function GroupCard({
   );
 }
 
-/** « Propriétaire » en vert, « Membre » en neutre : le rôle décide de ce qu'on peut faire dans le groupe, il se lit d'un coup d'œil. */
-function RoleTag({ owner }: { owner: boolean }) {
+/** « Propriétaire » en vert, « Membre » et « Lecteur » en neutre : le rôle décide de ce qu'on peut faire dans le groupe, il se lit d'un coup d'œil. */
+function RoleTag({ role }: { role: string }) {
   const colors = useColors();
   const isDark = useIsDark();
+  const owner = role === 'owner';
 
   return (
     <View
@@ -296,7 +298,7 @@ function RoleTag({ owner }: { owner: boolean }) {
       ]}
     >
       <Text style={[styles.roleLabel, { color: owner ? colors.positive : colors.text }]}>
-        {owner ? 'Propriétaire' : 'Membre'}
+        {roleLabel(role)}
       </Text>
     </View>
   );

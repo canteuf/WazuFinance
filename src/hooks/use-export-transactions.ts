@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 
-import { listGroupMembers } from '@/data/groups';
+import { listFormerMembers, listGroupMembers } from '@/data/groups';
 import { getFilteredTotals } from '@/data/summary';
 import { listAllForExport, type TransactionFilters } from '@/data/transactions';
 import { useActiveGroup } from '@/hooks/use-active-group';
@@ -30,7 +30,7 @@ const editedAtFormatter = new Intl.DateTimeFormat('fr-FR', {
  *
  * Une mutation plutôt qu'une requête : l'export est une action ponctuelle, rien à garder en cache, et `isPending` suffit à l'écran pour désactiver le bouton pendant la préparation.
  *
- * L'auteur vient de listGroupMembers() et non d'une jointure sur `users` : la policy `users_select_self_or_covisible` ne montre que les membres actuels, donc une jointure ne ferait pas mieux pour les opérations d'un membre parti du groupe — leur colonne « Saisie par » reste vide dans les deux cas. Un compte supprimé, lui, a laissé son nom sur la ligne (`author_name`).
+ * L'auteur vient de listGroupMembers() et non d'une jointure sur `users` : la policy `users_select_self_or_covisible` ne montre que les membres actuels. Un membre parti est nommé par `former_members`, un compte supprimé par le nom resté sur la ligne (`author_name`).
  *
  * Les totaux du relevé viennent de filtered_totals(), sommés par Postgres : les additionner ici passerait par des flottants binaires.
  */
@@ -43,11 +43,16 @@ export function useExportTransactions() {
         throw new Error('Aucun groupe actif.');
       }
 
-      const [transactions, members] = await Promise.all([
+      const [transactions, members, former] = await Promise.all([
         listAllForExport(activeGroup.groupId, filters),
         listGroupMembers(activeGroup.groupId),
+        activeGroup.isPersonal ? Promise.resolve([]) : listFormerMembers(activeGroup.groupId),
       ]);
-      const names = new Map(members.map((member) => [member.userId, member.displayName]));
+      // Les anciens membres d'abord, les membres actuels ensuite : quelqu'un qui est revenu garde son nom actuel.
+      const names = new Map([
+        ...former.map((member) => [member.userId, departedAuthorName(member.displayName)] as const),
+        ...members.map((member) => [member.userId, member.displayName] as const),
+      ]);
 
       const rows: ExportRow[] = transactions.map((transaction) => ({
         occurredOn: transaction.occurred_on,

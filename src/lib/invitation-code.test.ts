@@ -28,15 +28,23 @@ describe('sanitizeInvitationCodeInput', () => {
 
 
 describe('invitationMessage', () => {
-  it('nomme le groupe, donne le code affiché et dit où le saisir', () => {
-    const message = invitationMessage('Famille Nguema', '7KQ2M9XA', 7);
+  const link = 'https://example.org/join/?code=7KQ2M9XA';
+
+  it('nomme le groupe, donne le lien, le code affiché et où le saisir', () => {
+    const message = invitationMessage('Famille Nguema', '7KQ2M9XA', 7, link);
     expect(message).toContain('« Famille Nguema »');
+    expect(message).toContain(link);
     expect(message).toContain('7KQ2-M9XA');
     expect(message).toContain('encore 7 jours');
     expect(message).toContain('« Rejoindre »');
+    expect(message).not.toContain('une seule fois');
   });
 
   it('dit « jusqu’à demain » la veille de l’expiration', () => {
-    expect(invitationMessage('Coloc', '7KQ2M9XA', 1)).toContain('jusqu’à demain');
+    expect(invitationMessage('Coloc', '7KQ2M9XA', 1, link)).toContain('jusqu’à demain');
+  });
+
+  it('prévient un lecteur de son rôle', () => {
+    expect(invitationMessage('Tontine', '7KQ2M9XA', 7, link, true)).toContain('en lecture');
   });
 });

@@ -13,6 +13,17 @@ export function pairMembers(names: string[], avatars: (string | null)[]): Member
   return names.map((name, index) => ({ name, avatar: avatars[index] ?? null }));
 }
 
+/** Libellé d'un rôle dans un groupe. Le rôle arrive en chaîne brute : une valeur que cette version ne connaît pas se lit « Membre », le cas le plus courant. */
+export function roleLabel(role: string): string {
+  if (role === 'owner') {
+    return 'Propriétaire';
+  }
+  if (role === 'viewer') {
+    return 'Lecteur';
+  }
+  return 'Membre';
+}
+
 /**
  * Auteur d'une ligne dont le compte a été supprimé : la base a remis `user_id` à NULL et gardé le nom qu'il avait dans `author_name`. Sans nom — compte supprimé depuis le tableau de bord Supabase, qui ne le fige pas —, la ligne dit seulement « Ancien membre ».
  */

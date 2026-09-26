@@ -61,6 +61,8 @@ export const queryKeys = {
   // Racine réservée aux invalidations, comme budgetsAll : un événement Realtime sur les adhésions ne dit pas de quel groupe il s'agit (un DELETE ne porte que l'id).
   groupMembersAll: () => ['groupMembers'] as const,
   groupMembers: (groupId: string) => ['groupMembers', groupId] as const,
+  // Sous la clé des membres du groupe : un départ ou un retour, que useMembershipsRealtime() voit déjà, change aussi cette liste.
+  formerMembers: (groupId: string) => ['groupMembers', groupId, 'former'] as const,
   groupInvitation: (groupId: string) => ['groupInvitation', groupId] as const,
   // Clés plates, sans groupe, comme savingsGoals : le profil et les blocages de suppression appartiennent à l'utilisateur, et usePersistedQueryCache() est la seule frontière qui compte.
   profile: () => ['profile'] as const,

@@ -75,6 +75,9 @@ insert into public.budgets (id, group_id, category_id, period, amount, created_a
    (select id from public.categories where group_id is null and name = 'Loisirs'),
    'monthly', 200.00, '2026-09-01 10:00+00', '2026-09-01 10:00+00');
 
+-- Les fixtures ci-dessus ont journalisé leurs créations (20260927000300_full_activity_log.sql) : ce fichier ne compte que les modifications et suppressions, les créations sont couvertes par full_activity_log_test.sql.
+delete from public.activity_log;
+
 -- ---------------------------------------------------------------------------
 -- Bob, membre du groupe partagé
 -- ---------------------------------------------------------------------------

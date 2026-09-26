@@ -58,6 +58,19 @@ export function buildTransactionsCsv(rows: ExportRow[]): string {
   return BOM + [HEADER.join(SEPARATOR), ...lines].join(EOL) + EOL;
 }
 
+/** Le nom du groupe dans un nom de fichier : « Coloc Gambetta » → « coloc-gambetta ». */
+export function fileSlug(groupName: string): string {
+  return (
+    groupName
+      .normalize('NFD')
+      // Les diacritiques laissés par la décomposition NFD, U+0300 à U+036F.
+      .replace(/[\p{Diacritic}]/gu, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'groupe'
+  );
+}
+
 /**
  * « wazu-coloc-gambetta-2026-09-01_2026-09-30.csv ». Le nom du groupe passe en minuscules sans accents ni espaces : certains systèmes de fichiers et messageries les supportent mal.
  *
@@ -69,14 +82,7 @@ export function exportFileName(
   to: string | null,
   extension: 'csv' | 'pdf' = 'csv'
 ): string {
-  const slug =
-    groupName
-      .normalize('NFD')
-      // Les diacritiques laissés par la décomposition NFD, U+0300 à U+036F.
-      .replace(/[\p{Diacritic}]/gu, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '') || 'groupe';
+  const slug = fileSlug(groupName);
   let period = 'tout';
   if (from && to) {
     const last = isoToDate(to);

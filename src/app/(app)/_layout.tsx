@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { OfflineBanner } from '@/components/ui/offline-banner';
 import { useBudgetsRealtime } from '@/hooks/use-budgets-realtime';
 import { useMembershipsRealtime } from '@/hooks/use-memberships-realtime';
+import { usePendingInvite } from '@/hooks/use-pending-invite';
 import { useRecurringRealtime } from '@/hooks/use-recurring-realtime';
 import { useSavingsGoalsRealtime } from '@/hooks/use-savings-goals-realtime';
 import { useTransactionsRealtime } from '@/hooks/use-transactions-realtime';
@@ -35,6 +36,7 @@ function AppStack() {
   useMembershipsRealtime();
   useRecurringRealtime();
   useWalletsRealtime();
+  usePendingInvite();
 
   return (
     <View style={styles.root}>

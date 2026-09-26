@@ -204,20 +204,39 @@ export async function updatePeriodStartDay(groupId: string, day: number): Promis
   }
 }
 
+/** Rôle qu'une invitation donne à qui l'utilise : jamais propriétaire (contrainte `group_invitations_role_check`). */
+export type InvitationRole = 'member' | 'viewer';
+
 export type GroupInvitation = {
   id: string;
   code: string;
   expiresAt: string;
+  role: InvitationRole;
 };
 
-/** Invitation active d'un groupe : ni révoquée, ni utilisée, ni expirée. Au plus une à la fois. */
+function toInvitation(row: {
+  id: string;
+  code: string;
+  expires_at: string;
+  role: MembershipRole;
+}): GroupInvitation {
+  return {
+    id: row.id,
+    code: row.code,
+    expiresAt: row.expires_at,
+    role: row.role === 'viewer' ? 'viewer' : 'member',
+  };
+}
+
+/**
+ * Invitation active d'un groupe : ni révoquée, ni expirée. Au plus une à la fois. Un code sert à plusieurs personnes jusqu'à son échéance (migration group_roles) : qu'il ait déjà servi ne le retire pas.
+ */
 export async function getActiveInvitation(groupId: string): Promise<GroupInvitation | null> {
   const { data, error } = await supabase
     .from('group_invitations')
-    .select('id, code, expires_at')
+    .select('id, code, expires_at, role')
     .eq('group_id', groupId)
     .is('revoked_at', null)
-    .is('used_at', null)
     .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false })
     .limit(1)
@@ -227,30 +246,87 @@ export async function getActiveInvitation(groupId: string): Promise<GroupInvitat
     throw error;
   }
 
-  return data ? { id: data.id, code: data.code, expiresAt: data.expires_at } : null;
+  return data ? toInvitation(data) : null;
 }
 
 /**
- * Crée une invitation. Le code et l'échéance (7 jours) sont fixés par la base, et le client n'a pas le droit de les fournir : il ne choisit ni un code facile à deviner, ni une invitation sans fin (migration harden_group_access).
+ * Crée une invitation, pour un membre ou un lecteur. Le code et l'échéance (7 jours) sont fixés par la base, et le client n'a pas le droit de les fournir : il ne choisit ni un code facile à deviner, ni une invitation sans fin (migration harden_group_access).
  */
 export async function createInvitation(
   groupId: string,
-  createdBy: string
+  createdBy: string,
+  role: InvitationRole
 ): Promise<GroupInvitation> {
   const { data, error } = await supabase
     .from('group_invitations')
     .insert({
       group_id: groupId,
       created_by: createdBy,
+      role,
     })
-    .select('id, code, expires_at')
+    .select('id, code, expires_at, role')
     .single();
 
   if (error) {
     throw error;
   }
 
-  return { id: data.id, code: data.code, expiresAt: data.expires_at };
+  return toInvitation(data);
+}
+
+/** Passe un membre en lecteur, ou l'inverse. Réservé au propriétaire ; les refus arrivent en P0001 avec leur message. */
+export async function setMemberRole(
+  groupId: string,
+  userId: string,
+  role: InvitationRole
+): Promise<void> {
+  const { error } = await supabase.rpc('set_member_role', {
+    p_group_id: groupId,
+    p_user_id: userId,
+    p_role: role,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+/** Confie le groupe à un autre membre ; l'appelant devient simple membre et peut ensuite partir. */
+export async function transferOwnership(groupId: string, newOwnerId: string): Promise<void> {
+  const { error } = await supabase.rpc('transfer_ownership', {
+    p_group_id: groupId,
+    p_new_owner: newOwnerId,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export type FormerMember = {
+  userId: string;
+  displayName: string;
+  avatar: string | null;
+};
+
+/**
+ * Membres partis du groupe, avec le nom qu'ils avaient en partant. `users_select_self_or_covisible` ne montre plus leur profil : c'est ce qui garde leur nom sur leurs saisies, dans le journal et dans l'export (migration full_activity_log).
+ */
+export async function listFormerMembers(groupId: string): Promise<FormerMember[]> {
+  const { data, error } = await supabase
+    .from('former_members')
+    .select('user_id, display_name, avatar')
+    .eq('group_id', groupId);
+
+  if (error) {
+    throw error;
+  }
+
+  return data.map((row) => ({
+    userId: row.user_id,
+    displayName: row.display_name,
+    avatar: row.avatar,
+  }));
 }
 
 export async function revokeInvitation(id: string): Promise<void> {

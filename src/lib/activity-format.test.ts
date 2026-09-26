@@ -5,6 +5,7 @@ import {
   type ActivityLogRow,
   type CategoryName,
 } from '@/lib/activity-format';
+import { formatMoney } from '@/lib/money';
 
 const categories: CategoryName[] = [
   { id: 'cat-alim', name: 'Alimentation' },
@@ -181,6 +182,149 @@ describe('formatActivity — budgets', () => {
     );
 
     expect(result).toBe('Marie a modifié le budget Restaurants');
+  });
+});
+
+describe('formatActivity — créations et nouveaux sujets', () => {
+  const created = (subject: ActivityLogRow['subject'], values: object, overrides: Partial<ActivityLogRow> = {}) =>
+    entry({ subject, action: 'insert', old_values: null, new_values: values as never, changed_fields: [], ...overrides });
+
+  it('décrit la saisie d’une opération', () => {
+    expect(formatActivity(created('transaction', { ...operation, note: 'Pizzeria' }), null, categories)).toBe(
+      `Marie a ajouté Restaurants · Pizzeria, 15${XAF} du 8 sept.`
+    );
+  });
+
+  it('nomme un remboursement par sa note, pas « Sans catégorie »', () => {
+    const repayment = { ...operation, category_id: null, debt_id: 'd1', note: 'Remboursement de Cousin', amount: 4000 };
+    expect(formatActivity(created('transaction', repayment), null, categories)).toBe(
+      `Marie a ajouté Remboursement de Cousin, ${formatMoney(4000)} du 8 sept.`
+    );
+  });
+
+  it('décrit la création d’un budget', () => {
+    expect(formatActivity(created('budget', { category_id: 'cat-resto', amount: 200 }), 'user-marie', categories)).toBe(
+      `Vous avez créé le budget Restaurants (200${XAF})`
+    );
+  });
+
+  it('décrit un prêt, un emprunt, et sa modification', () => {
+    const loan = { direction: 'lent', counterparty: 'Cousin', amount: 10000 };
+    expect(formatActivity(created('debt', loan), null, categories)).toBe(
+      `Marie a noté le prêt à Cousin (${formatMoney(10000)})`
+    );
+    expect(formatActivity(created('debt', { ...loan, direction: 'borrowed' }), null, categories)).toBe(
+      `Marie a noté l’emprunt à Cousin (${formatMoney(10000)})`
+    );
+    expect(
+      formatActivity(
+        entry({ subject: 'debt', old_values: loan, new_values: { ...loan, due_on: '2026-10-01' }, changed_fields: ['due_on'] }),
+        null,
+        categories
+      )
+    ).toBe('Marie a modifié le prêt à Cousin : échéance → 1 oct.');
+  });
+
+  it('décrit un portefeuille créé puis ajusté', () => {
+    expect(formatActivity(created('wallet', { name: 'MoMo' }), null, categories)).toBe(
+      'Marie a créé le portefeuille MoMo'
+    );
+    const wallet = { name: 'MoMo', opening_balance: 0 };
+    expect(
+      formatActivity(
+        entry({ subject: 'wallet', old_values: wallet, new_values: { ...wallet, opening_balance: 5000 }, changed_fields: ['opening_balance'] }),
+        null,
+        categories
+      )
+    ).toBe(`Marie a modifié le portefeuille MoMo : solde de départ 0${XAF} → ${formatMoney(5000)}`);
+  });
+
+  it('décrit un transfert avec le nom des portefeuilles', () => {
+    const wallets = [
+      { id: 'w1', name: 'Principal' },
+      { id: 'w2', name: 'MoMo' },
+    ];
+    const transfer = { from_wallet_id: 'w1', to_wallet_id: 'w2', amount: 2000 };
+    expect(formatActivity(created('transfer', transfer), null, categories, { wallets })).toBe(
+      `Marie a transféré ${formatMoney(2000)} de Principal vers MoMo`
+    );
+    expect(formatActivity(created('transfer', transfer), null, categories)).toBe(
+      `Marie a transféré ${formatMoney(2000)} de un portefeuille vers un portefeuille`
+    );
+  });
+});
+
+describe('formatActivity — membres', () => {
+  const names = new Map([
+    ['user-marie', 'Marie'],
+    ['user-bintou', 'Bintou'],
+  ]);
+  const membership = (action: ActivityLogRow['action'], values: object, after?: object, actor = 'user-bintou') =>
+    entry({
+      subject: 'membership',
+      action,
+      actor_id: actor,
+      actor_name: actor === 'user-marie' ? 'Marie' : 'Bintou',
+      old_values: action === 'insert' ? null : (values as never),
+      new_values: action === 'delete' ? null : ((after ?? values) as never),
+      changed_fields: action === 'update' ? ['role'] : [],
+    });
+
+  it('dit qui a rejoint, et en quel rôle', () => {
+    expect(formatActivity(membership('insert', { user_id: 'user-bintou', role: 'member' }), null, categories, { names })).toBe(
+      'Bintou a rejoint le groupe'
+    );
+    expect(formatActivity(membership('insert', { user_id: 'user-bintou', role: 'viewer' }), 'user-bintou', categories, { names })).toBe(
+      'Vous avez rejoint le groupe en lecteur'
+    );
+  });
+
+  it('distingue un départ d’une exclusion', () => {
+    expect(formatActivity(membership('delete', { user_id: 'user-bintou' }), null, categories, { names })).toBe(
+      'Bintou a quitté le groupe'
+    );
+    expect(
+      formatActivity(membership('delete', { user_id: 'user-bintou' }, undefined, 'user-marie'), null, categories, { names })
+    ).toBe('Marie a exclu Bintou');
+  });
+
+  it('attribue un départ sans auteur à la personne partie (compte supprimé)', () => {
+    expect(
+      formatActivity({ ...membership('delete', { user_id: 'user-bintou' }), actor_id: null, actor_name: null }, null, categories, { names })
+    ).toBe('Bintou a quitté le groupe');
+  });
+
+  it('décrit un changement de rôle et une passation', () => {
+    expect(
+      formatActivity(
+        membership('update', { user_id: 'user-bintou', role: 'member' }, { user_id: 'user-bintou', role: 'viewer' }, 'user-marie'),
+        null,
+        categories,
+        { names }
+      )
+    ).toBe('Marie a changé le rôle de Bintou : membre → lecteur');
+    expect(
+      formatActivity(
+        membership('update', { user_id: 'user-bintou', role: 'member' }, { user_id: 'user-bintou', role: 'owner' }, 'user-marie'),
+        'user-marie',
+        categories,
+        { names }
+      )
+    ).toBe('Vous avez confié le groupe à Bintou');
+    expect(
+      formatActivity(
+        membership('update', { user_id: 'user-marie', role: 'owner' }, { user_id: 'user-marie', role: 'member' }, 'user-marie'),
+        null,
+        categories,
+        { names }
+      )
+    ).toBe('Marie a changé son rôle : propriétaire → membre');
+  });
+
+  it('nomme « un membre » une personne inconnue', () => {
+    expect(formatActivity(membership('delete', { user_id: 'user-x' }, undefined, 'user-marie'), null, categories)).toBe(
+      'Marie a exclu un membre'
+    );
   });
 });
 

@@ -12,6 +12,7 @@ import { ScreenHeader } from '@/components/ui/screen-header';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useBudgetProgress } from '@/hooks/use-budget-progress';
 import { useBudgetTotals } from '@/hooks/use-budget-totals';
+import { useCanWrite } from '@/hooks/use-can-write';
 import { statusFor, type BudgetProgress } from '@/lib/budget-progress';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { formatPeriodLabel, periodBounds, todayIso } from '@/lib/dates';
@@ -48,6 +49,7 @@ export default function BudgetsScreen() {
   const { items, isLoading, error, isEmptyError } = useBudgetProgress();
   const { totals } = useBudgetTotals();
   const [filter, setFilter] = useState<Filter>('all');
+  const canWrite = useCanWrite();
 
   // Seules bloquent les erreurs qui ne laissent rien de juste à montrer. TanStack garde les dernières données valides et ne remplit `error` qu'après l'échec d'un rafraîchissement en arrière-plan : revenir hors ligne au premier plan après plus de 30 s ne doit pas remplacer des budgets déjà affichés par un message d'erreur — même règle que activity.tsx.
   const blockingError: unknown =
@@ -77,22 +79,24 @@ export default function BudgetsScreen() {
         </ScreenHeader>
       }
       floatingAction={
-        // La saisie en trois taps reste à portée depuis chaque onglet, comme sur la maquette.
-        <Link href="/transaction" asChild>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Ajouter une opération"
-            // Aplati : <Link asChild> transmet le style à son enfant via un Slot, qui lève une erreur de rendu en développement s'il reçoit un tableau.
-            style={StyleSheet.flatten([
-              styles.fab,
-              elevation.floating,
-              { backgroundColor: colors.primary },
-            ])}
-          >
-            <MaterialCommunityIcons name="plus" size={22} color={colors.primaryText} />
-            <Text style={[styles.fabLabel, { color: colors.primaryText }]}>Ajouter</Text>
-          </Pressable>
-        </Link>
+        // La saisie en trois taps reste à portée depuis chaque onglet, comme sur la maquette. Un lecteur n'a rien à saisir.
+        canWrite ? (
+          <Link href="/transaction" asChild>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Ajouter une opération"
+              // Aplati : <Link asChild> transmet le style à son enfant via un Slot, qui lève une erreur de rendu en développement s'il reçoit un tableau.
+              style={StyleSheet.flatten([
+                styles.fab,
+                elevation.floating,
+                { backgroundColor: colors.primary },
+              ])}
+            >
+              <MaterialCommunityIcons name="plus" size={22} color={colors.primaryText} />
+              <Text style={[styles.fabLabel, { color: colors.primaryText }]}>Ajouter</Text>
+            </Pressable>
+          </Link>
+        ) : undefined
       }
     >
       {items.length > 0 ? (
@@ -114,9 +118,11 @@ export default function BudgetsScreen() {
           <MaterialCommunityIcons name="wallet-outline" size={32} color={colors.primary} />
           <Text style={[styles.emptyTitle, { color: colors.text }]}>Aucun budget pour l’instant</Text>
           <Text style={[styles.message, { color: colors.textMuted }]}>
-            Fixez un plafond sur une catégorie : l’app vous alerte à 80 % et au dépassement.
+            {canWrite
+              ? 'Fixez un plafond sur une catégorie : l’app vous alerte à 80 % et au dépassement.'
+              : 'Aucun plafond n’est encore fixé dans ce groupe.'}
           </Text>
-          <NewEnvelopeButton />
+          {canWrite ? <NewEnvelopeButton /> : null}
         </View>
       ) : (
         <>
@@ -182,14 +188,14 @@ export default function BudgetsScreen() {
                 <FadeInRow key={item.budget.id} index={index}>
                   <BudgetRow
                     item={item}
-                    onPress={() => router.push(`/budget?id=${item.budget.id}`)}
+                    onPress={canWrite ? () => router.push(`/budget?id=${item.budget.id}`) : undefined}
                   />
                 </FadeInRow>
               ))
             )}
           </View>
 
-          <NewEnvelopeButton />
+          {canWrite ? <NewEnvelopeButton /> : null}
         </>
       )}
     </Screen>
