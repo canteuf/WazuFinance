@@ -16,6 +16,9 @@ export type ExportRow = {
   categoryName: string | null;
   note: string | null;
   authorName: string | null;
+  /** Nom du portefeuille ; `null` quand le groupe n'en a qu'un, la colonne n'apprendrait rien. */
+  walletName: string | null;
+  tags: string[];
 };
 
 const SEPARATOR = ';';
@@ -23,7 +26,7 @@ const BOM = String.fromCharCode(0xfeff);
 // CRLF : la fin de ligne de la RFC 4180, et celle qu'Excel attend.
 const EOL = '\r\n';
 
-const HEADER = ['Date', 'Type', 'Catégorie', 'Montant', 'Note', 'Saisie par'];
+const HEADER = ['Date', 'Type', 'Catégorie', 'Montant', 'Note', 'Saisie par', 'Portefeuille', 'Étiquettes'];
 
 /**
  * Un texte saisi par un membre qui commence par `=`, `+`, `-`, `@` ou une tabulation serait exécuté comme une formule à l'ouverture dans un tableur (injection CSV). Préfixé d'une apostrophe, il s'affiche tel quel. Ne s'applique qu'aux textes libres : le montant, lui, commence légitimement par un signe moins.
@@ -52,6 +55,9 @@ export function buildTransactionsCsv(rows: ExportRow[]): string {
       formatCsvAmount(row.amount, row.type),
       quote(neutralize(row.note ?? '')),
       quote(neutralize(row.authorName ?? '')),
+      quote(neutralize(row.walletName ?? '')),
+      // Une seule colonne, les étiquettes séparées par une virgule : un tableur filtre sur « contient », et le nombre d'étiquettes varie d'une ligne à l'autre.
+      quote(neutralize(row.tags.join(', '))),
     ].join(SEPARATOR)
   );
 

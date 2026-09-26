@@ -1,5 +1,6 @@
-import type { TransactionFilters } from '@/data/transactions';
+import { filterArgs, type TransactionFilters } from '@/data/transactions';
 import { supabase } from '@/lib/supabase';
+import type { TransactionType } from '@/types/database';
 
 export type PeriodSummary = {
   /** Entrées hors retraits d'épargne. */
@@ -89,23 +90,13 @@ export async function getCategoryBreakdown(
 /**
  * Totaux des opérations sous les filtres de l'historique, pour l'en-tête du relevé exporté.
  *
- * Distinct de getPeriodSummary() : celui-ci exige des bornes et ignore catégorie, type et recherche. La fonction `filtered_totals` partage sa clause where avec `daily_totals`, donc le relevé et l'historique décrivent les mêmes lignes.
+ * Distinct de getPeriodSummary() : celui-ci exige des bornes et ignore les autres filtres. `filtered_totals` lit les lignes de `filtered_transactions()`, comme `daily_totals` : le relevé et l'historique décrivent les mêmes lignes.
  */
 export async function getFilteredTotals(
   groupId: string,
   filters: TransactionFilters
 ): Promise<PeriodSummary> {
-  const { data, error } = await supabase
-    .rpc('filtered_totals', {
-      p_group_id: groupId,
-      // `undefined` et non `null` : l'argument est alors omis, et la valeur par défaut — pas de filtre — s'applique.
-      p_from: filters.from ?? undefined,
-      p_to: filters.to ?? undefined,
-      p_type: filters.type ?? undefined,
-      p_category_id: filters.categoryId ?? undefined,
-      p_search: filters.search ?? undefined,
-    })
-    .single();
+  const { data, error } = await supabase.rpc('filtered_totals', filterArgs(groupId, filters)).single();
 
   if (error) {
     throw error;
@@ -119,5 +110,69 @@ export async function getFilteredTotals(
     debts: Number(data.debts),
     balance: Number(data.balance),
     txCount: Number(data.tx_count),
+  };
+}
+
+export type CategorySubtotal = {
+  /** `null` pour les opérations sans catégorie : épargne, prêts et dettes. */
+  categoryId: string | null;
+  name: string | null;
+  type: TransactionType;
+  total: number;
+  count: number;
+};
+
+/**
+ * Sous-totaux par catégorie des opérations filtrées, dépenses puis revenus, pour le relevé PDF. Mêmes lignes que `getFilteredTotals` : leur somme retombe sur ses totaux.
+ */
+export async function getFilteredCategoryTotals(
+  groupId: string,
+  filters: TransactionFilters
+): Promise<CategorySubtotal[]> {
+  const { data, error } = await supabase.rpc('filtered_category_totals', filterArgs(groupId, filters));
+
+  if (error) {
+    throw error;
+  }
+
+  return data.map((row) => ({
+    categoryId: row.category_id,
+    name: row.name,
+    type: row.type,
+    total: Number(row.total),
+    count: Number(row.tx_count),
+  }));
+}
+
+export type CommerceSummary = {
+  /** Revenus « Commerce », versements des ventes à crédit compris. */
+  sales: number;
+  /** Dépenses « Achat de stock ». */
+  stock: number;
+  /** Ventes moins stock, soustrait en base. */
+  margin: number;
+  /** Nombre d'opérations de commerce de la période : zéro, la carte ne s'affiche pas. */
+  count: number;
+};
+
+/** Ventes et achats de stock de la période, sommés en base. Voir commerce_summary(). */
+export async function getCommerceSummary(
+  groupId: string,
+  from: string,
+  to: string
+): Promise<CommerceSummary> {
+  const { data, error } = await supabase
+    .rpc('commerce_summary', { p_group_id: groupId, p_from: from, p_to: to })
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    sales: Number(data.sales),
+    stock: Number(data.stock),
+    margin: Number(data.margin),
+    count: Number(data.tx_count),
   };
 }

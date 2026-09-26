@@ -50,6 +50,8 @@ export function DueRecurring() {
         transactionId: transactionIdFor(`${item.id}:${item.next_due_on}`),
         amount: null,
         occurredOn: todayIso(),
+        // Le portefeuille retenu par le modèle : confirmer d'un geste ne pose pas la question, la feuille de l'échéance permet d'en changer.
+        walletId: null,
       },
       {
         onSuccess: () => toast.show(`Échéance « ${recurringTitle(item)} » enregistrée`),

@@ -71,11 +71,12 @@ export function TransactionRow({
 
   const edited = wasEdited(transaction);
 
+  // Le versement d'une vente à crédit porte sa catégorie, « Commerce » : c'est un revenu, et la ligne le dit.
   const categoryName = savings
     ? 'Épargne'
-    : debt
-      ? 'Prêt ou dette'
-      : (transaction.category?.name ?? 'Sans catégorie');
+    : (transaction.category?.name ?? (debt ? 'Prêt ou dette' : 'Sans catégorie'));
+  // Absentes d'une ligne restée dans un cache écrit avant les étiquettes.
+  const tags = transaction.tags ?? [];
 
   // La note tient le titre quand elle existe : c'est « Biocoop » qu'on reconnaît d'un coup d'œil dans une liste, pas « Alimentation », qui se répète sur dix lignes. Sans note, la catégorie reprend le titre plutôt que de laisser la ligne sans nom.
   const title = transaction.note?.trim() || categoryName;
@@ -87,6 +88,7 @@ export function TransactionRow({
     author?.name ?? null,
     ledger ? null : formatOccurredOn(transaction.occurred_on),
     walletName ?? null,
+    tags.length > 0 ? tags.join(', ') : null,
     pending ? 'en attente d’envoi' : edited ? 'modifié' : null,
   ]
     .filter((part): part is string => Boolean(part))
@@ -101,6 +103,7 @@ export function TransactionRow({
     formatOccurredOn(transaction.occurred_on),
     author ? `saisie par ${author.name === 'Vous' ? 'vous' : author.name}` : null,
     walletName ? `portefeuille ${walletName}` : null,
+    tags.length > 0 ? `${tags.length > 1 ? 'étiquettes' : 'étiquette'} ${tags.join(', ')}` : null,
     pending ? 'en attente d’envoi' : edited ? 'modifiée' : null,
     savings ? 'se gère depuis l’écran Épargne' : null,
     debt ? 'se gère depuis l’écran Prêts et dettes' : null,

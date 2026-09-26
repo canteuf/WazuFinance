@@ -116,6 +116,8 @@ const BY_ICON: Record<string, ToneName> = {
   'storefront-outline': 'green', // Commerce
   'bank-transfer-in': 'teal', // Transfert reçu
   'account-cash': 'green', // Tontine reçue
+  // 20260928000200_real_usage.sql. Rose, loin de l'orange d'« Alimentation » qui la suit dans la grille triée par nom.
+  'package-variant-closed': 'rose', // Achat de stock
 };
 
 /** djb2, tronqué. Sert seulement à répartir des teintes, jamais à sécuriser. */

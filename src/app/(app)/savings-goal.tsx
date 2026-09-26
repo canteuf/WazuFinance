@@ -18,12 +18,16 @@ import { Button } from '@/components/ui/button';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { CONTENT_GUTTER, contentColumn } from '@/components/ui/screen';
 import { SheetScrollView } from '@/components/ui/sheet-scroll-view';
+import { WalletPicker } from '@/components/wallet/wallet-picker';
+import { useActiveGroup } from '@/hooks/use-active-group';
 import { useAuth } from '@/hooks/use-auth';
 import { useRequestIds } from '@/hooks/use-request-ids';
+import { useWalletChoice } from '@/hooks/use-wallet-choice';
 import { useSavingsGoalMutations } from '@/hooks/use-savings-goal-mutations';
 import { useSavingsGoals } from '@/hooks/use-savings-goals';
 import { useSheetMaxHeight } from '@/hooks/use-sheet-max-height';
 import { dataErrorMessage } from '@/lib/data-errors';
+import { writeLastWallet } from '@/lib/last-used';
 import { formatMoney } from '@/lib/money';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 import { goBackOr } from '@/lib/navigation';
@@ -48,6 +52,10 @@ export default function SavingsGoalScreen() {
   const [adjustError, setAdjustError] = useState<string>();
   // Un identifiant par montant : retoucher « Verser » après « Pas de connexion » ne verse pas deux fois si le premier envoi était passé.
   const requestIdFor = useRequestIds();
+  // Les versements passent par le compte personnel, quel que soit le groupe affiché : ce sont ses portefeuilles qui se proposent.
+  const { groups } = useActiveGroup();
+  const personalGroupId = groups.find((group) => group.isPersonal)?.groupId ?? null;
+  const wallet = useWalletChoice(personalGroupId);
 
   const existing = typeof id === 'string' ? goals.find((goal) => goal.id === id) : undefined;
 
@@ -129,9 +137,14 @@ export default function SavingsGoalScreen() {
     }
     setAdjustError(undefined);
     addToGoal.mutate(
-      { id: existing.id, delta, requestId: requestIdFor(String(delta)) },
+      { id: existing.id, delta, requestId: requestIdFor(String(delta)), walletId: wallet.walletId },
       {
-        onSuccess: () => goBackOr(router, '/savings-goals'),
+        onSuccess: () => {
+          if (personalGroupId && wallet.walletId) {
+            void writeLastWallet(personalGroupId, wallet.walletId);
+          }
+          goBackOr(router, '/savings-goals');
+        },
         onError: (mutationError) => setAdjustError(dataErrorMessage(mutationError)),
       }
     );
@@ -202,6 +215,19 @@ export default function SavingsGoalScreen() {
               />
             </View>
 
+            {wallet.showPicker ? (
+              <View style={styles.walletField}>
+                <Text style={[styles.walletLabel, { color: colors.textMuted }]}>
+                  Portefeuille du compte personnel
+                </Text>
+                <WalletPicker
+                  wallets={wallet.wallets}
+                  selectedId={wallet.selectedId}
+                  onSelect={wallet.select}
+                />
+              </View>
+            ) : null}
+
             <AmountAdjuster
               options={{
                 add: { label: 'Verser', icon: 'plus-circle-outline' },
@@ -226,7 +252,8 @@ export default function SavingsGoalScreen() {
             />
             {/* Dit avant d'enregistrer ce que le versement fait au solde : sans cette phrase, voir le solde du compte personnel baisser après un versement ressemblerait à une erreur. */}
             <Text style={[styles.adjustHint, { color: colors.textMuted }]}>
-              Un versement sort du solde de votre compte personnel, un retrait y revient.
+              Un versement sort du solde de votre compte personnel, un retrait y revient
+              {wallet.showPicker ? ', dans le portefeuille choisi' : ''}.
             </Text>
 
             <Text style={[styles.section, { color: colors.text }]}>Paramètres de l’objectif</Text>
@@ -257,6 +284,15 @@ export default function SavingsGoalScreen() {
 }
 
 const styles = StyleSheet.create({
+  walletField: {
+    gap: spacing.sm,
+  },
+  walletLabel: {
+    fontFamily: font.semibold,
+    fontSize: 14,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
   sheet: {
     // Le fond garde la pleine largeur de la feuille ; ce sont les blocs qui se centrent, sur la même colonne que les écrans (voir `contentColumn`). Sans cela, le contenu d'une feuille s'étalait d'un bord à l'autre sur une tablette là où les cartes des écrans s'arrêtent à 420 points.
     alignItems: 'center',

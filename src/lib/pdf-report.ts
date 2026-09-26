@@ -7,6 +7,7 @@
  */
 
 import type { ExportRow } from '@/lib/csv';
+import type { TransactionType } from '@/types/database';
 import { formatBalance, formatSigned, withCurrency } from '@/lib/money';
 
 export type ReportTotals = {
@@ -20,6 +21,15 @@ export type ReportTotals = {
   txCount: number;
 };
 
+/** Sous-total d'une catégorie, sommé par Postgres (filtered_category_totals). */
+export type ReportSubtotal = {
+  /** `null` pour les opérations sans catégorie : épargne, prêts et dettes. */
+  name: string | null;
+  type: TransactionType;
+  total: number;
+  count: number;
+};
+
 export type ReportInput = {
   groupName: string;
   /** « Septembre 2026 », « du 5 sept. au 4 oct. », « Depuis le début ». */
@@ -29,6 +39,8 @@ export type ReportInput = {
   /** « 19 septembre 2026 à 21:40 ». */
   generatedAt: string;
   totals: ReportTotals;
+  /** Sorties puis entrées, les plus grosses d'abord. */
+  subtotals: ReportSubtotal[];
   rows: ExportRow[];
 };
 
@@ -52,20 +64,46 @@ function formatRowDate(iso: string): string {
   return dateFormatter.format(new Date(year, month - 1, day));
 }
 
-function row(item: ExportRow): string {
+function row(item: ExportRow, withWallet: boolean): string {
   const sign = item.type === 'expense' ? 'expense' : 'income';
+  const tags = item.tags.length > 0 ? `<div class="tags">${item.tags.map(escapeHtml).join(' · ')}</div>` : '';
   return `<tr>
   <td class="date">${formatRowDate(item.occurredOn)}</td>
   <td>${escapeHtml(item.categoryName ?? 'Sans catégorie')}</td>
-  <td class="note">${escapeHtml(item.note ?? '')}</td>
+  <td class="note">${escapeHtml(item.note ?? '')}${tags}</td>
+  ${withWallet ? `<td class="author">${escapeHtml(item.walletName ?? '')}</td>` : ''}
   <td class="author">${escapeHtml(item.authorName ?? '')}</td>
   <td class="amount ${sign}">${formatSigned(item.amount, item.type)}</td>
 </tr>`;
 }
 
+/** Les sous-totaux d'un sens, sous leur intertitre ; rien quand il n'y en a pas. */
+function subtotalBlock(title: string, items: ReportSubtotal[]): string {
+  if (items.length === 0) {
+    return '';
+  }
+  const lines = items
+    .map(
+      (item) => `<tr>
+  <td>${escapeHtml(item.name ?? 'Épargne, prêts, sans catégorie')}</td>
+  <td class="count">${item.count}</td>
+  <td class="amount ${item.type}">${formatSigned(item.total, item.type)}</td>
+</tr>`
+    )
+    .join('\n');
+  return `<div class="subtotal"><h2>${title}</h2><table><tbody>
+${lines}
+</tbody></table></div>`;
+}
+
 export function buildTransactionsReportHtml(input: ReportInput): string {
   const { totals } = input;
   const countLabel = totals.txCount === 1 ? '1 opération' : `${totals.txCount} opérations`;
+  // La colonne n'apparaît que si le groupe a plusieurs portefeuilles : l'export ne nomme le portefeuille que dans ce cas.
+  const withWallet = input.rows.some((item) => item.walletName !== null);
+  const columns = withWallet ? 6 : 5;
+  const expenses = input.subtotals.filter((item) => item.type === 'expense');
+  const incomes = input.subtotals.filter((item) => item.type === 'income');
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -99,6 +137,12 @@ export function buildTransactionsReportHtml(input: ReportInput): string {
   .amount { text-align: right; white-space: nowrap; font-weight: 600; font-variant-numeric: tabular-nums; }
   th.amount { font-weight: normal; }
   .income { color: #0B7A5B; }
+  .tags { color: #08775A; font-size: 9pt; margin-top: 2px; }
+  .subtotals { display: flex; gap: 16px; margin-bottom: 18px; align-items: flex-start; }
+  .subtotal { flex: 1; }
+  .subtotal h2 { font-size: 10pt; color: #5E6E69; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px; }
+  .subtotal td { padding: 4px 6px; }
+  .count { color: #5E6E69; text-align: right; font-variant-numeric: tabular-nums; }
   .empty { color: #5E6E69; text-align: center; padding: 24px; }
   /* margin-top: auto pousse le pied au bas de la page tant que le contenu est plus court qu'elle ; au-delà, il reprend sa place à la suite du tableau, sur la dernière page. Un pied répété sur chaque page demanderait une position fixe, que la WebView d'impression d'Android ne rend pas de façon fiable. */
   footer { margin-top: auto; padding-top: 14px; border-top: 1px solid #EEF2F0; color: #5E6E69; font-size: 8.5pt; }
@@ -117,10 +161,11 @@ export function buildTransactionsReportHtml(input: ReportInput): string {
   ${totals.debts !== 0 ? `<div class="total"><div class="label">Prêts et dettes</div><div class="value">${formatSigned(Math.abs(totals.debts), totals.debts > 0 ? 'income' : 'expense')}</div></div>` : ''}
   <div class="total"><div class="label">Solde</div><div class="value">${withCurrency(formatBalance(totals.balance))}</div></div>
 </section>
+${expenses.length + incomes.length > 0 ? `<section class="subtotals">${subtotalBlock('Sorties par catégorie', expenses)}${subtotalBlock('Entrées par catégorie', incomes)}</section>` : ''}
 <table>
-  <thead><tr><th>Date</th><th>Catégorie</th><th>Note</th><th>Saisie par</th><th class="amount">Montant</th></tr></thead>
+  <thead><tr><th>Date</th><th>Catégorie</th><th>Note</th>${withWallet ? '<th>Portefeuille</th>' : ''}<th>Saisie par</th><th class="amount">Montant</th></tr></thead>
   <tbody>
-${input.rows.length > 0 ? input.rows.map(row).join('\n') : '<tr><td class="empty" colspan="5">Aucune opération.</td></tr>'}
+${input.rows.length > 0 ? input.rows.map((item) => row(item, withWallet)).join('\n') : `<tr><td class="empty" colspan="${columns}">Aucune opération.</td></tr>`}
   </tbody>
 </table>
 <footer>Édité le ${escapeHtml(input.generatedAt)}.</footer>

@@ -36,6 +36,11 @@ export const queryKeys = {
     ['transactions', 'daily', groupId, filters] as const,
   frequentAmounts: (groupId: string, type: string) =>
     ['transactions', 'frequent', groupId, type] as const,
+  // Sous ['transactions'] : une saisie qui ajoute une étiquette la fait apparaître dans les suggestions sans qu'aucune mutation le sache.
+  transactionTags: (groupId: string) => ['transactions', 'tags', groupId] as const,
+  // Dérivée des opérations, comme periodSummary, et bornée de la même façon.
+  commerceSummary: (groupId: string, from: string) =>
+    ['transactions', 'commerce', groupId, from] as const,
   // Sous ['transactions'] parce que la dépense en vient, comme categoryBreakdown. Les plafonds, eux, n'y sont pas : les mutations et le Realtime des budgets invalident en plus la racine budgetTotalsAll(), qui n'existe que pour ça — invalider ['transactions'] rechargerait tout l'historique pour un plafond.
   budgetTotalsAll: () => ['transactions', 'budgetTotals'] as const,
   budgetTotals: (groupId: string, from: string) =>
@@ -79,4 +84,6 @@ export const mutationKeys = {
   createTransaction: () => ['transactionWrites', 'create'] as const,
   updateTransaction: () => ['transactionWrites', 'update'] as const,
   deleteTransaction: () => ['transactionWrites', 'delete'] as const,
+  // Sous la même racine : persisté, compté par le bandeau hors ligne et envoyé dans la même file que les saisies, dans l'ordre où il a été fait.
+  recordDebtPayment: () => ['transactionWrites', 'debtPayment'] as const,
 };

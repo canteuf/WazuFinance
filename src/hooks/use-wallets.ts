@@ -4,14 +4,21 @@ import { listTransfers, listWallets, type WalletOverview, type WalletTransfer } 
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { queryKeys } from '@/lib/query-keys';
 
-/** Portefeuilles du groupe actif, avec leur solde. */
-export function useWallets(): { wallets: WalletOverview[]; isLoading: boolean; error: unknown } {
+/**
+ * Portefeuilles d'un groupe, avec leur solde : le groupe actif par défaut. L'épargne passe le compte personnel, d'où partent ses versements quel que soit le groupe affiché.
+ */
+export function useWallets(groupId?: string | null): {
+  wallets: WalletOverview[];
+  isLoading: boolean;
+  error: unknown;
+} {
   const { activeGroupId } = useActiveGroup();
+  const target = groupId === undefined ? activeGroupId : groupId;
 
   const { data, isLoading, error } = useQuery({
-    queryKey: queryKeys.wallets(activeGroupId ?? ''),
-    queryFn: () => listWallets(activeGroupId as string),
-    enabled: activeGroupId !== null,
+    queryKey: queryKeys.wallets(target ?? ''),
+    queryFn: () => listWallets(target as string),
+    enabled: target !== null,
   });
 
   return { wallets: data ?? [], isLoading, error };

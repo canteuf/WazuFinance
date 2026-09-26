@@ -3,6 +3,8 @@ import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useCategories } from '@/hooks/use-categories';
+import { useTransactionTags } from '@/hooks/use-transaction-tags';
+import { useWallets } from '@/hooks/use-wallets';
 import type { PeriodPreset, PeriodPresetId } from '@/lib/dates';
 import { font, radius, spacing, useColors } from '@/theme/tokens';
 import type { TransactionType } from '@/types/database';
@@ -12,17 +14,22 @@ type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 export type HistoryFilterState = {
   presetId: PeriodPresetId;
   type: TransactionType | null;
-  categoryId: string | null;
+  /** Catégories cochées ; vide pour toutes. */
+  categoryIds: string[];
   /** Texte tel que tapé ; l'écran le normalise et le temporise avant la requête. */
   search: string;
+  walletId: string | null;
+  tag: string | null;
 };
 
 /** État d'ouverture de l'écran : la période en cours, sans autre restriction. */
 export const DEFAULT_FILTERS: HistoryFilterState = {
   presetId: 'current',
   type: null,
-  categoryId: null,
+  categoryIds: [],
   search: '',
+  walletId: null,
+  tag: null,
 };
 
 /**
@@ -34,7 +41,9 @@ export function isDefaultFilters(state: HistoryFilterState): boolean {
   return (
     state.presetId === DEFAULT_FILTERS.presetId &&
     state.type === DEFAULT_FILTERS.type &&
-    state.categoryId === DEFAULT_FILTERS.categoryId &&
+    state.categoryIds.length === 0 &&
+    state.walletId === null &&
+    state.tag === null &&
     state.search.trim() === ''
   );
 }
@@ -44,38 +53,57 @@ export function activeFilterCount(state: HistoryFilterState): number {
   return [
     state.presetId !== DEFAULT_FILTERS.presetId,
     state.type !== null,
-    state.categoryId !== null,
+    state.categoryIds.length > 0,
+    state.walletId !== null,
+    state.tag !== null,
     state.search.trim() !== '',
   ].filter(Boolean).length;
 }
 
-type PanelId = 'period' | 'category' | null;
+type PanelId = 'period' | 'category' | 'wallet' | 'tag' | null;
 
 /**
  * Recherche, puis les pastilles de filtre, d'après la maquette : période, dépenses, revenus, catégorie.
  *
  * La maquette les tient sur une seule rangée ; à la largeur réelle d'un téléphone elles n'y tiennent pas, et le défilement horizontal coupait la dernière en deux au bord de l'écran. Elles passent donc à la ligne : deux rangées pleines valent mieux qu'une rangée tronquée.
  *
- * La période et la catégorie ont trop de valeurs pour tenir dans la rangée ; leur pastille déplie un panneau dessous plutôt qu'une modale, qui masquerait la liste que le choix est en train de filtrer.
+ * La période, les catégories, le portefeuille et l'étiquette ont trop de valeurs pour tenir dans la rangée ; leur pastille déplie un panneau dessous plutôt qu'une modale, qui masquerait la liste que le choix est en train de filtrer. Le portefeuille n'apparaît que s'il y en a plusieurs, l'étiquette que si le groupe en a déjà utilisé : une pastille sans choix derrière n'apprend rien.
+ *
+ * Plusieurs catégories se cochent ensemble — « Alimentation » et « Famille » pour rendre des comptes à qui envoie l'argent — : leur panneau reste ouvert d'un toucher à l'autre, et se referme par sa pastille.
  */
 export function FilterBar({
   state,
   presets,
-  effectiveCategoryId,
+  effectiveCategoryIds,
+  effectiveWalletId,
   onChange,
 }: {
   state: HistoryFilterState;
   presets: PeriodPreset[];
-  /** Catégorie corrigée par l'écran appelant : même valeur que celle qui alimente la requête. */
-  effectiveCategoryId: string | null;
+  /** Catégories corrigées par l'écran appelant : mêmes valeurs que celles qui alimentent la requête. */
+  effectiveCategoryIds: string[];
+  /** Portefeuille corrigé de la même façon. */
+  effectiveWalletId: string | null;
   onChange: (next: HistoryFilterState) => void;
 }) {
   const colors = useColors();
   const { categories } = useCategories(state.type);
+  const { wallets } = useWallets();
+  const tags = useTransactionTags();
   const [panel, setPanel] = useState<PanelId>(null);
 
   const preset = presets.find((item) => item.id === state.presetId) ?? presets[0];
-  const category = categories.find((item) => item.id === effectiveCategoryId);
+  const chosen = categories.filter((item) => effectiveCategoryIds.includes(item.id));
+  const categoryLabel =
+    chosen.length === 0 ? 'Par catégorie' : chosen.length === 1 ? chosen[0].name : `${chosen.length} catégories`;
+  const wallet = wallets.find((item) => item.id === effectiveWalletId);
+
+  function toggleCategory(id: string) {
+    const categoryIds = effectiveCategoryIds.includes(id)
+      ? effectiveCategoryIds.filter((candidate) => candidate !== id)
+      : [...effectiveCategoryIds, id];
+    onChange({ ...state, categoryIds });
+  }
 
   function toggleType(type: TransactionType) {
     const next = state.type === type ? null : type;
@@ -83,7 +111,7 @@ export function FilterBar({
       ...state,
       type: next,
       // Une catégorie appartient à un seul type : passer à un type concret ne peut conserver une sélection que par coïncidence, donc on la vide. Repasser à « tout » élargit l'offre sans rien invalider.
-      categoryId: next === null ? state.categoryId : null,
+      categoryIds: next === null ? state.categoryIds : [],
     });
   }
 
@@ -138,13 +166,35 @@ export function FilterBar({
           onPress={() => toggleType('income')}
         />
         <Chip
-          label={category?.name ?? 'Par catégorie'}
+          label={categoryLabel}
           trailingIcon={panel === 'category' ? 'chevron-up' : 'chevron-down'}
           group="Catégorie"
-          selected={category !== undefined}
+          selected={chosen.length > 0}
           expanded={panel === 'category'}
           onPress={() => setPanel(panel === 'category' ? null : 'category')}
         />
+        {wallets.length > 1 ? (
+          <Chip
+            label={wallet?.name ?? 'Portefeuille'}
+            icon="wallet-outline"
+            trailingIcon={panel === 'wallet' ? 'chevron-up' : 'chevron-down'}
+            group="Portefeuille"
+            selected={wallet !== undefined}
+            expanded={panel === 'wallet'}
+            onPress={() => setPanel(panel === 'wallet' ? null : 'wallet')}
+          />
+        ) : null}
+        {tags.length > 0 || state.tag !== null ? (
+          <Chip
+            label={state.tag ?? 'Étiquette'}
+            icon="tag-outline"
+            trailingIcon={panel === 'tag' ? 'chevron-up' : 'chevron-down'}
+            group="Étiquette"
+            selected={state.tag !== null}
+            expanded={panel === 'tag'}
+            onPress={() => setPanel(panel === 'tag' ? null : 'tag')}
+          />
+        ) : null}
       </View>
 
       {panel === 'period' ? (
@@ -166,14 +216,14 @@ export function FilterBar({
       ) : null}
 
       {panel === 'category' ? (
-        <Panel title="Catégorie">
+        <Panel title="Catégories · plusieurs choix possibles">
           <Chip
             label="Toutes"
             group="Catégorie"
             block
-            selected={effectiveCategoryId === null}
+            selected={effectiveCategoryIds.length === 0}
             onPress={() => {
-              onChange({ ...state, categoryId: null });
+              onChange({ ...state, categoryIds: [] });
               setPanel(null);
             }}
           />
@@ -183,9 +233,62 @@ export function FilterBar({
               label={item.name}
               group="Catégorie"
               block
-              selected={effectiveCategoryId === item.id}
+              selected={effectiveCategoryIds.includes(item.id)}
+              onPress={() => toggleCategory(item.id)}
+            />
+          ))}
+        </Panel>
+      ) : null}
+
+      {panel === 'wallet' ? (
+        <Panel title="Portefeuille">
+          <Chip
+            label="Tous"
+            group="Portefeuille"
+            block
+            selected={effectiveWalletId === null}
+            onPress={() => {
+              onChange({ ...state, walletId: null });
+              setPanel(null);
+            }}
+          />
+          {wallets.map((item) => (
+            <Chip
+              key={item.id}
+              label={item.name}
+              group="Portefeuille"
+              block
+              selected={effectiveWalletId === item.id}
               onPress={() => {
-                onChange({ ...state, categoryId: item.id });
+                onChange({ ...state, walletId: item.id });
+                setPanel(null);
+              }}
+            />
+          ))}
+        </Panel>
+      ) : null}
+
+      {panel === 'tag' ? (
+        <Panel title="Étiquette">
+          <Chip
+            label="Toutes"
+            group="Étiquette"
+            block
+            selected={state.tag === null}
+            onPress={() => {
+              onChange({ ...state, tag: null });
+              setPanel(null);
+            }}
+          />
+          {tags.map((item) => (
+            <Chip
+              key={item}
+              label={item}
+              group="Étiquette"
+              block
+              selected={state.tag === item}
+              onPress={() => {
+                onChange({ ...state, tag: item });
                 setPanel(null);
               }}
             />

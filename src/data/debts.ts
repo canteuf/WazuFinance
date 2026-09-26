@@ -73,9 +73,11 @@ export type CreateDebtInput = {
   /** Date de l'appareil : le serveur est en UTC. */
   occurredOn: string;
   transactionId: string;
+  /** Portefeuille d'où sort le prêt ou où entre l'emprunt ; `null` : celui par défaut du groupe. Sans objet pour une vente à crédit. */
+  walletId: string | null;
 };
 
-/** Crée la dette et son premier mouvement d'argent. Voir create_debt(). */
+/** Crée la dette et son premier mouvement d'argent — aucun pour une vente à crédit. Voir create_debt(). */
 export async function createDebt(input: CreateDebtInput): Promise<void> {
   const { error } = await supabase.rpc('create_debt', {
     p_id: input.id,
@@ -88,6 +90,7 @@ export async function createDebt(input: CreateDebtInput): Promise<void> {
     // `undefined` et non `null` : l'argument est alors omis, et sa valeur par défaut (NULL) s'applique.
     p_due_on: input.dueOn ?? undefined,
     p_note: input.note ?? undefined,
+    p_wallet_id: input.walletId ?? undefined,
   });
 
   if (error) {
@@ -100,6 +103,8 @@ export type RecordDebtPaymentInput = {
   amount: number;
   occurredOn: string;
   transactionId: string;
+  /** Absent d'un remboursement mis en file par une version antérieure : vaut `null`. */
+  walletId?: string | null;
 };
 
 /** Enregistre un remboursement, partiel ou total. Voir record_debt_payment(). */
@@ -109,6 +114,7 @@ export async function recordDebtPayment(input: RecordDebtPaymentInput): Promise<
     p_amount: input.amount,
     p_occurred_on: input.occurredOn,
     p_transaction_id: input.transactionId,
+    p_wallet_id: input.walletId ?? undefined,
   });
 
   if (error) {

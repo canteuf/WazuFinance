@@ -48,17 +48,20 @@ export type TransactionFields = {
   occurred_on: string;
   note: string | null;
   wallet_id: string | null;
+  /** Absent d'une ligne lue avant les étiquettes. */
+  tags?: string[];
 };
 
 /**
  * Vrai quand la ligne en base porte déjà ce que la modification voulait écrire.
  *
- * Une modification arrivée en base dont la réponse s'est perdue est rejouée plus tard, parfois après un redémarrage qui a effacé la chaîne des versions : elle trouve alors une version plus récente que celle qu'elle attend — la sienne. Si les valeurs sont déjà les bonnes, ce n'est pas un conflit, c'est un renvoi. `wallet_id` absent du patch (modification mise en file avant les portefeuilles) n'est pas comparé. Le montant est comparé en nombre : PostgREST peut rendre un numeric en chaîne.
+ * Une modification arrivée en base dont la réponse s'est perdue est rejouée plus tard, parfois après un redémarrage qui a effacé la chaîne des versions : elle trouve alors une version plus récente que celle qu'elle attend — la sienne. Si les valeurs sont déjà les bonnes, ce n'est pas un conflit, c'est un renvoi. `wallet_id` ou `tags` absents du patch (modification mise en file avant les portefeuilles ou les étiquettes) ne sont pas comparés. Le montant est comparé en nombre : PostgREST peut rendre un numeric en chaîne.
  */
 export function patchIsApplied(
   row: TransactionFields,
   patch: Omit<TransactionFields, 'wallet_id'> & { wallet_id?: string | null }
 ): boolean {
+  const rowTags = row.tags ?? [];
   return (
     row.category_id === patch.category_id &&
     row.type === patch.type &&
@@ -66,7 +69,10 @@ export function patchIsApplied(
     row.occurred_on === patch.occurred_on &&
     (row.note ?? null) === (patch.note ?? null) &&
     // `null` demande le portefeuille par défaut, que la base choisit : la ligne en porte alors un, quel qu'il soit.
-    (patch.wallet_id === undefined || patch.wallet_id === null || row.wallet_id === patch.wallet_id)
+    (patch.wallet_id === undefined || patch.wallet_id === null || row.wallet_id === patch.wallet_id) &&
+    // Absentes d'une modification mise en file avant les étiquettes : elles ne sont pas comparées.
+    (patch.tags === undefined ||
+      (patch.tags.length === rowTags.length && patch.tags.every((tag, index) => rowTags[index] === tag)))
   );
 }
 

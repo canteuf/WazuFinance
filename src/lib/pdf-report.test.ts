@@ -9,6 +9,8 @@ const expense: ExportRow = {
   categoryName: 'Alimentation',
   note: 'Marché',
   authorName: 'Camille',
+  walletName: null,
+  tags: [],
 };
 
 const input: ReportInput = {
@@ -17,6 +19,10 @@ const input: ReportInput = {
   filtersLabel: '',
   generatedAt: '19 septembre 2026 à 21:40',
   totals: { income: 210000, expense: 12500, savings: 0, debts: 0, balance: 197500, txCount: 2 },
+  subtotals: [
+    { name: 'Alimentation', type: 'expense', total: 12500, count: 1 },
+    { name: 'Salaire', type: 'income', total: 210000, count: 1 },
+  ],
   rows: [expense, { ...expense, type: 'income', amount: 210000, categoryName: 'Salaire', note: null }],
 };
 
@@ -79,6 +85,34 @@ describe('buildTransactionsReportHtml', () => {
     });
     expect(withDebts).toContain('>Prêts et dettes<');
     expect(withDebts).toContain(formatSigned(50000, 'expense'));
+  });
+
+  it('donne les sous-totaux par catégorie, sorties puis entrées', () => {
+    expect(html).toContain('>Sorties par catégorie<');
+    expect(html).toContain('>Entrées par catégorie<');
+    expect(html.indexOf('Sorties par catégorie')).toBeLessThan(html.indexOf('Entrées par catégorie'));
+    const none = buildTransactionsReportHtml({ ...input, subtotals: [] });
+    expect(none).not.toContain('par catégorie');
+  });
+
+  it('nomme les opérations sans catégorie dans les sous-totaux', () => {
+    const withSavings = buildTransactionsReportHtml({
+      ...input,
+      subtotals: [{ name: null, type: 'expense', total: 50000, count: 2 }],
+    });
+    expect(withSavings).toContain('Épargne, prêts, sans catégorie');
+  });
+
+  it('n’ajoute la colonne Portefeuille que si les lignes en nomment un', () => {
+    expect(html).not.toContain('<th>Portefeuille</th>');
+    const withWallet = buildTransactionsReportHtml({ ...input, rows: [{ ...expense, walletName: 'MoMo' }] });
+    expect(withWallet).toContain('<th>Portefeuille</th>');
+    expect(withWallet).toContain('>MoMo<');
+  });
+
+  it('écrit les étiquettes sous la note, échappées', () => {
+    const tagged = buildTransactionsReportHtml({ ...input, rows: [{ ...expense, tags: ['Argent <de> Jean'] }] });
+    expect(tagged).toContain('<div class="tags">Argent &lt;de&gt; Jean</div>');
   });
 
   it('dit qu’il n’y a rien plutôt que de rendre un tableau vide', () => {

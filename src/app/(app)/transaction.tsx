@@ -184,6 +184,8 @@ export default function TransactionScreen() {
                 frequency: repeat,
                 anchorDay,
                 nextDueOn: nextDueAfter(repeat, anchorDay, entry.occurredOn),
+                // Le portefeuille de la première occurrence : les échéances suivantes le reprendront.
+                walletId: entry.walletId,
               },
               {
                 onSuccess: () =>
@@ -219,6 +221,7 @@ export default function TransactionScreen() {
         note: existing.data.note,
         repeat: null,
         walletId: existing.data.wallet_id,
+        tags: existing.data.tags ?? [],
       }
     : undefined;
 

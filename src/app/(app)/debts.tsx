@@ -20,7 +20,7 @@ import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 /**
  * Prêts et dettes du groupe actif : ce qu'on doit au groupe, ce qu'il doit, et chaque dette avec son reste.
  *
- * Deux sections plutôt qu'une liste mêlée : « on vous doit » et « vous devez » appellent deux gestes différents (relancer, rembourser). Les dettes soldées passent en dernier, sous leur propre titre : elles gardent l'historique sans encombrer ce qui reste à suivre.
+ * Des sections plutôt qu'une liste mêlée : « on vous doit » et « vous devez » appellent deux gestes différents (relancer, rembourser), et les clients à qui la commerçante a vendu à crédit se suivent à part des proches. Les dettes soldées passent en dernier, sous leur propre titre : elles gardent l'historique sans encombrer ce qui reste à suivre.
  */
 export default function DebtsScreen() {
   const colors = useColors();
@@ -31,6 +31,7 @@ export default function DebtsScreen() {
   const canWrite = useCanWrite();
 
   const lent = debts.filter((debt) => debt.direction === 'lent' && debt.remaining > 0);
+  const customers = debts.filter((debt) => debt.direction === 'credit_sale' && debt.remaining > 0);
   const borrowed = debts.filter((debt) => debt.direction === 'borrowed' && debt.remaining > 0);
   const settled = debts.filter((debt) => debt.remaining === 0);
 
@@ -43,7 +44,8 @@ export default function DebtsScreen() {
     >
       <Text style={[styles.subtitle, { color: colors.textMuted }]}>
         Dans « {activeGroup?.name ?? '…'} ». Un prêt fait baisser le solde, son remboursement le
-        fait remonter ; ni l’un ni l’autre ne compte comme dépense ou revenu.
+        fait remonter ; ni l’un ni l’autre ne compte comme dépense ou revenu. Une vente à crédit
+        n’entre qu’avec les versements du client, comptés en revenus « Commerce ».
       </Text>
 
       {totals ? (
@@ -64,7 +66,7 @@ export default function DebtsScreen() {
             <Text style={[styles.emptyTitle, { color: colors.text }]}>Aucun prêt ni dette</Text>
             <Text style={[styles.message, { color: colors.textMuted }]}>
               {canWrite
-                ? 'Touchez « Ajouter » pour noter l’argent prêté à un proche ou emprunté.'
+                ? 'Touchez « Ajouter » pour noter l’argent prêté à un proche, emprunté, ou une vente à crédit.'
                 : 'Aucun prêt ni dette n’est noté dans ce groupe.'}
             </Text>
           </View>
@@ -72,6 +74,7 @@ export default function DebtsScreen() {
       ) : (
         <>
           <DebtSection title="On vous doit" debts={lent} />
+          <DebtSection title="Clients à crédit" debts={customers} />
           <DebtSection title="Vous devez" debts={borrowed} />
           <DebtSection title="Soldés" debts={settled} />
         </>
@@ -129,7 +132,7 @@ function DebtRow({ debt }: { debt: DebtOverview }) {
   const late = !settled && debt.dueOn !== null && debt.dueOn < todayIso();
 
   const detail = settled
-    ? `Soldé · ${formatMoney(debt.amount)}`
+    ? `${debt.direction === 'credit_sale' ? 'Réglé' : 'Soldé'} · ${formatMoney(debt.amount)}`
     : `Reste ${formatMoney(debt.remaining)} sur ${formatMoney(debt.amount)}`;
   const due =
     debt.dueOn && !settled ? `${late ? 'En retard · ' : 'Échéance '}${formatOccurredOn(debt.dueOn)}` : null;
@@ -178,7 +181,11 @@ function DebtRow({ debt }: { debt: DebtOverview }) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label}
-        accessibilityHint="Ouvre la dette pour enregistrer un remboursement"
+        accessibilityHint={
+          debt.direction === 'credit_sale'
+            ? 'Ouvre la vente à crédit pour enregistrer un versement'
+            : 'Ouvre la dette pour enregistrer un remboursement'
+        }
         style={StyleSheet.flatten(styles.row)}
       >
         {content}

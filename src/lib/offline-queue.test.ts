@@ -81,6 +81,13 @@ describe('patchIsApplied', () => {
     expect(patchIsApplied(row, { ...row, amount: 6000 })).toBe(false);
     expect(patchIsApplied(row, { ...row, note: null })).toBe(false);
     expect(patchIsApplied(row, { ...row, wallet_id: 'w2' })).toBe(false);
+    expect(patchIsApplied({ ...row, tags: ['Jean'] }, { ...row, tags: ['Jean', 'Rentrée'] })).toBe(false);
+  });
+
+  it('compare les étiquettes, et les ignore quand la modification n’en porte pas', () => {
+    expect(patchIsApplied({ ...row, tags: ['Jean'] }, { ...row, tags: ['Jean'] })).toBe(true);
+    expect(patchIsApplied({ ...row, tags: ['Jean'] }, row)).toBe(true);
+    expect(patchIsApplied(row, { ...row, tags: [] })).toBe(true);
   });
 
   it('ignore le portefeuille quand la modification n’en demande aucun en particulier', () => {

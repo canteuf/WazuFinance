@@ -54,8 +54,8 @@ export function DebtsEntry() {
         </View>
       ) : (
         <Text style={[styles.hint, { color: colors.textMuted }]}>
-          Notez ce que vous prêtez à un proche ou ce que vous empruntez, et suivez les
-          remboursements jusqu’au dernier franc.
+          Notez ce que vous prêtez à un proche, ce que vous empruntez ou ce qu’un client vous
+          doit, et suivez les remboursements jusqu’au dernier franc.
         </Text>
       )}
     </Card>

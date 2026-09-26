@@ -93,13 +93,16 @@ export async function updateSavingsGoal(
  *
  * La même fonction enregistre le mouvement comme opération d'épargne du compte personnel, qui sort du solde (migration savings_movements). `today` la date : il vient de l'appareil, le serveur étant en UTC.
  *
+ * `walletId` est un portefeuille du compte personnel, d'où part le versement ou où revient le retrait ; `null` : celui par défaut.
+ *
  * `requestId` identifie le geste et devient l'id de cette opération : un renvoi après une réponse perdue la retrouve au lieu de verser deux fois (migration idempotent_deltas).
  */
 export async function addToSavingsGoal(
   id: string,
   delta: number,
   today: string,
-  requestId: string
+  requestId: string,
+  walletId: string | null
 ): Promise<SavingsGoal> {
   const { data, error } = await supabase
     .rpc('add_to_savings_goal', {
@@ -107,6 +110,7 @@ export async function addToSavingsGoal(
       p_delta: delta,
       p_occurred_on: today,
       p_id: requestId,
+      p_wallet_id: walletId ?? undefined,
     })
     .single();
 

@@ -476,6 +476,7 @@ export type Database = {
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
           user_id: string | null
+          wallet_id: string | null
         }
         Insert: {
           amount: number
@@ -491,6 +492,7 @@ export type Database = {
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
           user_id?: string | null
+          wallet_id?: string | null
         }
         Update: {
           amount?: number
@@ -506,6 +508,7 @@ export type Database = {
           type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
           user_id?: string | null
+          wallet_id?: string | null
         }
         Relationships: [
           {
@@ -527,6 +530,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
             referencedColumns: ["id"]
           },
         ]
@@ -588,6 +598,7 @@ export type Database = {
           note: string | null
           occurred_on: string
           savings_goal_id: string | null
+          tags: string[]
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
           user_id: string | null
@@ -605,6 +616,7 @@ export type Database = {
           note?: string | null
           occurred_on?: string
           savings_goal_id?: string | null
+          tags?: string[]
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
           user_id?: string | null
@@ -622,6 +634,7 @@ export type Database = {
           note?: string | null
           occurred_on?: string
           savings_goal_id?: string | null
+          tags?: string[]
           type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
           user_id?: string | null
@@ -826,6 +839,7 @@ export type Database = {
           p_goal_id: string
           p_id?: string
           p_occurred_on?: string
+          p_wallet_id?: string
         }
         Returns: {
           created_at: string
@@ -885,6 +899,16 @@ export type Database = {
         }[]
       }
       claim_request: { Args: { p_id: string }; Returns: boolean }
+      commerce_category: { Args: { p_group_id: string }; Returns: string }
+      commerce_summary: {
+        Args: { p_from: string; p_group_id: string; p_to: string }
+        Returns: {
+          margin: number
+          sales: number
+          stock: number
+          tx_count: number
+        }[]
+      }
       confirm_recurring: {
         Args: {
           p_amount?: number
@@ -892,6 +916,7 @@ export type Database = {
           p_id: string
           p_occurred_on?: string
           p_transaction_id: string
+          p_wallet_id?: string
         }
         Returns: {
           amount: number
@@ -905,6 +930,7 @@ export type Database = {
           note: string | null
           occurred_on: string
           savings_goal_id: string | null
+          tags: string[]
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
           user_id: string | null
@@ -928,6 +954,7 @@ export type Database = {
           p_note?: string
           p_occurred_on: string
           p_transaction_id: string
+          p_wallet_id?: string
         }
         Returns: {
           amount: number
@@ -953,11 +980,14 @@ export type Database = {
       daily_totals: {
         Args: {
           p_category_id?: string
+          p_category_ids?: string[]
           p_from?: string
           p_group_id: string
           p_search?: string
+          p_tag?: string
           p_to?: string
           p_type?: Database["public"]["Enums"]["transaction_type"]
+          p_wallet_id?: string
         }
         Returns: {
           occurred_on: string
@@ -988,14 +1018,37 @@ export type Database = {
         }[]
       }
       delete_own_account: { Args: never; Returns: undefined }
-      filtered_totals: {
+      filtered_category_totals: {
         Args: {
           p_category_id?: string
+          p_category_ids?: string[]
           p_from?: string
           p_group_id: string
           p_search?: string
+          p_tag?: string
           p_to?: string
           p_type?: Database["public"]["Enums"]["transaction_type"]
+          p_wallet_id?: string
+        }
+        Returns: {
+          category_id: string
+          name: string
+          total: number
+          tx_count: number
+          type: Database["public"]["Enums"]["transaction_type"]
+        }[]
+      }
+      filtered_totals: {
+        Args: {
+          p_category_id?: string
+          p_category_ids?: string[]
+          p_from?: string
+          p_group_id: string
+          p_search?: string
+          p_tag?: string
+          p_to?: string
+          p_type?: Database["public"]["Enums"]["transaction_type"]
+          p_wallet_id?: string
         }
         Returns: {
           balance: number
@@ -1005,6 +1058,43 @@ export type Database = {
           savings: number
           tx_count: number
         }[]
+      }
+      filtered_transactions: {
+        Args: {
+          p_category_id?: string
+          p_category_ids?: string[]
+          p_from?: string
+          p_group_id: string
+          p_search?: string
+          p_tag?: string
+          p_to?: string
+          p_type?: Database["public"]["Enums"]["transaction_type"]
+          p_wallet_id?: string
+        }
+        Returns: {
+          amount: number
+          author_name: string | null
+          category_id: string | null
+          created_at: string
+          debt_id: string | null
+          group_id: string
+          id: string
+          is_savings: boolean
+          note: string | null
+          occurred_on: string
+          savings_goal_id: string | null
+          tags: string[]
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+          user_id: string | null
+          wallet_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "transactions"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       frequent_amounts: {
         Args: {
@@ -1071,6 +1161,7 @@ export type Database = {
           p_debt_id: string
           p_occurred_on: string
           p_transaction_id: string
+          p_wallet_id?: string
         }
         Returns: {
           amount: number
@@ -1084,6 +1175,7 @@ export type Database = {
           note: string | null
           occurred_on: string
           savings_goal_id: string | null
+          tags: string[]
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
           user_id: string | null
@@ -1122,6 +1214,14 @@ export type Database = {
       skip_recurring: {
         Args: { p_due_on: string; p_id: string }
         Returns: undefined
+      }
+      tags_are_valid: { Args: { p_tags: string[] }; Returns: boolean }
+      transaction_tags: {
+        Args: { p_group_id: string }
+        Returns: {
+          tag: string
+          uses: number
+        }[]
       }
       transfer_between_wallets: {
         Args: {
@@ -1180,7 +1280,7 @@ export type Database = {
         | "transfer"
         | "membership"
       budget_period: "weekly" | "monthly"
-      debt_direction: "lent" | "borrowed"
+      debt_direction: "lent" | "borrowed" | "credit_sale"
       membership_role: "owner" | "member" | "viewer"
       recurrence_frequency: "weekly" | "monthly"
       transaction_type: "expense" | "income"
@@ -1325,7 +1425,7 @@ export const Constants = {
         "membership",
       ],
       budget_period: ["weekly", "monthly"],
-      debt_direction: ["lent", "borrowed"],
+      debt_direction: ["lent", "borrowed", "credit_sale"],
       membership_role: ["owner", "member", "viewer"],
       recurrence_frequency: ["weekly", "monthly"],
       transaction_type: ["expense", "income"],

@@ -9,6 +9,7 @@ import {
 } from "react-native";
 
 import { BudgetsEntry } from "@/components/dashboard/budgets-entry";
+import { CommerceEntry } from "@/components/dashboard/commerce-entry";
 import { CategoryBreakdown } from "@/components/dashboard/category-breakdown";
 import { DebtsEntry } from "@/components/dashboard/debts-entry";
 import { DueRecurring } from "@/components/dashboard/due-recurring";
@@ -122,6 +123,9 @@ export default function DashboardScreen() {
 
       {/* Où est l'argent, juste sous ce qui en est entré et sorti : les deux soldes se lisent ensemble. */}
       <WalletsEntry />
+
+      {/* Ne rend rien sans opération « Commerce » ou « Achat de stock » sur la période. Sous les portefeuilles : la caisse du commerce se lit avec l'argent qu'elle a fait entrer. */}
+      <CommerceEntry />
 
       {/* Ne rend rien tant qu'aucune dépense n'existe sur la période : la liste voisine annonce déjà l'absence d'opérations, et un second état vide ne ferait que répéter la même chose. */}
       <CategoryBreakdown />

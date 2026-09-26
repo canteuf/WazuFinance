@@ -7,6 +7,8 @@ const row: ExportRow = {
   categoryName: 'Alimentation',
   note: 'Marché',
   authorName: 'Camille',
+  walletName: null,
+  tags: [],
 };
 
 function lines(csv: string): string[] {
@@ -17,13 +19,18 @@ describe('buildTransactionsCsv', () => {
   it('commence par une marque UTF-8 pour Excel et un en-tête en point-virgules', () => {
     const csv = buildTransactionsCsv([]);
     expect(csv.charCodeAt(0)).toBe(0xfeff);
-    expect(lines(csv.slice(1))[0]).toBe('Date;Type;Catégorie;Montant;Note;Saisie par');
+    expect(lines(csv.slice(1))[0]).toBe('Date;Type;Catégorie;Montant;Note;Saisie par;Portefeuille;Étiquettes');
   });
 
   it('écrit une dépense en négatif, sans décimale', () => {
     expect(lines(buildTransactionsCsv([row]))[1]).toBe(
-      '2026-09-19;Dépense;Alimentation;-12500;Marché;Camille'
+      '2026-09-19;Dépense;Alimentation;-12500;Marché;Camille;;'
     );
+  });
+
+  it('écrit le portefeuille et les étiquettes', () => {
+    const csv = buildTransactionsCsv([{ ...row, walletName: 'MoMo', tags: ['Argent de Jean', 'Rentrée 2027'] }]);
+    expect(lines(csv)[1]).toBe('2026-09-19;Dépense;Alimentation;-12500;Marché;Camille;MoMo;Argent de Jean, Rentrée 2027');
   });
 
   it('écrit un revenu en positif', () => {
@@ -48,7 +55,7 @@ describe('buildTransactionsCsv', () => {
 
   it('laisse vides la note et l’auteur absents, et nomme l’absence de catégorie', () => {
     const csv = buildTransactionsCsv([{ ...row, note: null, authorName: null, categoryName: null }]);
-    expect(lines(csv)[1]).toBe('2026-09-19;Dépense;Sans catégorie;-12500;;');
+    expect(lines(csv)[1]).toBe('2026-09-19;Dépense;Sans catégorie;-12500;;;;');
   });
 
   it('termine le fichier par une fin de ligne', () => {

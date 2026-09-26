@@ -67,6 +67,10 @@ export type CreateTransactionInput = {
    * Portefeuille de l'opération. `null` laisse la base choisir celui par défaut du groupe (assign_transaction_wallet()). Une saisie mise en file par une version de l'app antérieure aux portefeuilles n'a pas ce champ du tout : il arrive `undefined`, et vaut `null`.
    */
   walletId: string | null;
+  /**
+   * Étiquettes, déjà normalisées par `normalizeTags`. Absent d'une saisie mise en file par une version de l'app antérieure aux étiquettes : la création laisse alors la valeur par défaut (aucune), la modification ne touche pas à celles de la ligne.
+   */
+  tags?: string[];
 };
 
 export type UpdateTransactionInput = Omit<CreateTransactionInput, 'id' | 'groupId' | 'userId'>;
@@ -95,6 +99,7 @@ export async function create(
         occurred_on: input.occurredOn,
         note: input.note,
         wallet_id: input.walletId ?? null,
+        tags: input.tags ?? [],
       },
       { onConflict: 'id', ignoreDuplicates: true }
     )
@@ -132,6 +137,7 @@ export async function update(
     note: patch.note,
     // Absent d'une modification mise en file avant les portefeuilles : on ne touche alors pas à celui de la ligne.
     ...(patch.walletId === undefined ? {} : { wallet_id: patch.walletId }),
+    ...(patch.tags === undefined ? {} : { tags: patch.tags }),
   };
 
   let query = supabase.from('transactions').update(fields).eq('id', id);
@@ -179,11 +185,33 @@ export type TransactionFilters = {
   /** Bornes de date, `null` des deux côtés pour « Tout ». */
   from: string | null;
   to: string | null;
-  categoryId: string | null;
+  /** Une ou plusieurs catégories, triées pour que la clé de cache ne dépende pas de l'ordre des touchers ; `null` pour toutes, jamais un tableau vide. */
+  categoryIds: string[] | null;
   type: Tables<'transactions'>['type'] | null;
   /** Déjà passé par `normalizeSearch` : `null` quand il n'y a rien à chercher. */
   search: string | null;
+  walletId: string | null;
+  /** Une étiquette exacte, telle qu'enregistrée. */
+  tag: string | null;
 };
+
+/**
+ * Les filtres en arguments des fonctions de la base (daily_totals, filtered_totals, filtered_category_totals), qui partagent toutes la même clause where : filtered_transactions(). Un seul endroit les traduit, pour que les trois décrivent les mêmes lignes que `listPage`.
+ *
+ * `undefined` et non `null` : l'argument est alors omis, et la valeur par défaut de la fonction — pas de filtre — s'applique.
+ */
+export function filterArgs(groupId: string, filters: TransactionFilters) {
+  return {
+    p_group_id: groupId,
+    p_from: filters.from ?? undefined,
+    p_to: filters.to ?? undefined,
+    p_type: filters.type ?? undefined,
+    p_category_ids: filters.categoryIds ?? undefined,
+    p_search: filters.search ?? undefined,
+    p_wallet_id: filters.walletId ?? undefined,
+    p_tag: filters.tag ?? undefined,
+  };
+}
 
 /** Dernière ligne rendue par la page précédente. */
 export type TransactionCursor = {
@@ -216,8 +244,14 @@ export async function listPage(
   if (filters.to !== null) {
     query = query.lt('occurred_on', filters.to);
   }
-  if (filters.categoryId !== null) {
-    query = query.eq('category_id', filters.categoryId);
+  if (filters.categoryIds !== null) {
+    query = query.in('category_id', filters.categoryIds);
+  }
+  if (filters.walletId !== null) {
+    query = query.eq('wallet_id', filters.walletId);
+  }
+  if (filters.tag !== null) {
+    query = query.contains('tags', [filters.tag]);
   }
   if (filters.type !== null) {
     query = query.eq('type', filters.type);
@@ -286,15 +320,7 @@ export async function getDailyTotals(
   groupId: string,
   filters: TransactionFilters
 ): Promise<Map<string, DailyTotal>> {
-  const { data, error } = await supabase.rpc('daily_totals', {
-    p_group_id: groupId,
-    // `undefined` et non `null` : l'argument est alors omis, et la valeur par défaut de la fonction — pas de filtre — s'applique.
-    p_from: filters.from ?? undefined,
-    p_to: filters.to ?? undefined,
-    p_type: filters.type ?? undefined,
-    p_category_id: filters.categoryId ?? undefined,
-    p_search: filters.search ?? undefined,
-  });
+  const { data, error } = await supabase.rpc('daily_totals', filterArgs(groupId, filters));
 
   if (error) {
     throw error;
@@ -320,4 +346,15 @@ export async function getFrequentAmounts(
   }
 
   return data.map((row) => Number(row.amount));
+}
+
+/** Étiquettes déjà utilisées dans le groupe, les plus fréquentes d'abord : proposées à la saisie et dans le filtre de l'historique. */
+export async function getTransactionTags(groupId: string): Promise<string[]> {
+  const { data, error } = await supabase.rpc('transaction_tags', { p_group_id: groupId });
+
+  if (error) {
+    throw error;
+  }
+
+  return data.map((row) => row.tag);
 }

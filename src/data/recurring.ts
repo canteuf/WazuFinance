@@ -34,6 +34,8 @@ export type CreateRecurringInput = {
   anchorDay: number;
   /** Première échéance, calculée par nextDueAfter() : la contrainte recurring_anchor_matches refuse une date qui ne tombe pas sur `anchorDay`. */
   nextDueOn: string;
+  /** Portefeuille que les échéances reprendront ; `null` : celui par défaut du groupe. */
+  walletId: string | null;
 };
 
 export async function createRecurring(input: CreateRecurringInput): Promise<void> {
@@ -48,6 +50,7 @@ export async function createRecurring(input: CreateRecurringInput): Promise<void
     frequency: input.frequency,
     anchor_day: input.anchorDay,
     next_due_on: input.nextDueOn,
+    wallet_id: input.walletId,
   });
 
   if (error) {
@@ -65,6 +68,8 @@ export type ConfirmRecurringInput = {
   amount: number | null;
   /** Date de l'appareil : le serveur est en UTC. */
   occurredOn: string;
+  /** Portefeuille de cette fois ; `null` reprend celui du modèle, puis celui par défaut du groupe. */
+  walletId: string | null;
 };
 
 /** Enregistre une échéance comme opération et avance le modèle. Voir confirm_recurring(). */
@@ -76,6 +81,7 @@ export async function confirmRecurring(input: ConfirmRecurringInput): Promise<vo
     // `undefined` et non `null` : l'argument est alors omis, et la valeur par défaut de la fonction s'applique.
     p_amount: input.amount ?? undefined,
     p_occurred_on: input.occurredOn,
+    p_wallet_id: input.walletId ?? undefined,
   });
 
   if (error) {

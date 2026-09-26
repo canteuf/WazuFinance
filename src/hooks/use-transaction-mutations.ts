@@ -1,5 +1,6 @@
 import { useMutation, type QueryClient } from '@tanstack/react-query';
 
+import { recordDebtPayment, type RecordDebtPaymentInput } from '@/data/debts';
 import {
   create,
   remove,
@@ -81,6 +82,13 @@ export function registerTransactionMutationDefaults(queryClient: QueryClient): v
   queryClient.setMutationDefaults(mutationKeys.deleteTransaction(), {
     ...common,
     mutationFn: (id: string) => remove(id),
+    onSuccess: () => void invalidate(),
+  });
+
+  // Le remboursement d'une dette patiente lui aussi : la commerçante encaisse son client au marché, souvent sans réseau. Rejouable sans doublon (l'id du mouvement vient de l'app), et un remboursement devenu trop grand entre-temps — un autre membre a soldé la dette — est refusé par la base, jamais renvoyé, et signalé par l'alerte des écritures en file.
+  queryClient.setMutationDefaults(mutationKeys.recordDebtPayment(), {
+    ...common,
+    mutationFn: (input: RecordDebtPaymentInput) => recordDebtPayment(input),
     onSuccess: () => void invalidate(),
   });
 }

@@ -7,7 +7,7 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { spacing, useColors } from '@/theme/tokens';
 
@@ -67,11 +67,19 @@ export function Screen({
   floatingAlign?: 'end' | 'center';
 }) {
   const colors = useColors();
+  // Marges lues dans le contexte, et non mesurées par une `SafeAreaView` native : sous le bandeau hors ligne, le layout `(app)` y met un haut à zéro, que la mesure native ignorait (voir OfflineBanner).
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: colors.background }]}
-      edges={inTabs ? ['top'] : ['top', 'bottom']}
+    <View
+      style={[
+        styles.safeArea,
+        {
+          backgroundColor: colors.background,
+          paddingTop: insets.top,
+          paddingBottom: inTabs ? 0 : insets.bottom,
+        },
+      ]}
     >
       <KeyboardAvoidingView
         style={styles.flex}
@@ -104,7 +112,7 @@ export function Screen({
           </View>
         ) : null}
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 

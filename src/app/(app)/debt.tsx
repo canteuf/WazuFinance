@@ -1,7 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { randomUUID } from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AmountInput } from '@/components/transaction/amount-input';
@@ -12,13 +12,17 @@ import { CONTENT_GUTTER, contentColumn } from '@/components/ui/screen';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { SheetScrollView } from '@/components/ui/sheet-scroll-view';
 import { TextField } from '@/components/ui/text-field';
+import { WalletPicker } from '@/components/wallet/wallet-picker';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useDebtMutations } from '@/hooks/use-debt-mutations';
 import { useDebts } from '@/hooks/use-debts';
+import { useIsOnline } from '@/hooks/use-offline-status';
 import { useSheetMaxHeight } from '@/hooks/use-sheet-max-height';
 import { useToast } from '@/hooks/use-toast';
+import { useWalletChoice, type WalletChoice } from '@/hooks/use-wallet-choice';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { formatOccurredOn, isoToDate, todayIso } from '@/lib/dates';
+import { writeLastWallet } from '@/lib/last-used';
 import { formatMoney, parseAmount, toAmountInput } from '@/lib/money';
 import { goBackOr } from '@/lib/navigation';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
@@ -59,11 +63,7 @@ export default function DebtScreen() {
     );
   }
 
-  const title = existing
-    ? existing.direction === 'lent'
-      ? `Prêt à ${existing.counterparty}`
-      : `Emprunt à ${existing.counterparty}`
-    : 'Nouveau prêt ou dette';
+  const title = existing ? debtTitle(existing.direction, existing.counterparty) : 'Nouveau prêt ou dette';
 
   return (
     <View style={[styles.sheet, { backgroundColor: colors.background, maxHeight: sheetMaxHeight }]}>
@@ -102,6 +102,7 @@ function CreateForm({ onDone }: { onDone: () => void }) {
   const toast = useToast();
   const { activeGroupId } = useActiveGroup();
   const { create } = useDebtMutations();
+  const wallet = useWalletChoice(activeGroupId);
 
   const [direction, setDirection] = useState<DebtDirection>('lent');
   const [counterparty, setCounterparty] = useState('');
@@ -116,7 +117,9 @@ function CreateForm({ onDone }: { onDone: () => void }) {
 
   const amount = parseAmount(amountText);
   const name = counterparty.trim();
-  const nameError = touched && name === '' ? 'Indiquez la personne.' : undefined;
+  const creditSale = direction === 'credit_sale';
+  const nameError =
+    touched && name === '' ? (creditSale ? 'Indiquez le client.' : 'Indiquez la personne.') : undefined;
   const amountError = touched && amount === null ? 'Montant invalide.' : undefined;
 
   function handleSubmit() {
@@ -136,13 +139,20 @@ function CreateForm({ onDone }: { onDone: () => void }) {
         note: note.trim() === '' ? null : note.trim(),
         occurredOn,
         transactionId: ids.transaction,
+        // Une vente à crédit ne déplace pas d'argent le jour de la vente : pas de portefeuille à envoyer.
+        walletId: creditSale ? null : wallet.walletId,
       },
       {
         onSuccess: () => {
+          if (!creditSale && wallet.walletId) {
+            void writeLastWallet(activeGroupId, wallet.walletId);
+          }
           toast.show(
             direction === 'lent'
               ? `Prêt de ${formatMoney(amount)} à ${name} enregistré`
-              : `Emprunt de ${formatMoney(amount)} à ${name} enregistré`
+              : direction === 'borrowed'
+                ? `Emprunt de ${formatMoney(amount)} à ${name} enregistré`
+                : `Vente à crédit de ${formatMoney(amount)} à ${name} enregistrée`
           );
           onDone();
         },
@@ -154,25 +164,29 @@ function CreateForm({ onDone }: { onDone: () => void }) {
   return (
     <>
       <SegmentedControl<DebtDirection>
+        // Libellés courts : trois segments se partagent la largeur d'un téléphone. La phrase dessous dit ce que chacun fait au solde.
         options={[
-          { value: 'lent', label: 'J’ai prêté', icon: 'arrow-top-right' },
-          { value: 'borrowed', label: 'J’ai emprunté', icon: 'arrow-bottom-left' },
+          { value: 'lent', label: 'Prêt', icon: 'arrow-top-right' },
+          { value: 'borrowed', label: 'Emprunt', icon: 'arrow-bottom-left' },
+          { value: 'credit_sale', label: 'Crédit client', icon: 'storefront-outline' },
         ]}
         value={direction}
         onChange={setDirection}
       />
       <Text style={[styles.hint, { color: colors.textMuted }]}>
         {direction === 'lent'
-          ? 'Le montant sort du solde aujourd’hui, et y revient à chaque remboursement.'
-          : 'Le montant entre au solde aujourd’hui, et en sort à chaque remboursement.'}
+          ? 'Vous avez prêté : le montant sort du solde aujourd’hui, et y revient à chaque remboursement.'
+          : direction === 'borrowed'
+            ? 'Vous avez emprunté : le montant entre au solde aujourd’hui, et en sort à chaque remboursement.'
+            : 'Vous avez vendu à crédit : rien n’entre aujourd’hui, chaque versement du client compte comme revenu « Commerce ».'}
       </Text>
 
       <TextField
-        label={direction === 'lent' ? 'À qui ?' : 'Auprès de qui ?'}
+        label={direction === 'lent' ? 'À qui ?' : direction === 'borrowed' ? 'Auprès de qui ?' : 'Quel client ?'}
         value={counterparty}
         onChangeText={setCounterparty}
         errorText={nameError}
-        placeholder="Ex : Paul, tante Awa, la boutique"
+        placeholder={creditSale ? 'Ex : Mama Ngo, le tailleur' : 'Ex : Paul, tante Awa, la boutique'}
         autoCapitalize="words"
         maxLength={60}
       />
@@ -189,17 +203,23 @@ function CreateForm({ onDone }: { onDone: () => void }) {
         ) : null}
       </View>
 
-      <View style={styles.field}>
-        <Text style={[styles.eyebrow, { color: colors.textMuted }]}>
-          {direction === 'lent' ? 'Date du prêt' : 'Date de l’emprunt'}
-        </Text>
-        <DateField
-          value={occurredOn}
-          label={formatOccurredOn(occurredOn)}
-          onChange={setOccurredOn}
-          maximumDate={new Date()}
-        />
-      </View>
+      {/* Une vente à crédit ne fait rien entrer le jour de la vente : ni portefeuille ni date d'opération à demander. */}
+      {creditSale ? null : (
+        <>
+          <DebtWalletField wallet={wallet} label={direction === 'lent' ? 'Sorti de' : 'Reçu sur'} />
+          <View style={styles.field}>
+            <Text style={[styles.eyebrow, { color: colors.textMuted }]}>
+              {direction === 'lent' ? 'Date du prêt' : 'Date de l’emprunt'}
+            </Text>
+            <DateField
+              value={occurredOn}
+              label={formatOccurredOn(occurredOn)}
+              onChange={setOccurredOn}
+              maximumDate={new Date()}
+            />
+          </View>
+        </>
+      )}
 
       <View style={styles.field}>
         <Text style={[styles.eyebrow, { color: colors.textMuted }]}>Échéance (facultatif)</Text>
@@ -237,6 +257,34 @@ function CreateForm({ onDone }: { onDone: () => void }) {
   );
 }
 
+/** Titre d'une dette dans la feuille. */
+function debtTitle(direction: DebtDirection, counterparty: string): string {
+  switch (direction) {
+    case 'lent':
+      return `Prêt à ${counterparty}`;
+    case 'borrowed':
+      return `Emprunt à ${counterparty}`;
+    case 'credit_sale':
+      return `Vente à crédit à ${counterparty}`;
+  }
+}
+
+/** Le portefeuille d'où part ou arrive l'argent, seulement quand le groupe en a plusieurs. */
+function DebtWalletField({ wallet, label }: { wallet: WalletChoice; label: string }) {
+  const colors = useColors();
+
+  if (!wallet.showPicker) {
+    return null;
+  }
+
+  return (
+    <View style={styles.field}>
+      <Text style={[styles.eyebrow, { color: colors.textMuted }]}>{label}</Text>
+      <WalletPicker wallets={wallet.wallets} selectedId={wallet.selectedId} onSelect={wallet.select} />
+    </View>
+  );
+}
+
 /** Suivi : ce qui reste, un remboursement, et la suppression d'une dette saisie par erreur. */
 function PaymentForm({ debtId, onDone }: { debtId: string; onDone: () => void }) {
   const colors = useColors();
@@ -245,6 +293,18 @@ function PaymentForm({ debtId, onDone }: { debtId: string; onDone: () => void })
   const { debts } = useDebts();
   const { pay, remove } = useDebtMutations();
   const debt = debts.find((candidate) => candidate.id === debtId);
+  const { activeGroupId } = useActiveGroup();
+  const wallet = useWalletChoice(activeGroupId);
+  const online = useIsOnline();
+
+  // Même règle que la saisie : un remboursement qui bute sur un réseau instable reste en file et partira seul ; la feuille n'a plus à l'attendre.
+  const retrying = pay.failureCount > 0;
+  useEffect(() => {
+    if (retrying) {
+      toast.show('Réseau instable. Le remboursement est gardé sur le téléphone et partira dès que possible.', 'info');
+      onDone();
+    }
+  }, [retrying, toast, onDone]);
 
   const [amountText, setAmountText] = useState<string | null>(null);
   const [occurredOn, setOccurredOn] = useState(todayIso());
@@ -272,19 +332,27 @@ function PaymentForm({ debtId, onDone }: { debtId: string; onDone: () => void })
     }
     setErrorText(undefined);
     pay.mutate(
-      { debtId: debt.id, amount, occurredOn, transactionId },
+      { debtId: debt.id, amount, occurredOn, transactionId, walletId: wallet.walletId },
       {
         onSuccess: () => {
+          if (activeGroupId && wallet.walletId) {
+            void writeLastWallet(activeGroupId, wallet.walletId);
+          }
           toast.show(
             amount === debt.remaining
               ? `${debt.counterparty} : dette soldée`
-              : `Remboursement de ${formatMoney(amount)} enregistré`
+              : `${debt.direction === 'credit_sale' ? 'Versement' : 'Remboursement'} de ${formatMoney(amount)} enregistré`
           );
           onDone();
         },
         onError: (error) => setErrorText(dataErrorMessage(error)),
       }
     );
+    // Hors ligne, le remboursement se met en file : la feuille se ferme aussitôt, et le bandeau d'état le compte parmi les écritures en attente.
+    if (!online) {
+      toast.show('Remboursement gardé sur le téléphone. Envoi au retour du réseau.', 'info');
+      onDone();
+    }
   }
 
   function handleDelete() {
@@ -307,7 +375,8 @@ function PaymentForm({ debtId, onDone }: { debtId: string; onDone: () => void })
           {settled ? 'Soldé' : `Reste ${formatMoney(debt.remaining)}`}
         </Text>
         <Text style={[styles.hint, { color: colors.textMuted }]}>
-          {formatMoney(debt.paid)} remboursés sur {formatMoney(debt.amount)}
+          {formatMoney(debt.paid)} {debt.direction === 'credit_sale' ? 'versés' : 'remboursés'} sur{' '}
+          {formatMoney(debt.amount)}
           {debt.dueOn ? ` · échéance ${formatOccurredOn(debt.dueOn)}` : ''}
         </Text>
         {debt.note ? <Text style={[styles.hint, { color: colors.textMuted }]}>{debt.note}</Text> : null}
@@ -317,12 +386,18 @@ function PaymentForm({ debtId, onDone }: { debtId: string; onDone: () => void })
         <>
           <View style={styles.field}>
             <Text style={[styles.eyebrow, { color: colors.textMuted }]}>
-              {debt.direction === 'lent' ? 'Remboursement reçu' : 'Remboursement versé'}
+              {debt.direction === 'lent'
+                ? 'Remboursement reçu'
+                : debt.direction === 'borrowed'
+                  ? 'Remboursement versé'
+                  : 'Versement du client'}
             </Text>
             <View style={[styles.card, { backgroundColor: colors.surface }, elevation.card]}>
               <AmountInput value={shownAmount} onChangeText={setAmountText} />
             </View>
           </View>
+
+          <DebtWalletField wallet={wallet} label={debt.direction === 'borrowed' ? 'Payé avec' : 'Reçu sur'} />
 
           <View style={styles.field}>
             <Text style={[styles.eyebrow, { color: colors.textMuted }]}>Date</Text>

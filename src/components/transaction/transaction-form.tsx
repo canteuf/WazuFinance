@@ -15,16 +15,18 @@ import { AmountInput } from '@/components/transaction/amount-input';
 import { CategoryCreator } from '@/components/transaction/category-creator';
 import { CategoryPicker } from '@/components/transaction/category-picker';
 import { DateField } from '@/components/transaction/date-field';
+import { TagInput } from '@/components/transaction/tag-input';
 import { Button } from '@/components/ui/button';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { WalletPicker } from '@/components/wallet/wallet-picker';
 import { CONTENT_GUTTER } from '@/components/ui/screen';
 import { useCategories } from '@/hooks/use-categories';
 import { useFrequentAmounts } from '@/hooks/use-frequent-amounts';
-import { useWallets } from '@/hooks/use-wallets';
+import { useTransactionTags } from '@/hooks/use-transaction-tags';
+import { useWalletChoice } from '@/hooks/use-wallet-choice';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { formatOccurredOn, todayIso } from '@/lib/dates';
-import { readLastCategory, readLastWallet } from '@/lib/last-used';
+import { readLastCategory } from '@/lib/last-used';
 import { formatMoney, parseAmount, spokenAmount, toAmountInput } from '@/lib/money';
 import { anchorFor, describeRecurrence } from '@/lib/recurrence';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
@@ -40,6 +42,8 @@ export type TransactionFormValues = {
   repeat: RecurrenceFrequency | null;
   /** `null` laisse la base ranger l'opération dans le portefeuille par défaut du groupe. */
   walletId: string | null;
+  /** Étiquettes, déjà normalisées (`addTag`). */
+  tags: string[];
 };
 
 type RepeatChoice = 'once' | RecurrenceFrequency;
@@ -95,10 +99,13 @@ export function TransactionForm({
   );
   const [note, setNote] = useState(initialValues?.note ?? '');
   const [occurredOn, setOccurredOn] = useState(initialValues?.occurredOn ?? todayIso());
+  const [tags, setTags] = useState<string[]>(initialValues?.tags ?? []);
+  const knownTags = useTransactionTags();
   const [touched, setTouched] = useState(false);
   // Date et note repliées par défaut : la saisie courante se fait du jour, sans note, et les montrer d'office repoussait « Enregistrer » sous le clavier. Dépliées d'emblée quand elles portent déjà autre chose que ces valeurs, pour qu'une modification ne cache pas ce qui a été saisi.
   const [detailsOpen, setDetailsOpen] = useState(
     Boolean(initialValues?.note) ||
+      (initialValues?.tags.length ?? 0) > 0 ||
       (initialValues !== undefined && initialValues.occurredOn !== todayIso())
   );
   const [repeat, setRepeat] = useState<RepeatChoice>('once');
@@ -106,11 +113,8 @@ export function TransactionForm({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const { categories, isLoading: categoriesLoading, error: categoriesError } = useCategories(type);
-  const { wallets } = useWallets();
-  // Sélection brute, comme la catégorie : la valeur de l'opération en modification, sinon le dernier portefeuille utilisé dans ce groupe.
-  const [walletSelection, setWalletSelection] = useState<string | null>(
-    initialValues?.walletId ?? null
-  );
+  // La valeur de l'opération en modification, sinon le dernier portefeuille utilisé dans ce groupe.
+  const wallet = useWalletChoice(groupId, initialValues ? initialValues.walletId : undefined);
 
   // Présélection de la dernière catégorie, uniquement en création.
   useEffect(() => {
@@ -121,11 +125,6 @@ export function TransactionForm({
     readLastCategory(groupId).then((lastId) => {
       if (active && lastId) {
         setCategorySelection(lastId);
-      }
-    });
-    readLastWallet(groupId).then((lastId) => {
-      if (active && lastId) {
-        setWalletSelection(lastId);
       }
     });
     return () => {
@@ -140,13 +139,6 @@ export function TransactionForm({
     !categories.some((category) => category.id === categorySelection)
       ? null
       : categorySelection;
-
-  // Un portefeuille supprimé entre-temps, ou mémorisé dans un autre groupe, retombe sur celui par défaut ; avant l'arrivée de la liste, on garde la sélection, comme pour la catégorie.
-  const defaultWallet = wallets.find((wallet) => wallet.isDefault);
-  const walletId =
-    wallets.length === 0 || wallets.some((wallet) => wallet.id === walletSelection)
-      ? walletSelection
-      : (defaultWallet?.id ?? null);
 
   const amount = parseAmount(amountText);
   const amountError = touched && amount === null ? 'Montant invalide.' : undefined;
@@ -173,7 +165,8 @@ export function TransactionForm({
       occurredOn,
       note: note.trim() === '' ? null : note.trim(),
       repeat: allowRepeat && repeat !== 'once' ? repeat : null,
-      walletId,
+      walletId: wallet.walletId,
+      tags,
     });
   }
 
@@ -229,15 +222,15 @@ export function TransactionForm({
       </View>
 
       {/* Seulement quand il y a un choix à faire : avec le seul portefeuille « Principal », la saisie reste celle d'avant. Au-dessus des catégories, parce que choisir une catégorie ferme le clavier et amène le bouton « Enregistrer » ; le portefeuille doit donc être réglé avant. */}
-      {wallets.length > 1 ? (
+      {wallet.showPicker ? (
         <View style={styles.field}>
           <Text style={[styles.eyebrow, { color: colors.textMuted }]}>
             {type === 'expense' ? 'Payé avec' : 'Reçu sur'}
           </Text>
           <WalletPicker
-            wallets={wallets}
-            selectedId={walletId ?? defaultWallet?.id ?? null}
-            onSelect={setWalletSelection}
+            wallets={wallet.wallets}
+            selectedId={wallet.selectedId}
+            onSelect={wallet.select}
           />
         </View>
       ) : null}
@@ -335,6 +328,11 @@ export function TransactionForm({
             </View>
           </View>
 
+          <View style={styles.field}>
+            <Text style={[styles.eyebrow, { color: colors.textMuted }]}>Étiquettes (facultatif)</Text>
+            <TagInput value={tags} onChange={setTags} known={knownTags} />
+          </View>
+
           {allowRepeat ? (
             <View style={styles.field}>
               <Text style={[styles.eyebrow, { color: colors.textMuted }]}>Répéter</Text>
@@ -361,14 +359,14 @@ export function TransactionForm({
         // Résumé de ce qui s'enregistrera si l'on ne touche à rien : la date du jour, sans note. Le toucher déplie les deux champs.
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Date : ${formatOccurredOn(occurredOn)}. Ajouter une note ou changer la date`}
+          accessibilityLabel={`Date : ${formatOccurredOn(occurredOn)}. Ajouter une note, une étiquette ou changer la date`}
           onPress={() => setDetailsOpen(true)}
           style={[styles.detailsToggle, { borderColor: colors.border }]}
         >
           <MaterialCommunityIcons name="calendar-edit" size={20} color={colors.primary} />
           <Text style={[styles.detailsLabel, { color: colors.text }]}>
             {formatOccurredOn(occurredOn)} ·{' '}
-            <Text style={{ color: colors.primary }}>Ajouter une note ou changer la date</Text>
+            <Text style={{ color: colors.primary }}>Note, étiquette ou date</Text>
           </Text>
         </Pressable>
       )}

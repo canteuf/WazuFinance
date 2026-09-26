@@ -11,10 +11,13 @@ import { Button } from '@/components/ui/button';
 import { DeleteAction, PrimaryAction } from '@/components/ui/form-actions';
 import { CONTENT_GUTTER, contentColumn } from '@/components/ui/screen';
 import { SheetScrollView } from '@/components/ui/sheet-scroll-view';
+import { WalletPicker } from '@/components/wallet/wallet-picker';
+import { useActiveGroup } from '@/hooks/use-active-group';
 import { useRecurring } from '@/hooks/use-recurring';
 import { useRecurringMutations } from '@/hooks/use-recurring-mutations';
 import { useSheetMaxHeight } from '@/hooks/use-sheet-max-height';
 import { useToast } from '@/hooks/use-toast';
+import { useWalletChoice } from '@/hooks/use-wallet-choice';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { formatOccurredOn, todayIso } from '@/lib/dates';
 import { formatMoney, parseAmount, toAmountInput } from '@/lib/money';
@@ -38,6 +41,9 @@ export default function RecurringScreen() {
   const { confirm, skip, remove } = useRecurringMutations();
 
   const item = recurring.find((candidate) => candidate.id === id);
+  const { activeGroupId } = useActiveGroup();
+  // Présélectionné sur le portefeuille retenu par le modèle ; en changer ne vaut que pour cette échéance.
+  const wallet = useWalletChoice(activeGroupId, item?.wallet_id ?? null);
 
   const [amountText, setAmountText] = useState<string | null>(null);
   const [occurredOn, setOccurredOn] = useState(todayIso());
@@ -89,6 +95,7 @@ export default function RecurringScreen() {
         // `null` quand le montant n'a pas changé : la base reprend celui du modèle.
         amount: amount === Number(item.amount) ? null : amount,
         occurredOn,
+        walletId: wallet.walletId,
       },
       {
         onSuccess: () => {
@@ -171,6 +178,15 @@ export default function RecurringScreen() {
             Le montant saisi ne vaut que pour cette échéance.
           </Text>
         </View>
+
+        {wallet.showPicker ? (
+          <View style={styles.field}>
+            <Text style={[styles.eyebrow, { color: colors.textMuted }]}>
+              {item.type === 'expense' ? 'Payé avec' : 'Reçu sur'}
+            </Text>
+            <WalletPicker wallets={wallet.wallets} selectedId={wallet.selectedId} onSelect={wallet.select} />
+          </View>
+        ) : null}
 
         <View style={styles.field}>
           <Text style={[styles.eyebrow, { color: colors.textMuted }]}>Date de l’opération</Text>

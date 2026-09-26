@@ -25,6 +25,7 @@ import { useCategories } from '@/hooks/use-categories';
 import { useDailyTotals } from '@/hooks/use-daily-totals';
 import { useExportTransactions, type ExportFormat } from '@/hooks/use-export-transactions';
 import { useTransactionHistory } from '@/hooks/use-transaction-history';
+import { useWallets } from '@/hooks/use-wallets';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { formatPeriodLabel, periodPresets, todayIso } from '@/lib/dates';
 import { dayTitle, groupByDay } from '@/lib/ledger';
@@ -44,20 +45,28 @@ const FORMATS: {
   { id: 'pdf', label: 'Relevé (PDF)', icon: 'file-document-outline' },
 ];
 
-/** Les filtres actifs en plus de la période, rédigés pour l'en-tête du relevé : « Dépenses · Alimentation · "marché" ». Vide quand seule la période filtre. */
+/** Les filtres actifs en plus de la période, rédigés pour l'en-tête du relevé : « Dépenses · Alimentation, Famille · MoMo · étiquette Argent de Jean · "marché" ». Vide quand seule la période filtre. */
 function exportFiltersLabel(
-  filters: HistoryFilterState,
-  categories: { id: string; name: string }[]
+  filters: TransactionFilters,
+  categories: { id: string; name: string }[],
+  wallets: { id: string; name: string }[]
 ): string {
   const parts: string[] = [];
   if (filters.type !== null) {
     parts.push(filters.type === 'expense' ? 'Dépenses' : 'Revenus');
   }
-  const category = categories.find((item) => item.id === filters.categoryId);
-  if (category) {
-    parts.push(category.name);
+  const chosen = categories.filter((item) => filters.categoryIds?.includes(item.id));
+  if (chosen.length > 0) {
+    parts.push(chosen.map((item) => item.name).join(', '));
   }
-  const search = normalizeSearch(filters.search);
+  const wallet = wallets.find((item) => item.id === filters.walletId);
+  if (wallet) {
+    parts.push(wallet.name);
+  }
+  if (filters.tag !== null) {
+    parts.push(`étiquette ${filters.tag}`);
+  }
+  const search = filters.search;
   if (search !== null) {
     parts.push(`« ${search} »`);
   }
@@ -106,21 +115,26 @@ export default function HistoryScreen() {
 
   const { categories, isLoading: categoriesLoading } = useCategories(filters.type);
 
-  // La correction vit ici, pas dans `FilterBar` : c'est l'écran qui possède l'état à partir duquel la requête est construite, donc la sélection corrigée doit être calculée là où cet état est lu — sinon les pastilles et la requête peuvent diverger (groupe actif changé, catégorie supprimée par un autre membre pendant que l'écran reste monté).
-  const effectiveCategoryId =
-    filters.categoryId !== null &&
-    !categoriesLoading &&
-    !categories.some((category) => category.id === filters.categoryId)
-      ? null
-      : filters.categoryId;
+  const { wallets, isLoading: walletsLoading } = useWallets();
 
-  // Un seul objet de filtres pour la liste et pour les totaux : les en-têtes de jour doivent décrire exactement les lignes affichées dessous.
+  // La correction vit ici, pas dans `FilterBar` : c'est l'écran qui possède l'état à partir duquel la requête est construite, donc la sélection corrigée doit être calculée là où cet état est lu — sinon les pastilles et la requête peuvent diverger (groupe actif changé, catégorie ou portefeuille supprimé par un autre membre pendant que l'écran reste monté).
+  const effectiveCategoryIds = categoriesLoading
+    ? filters.categoryIds
+    : filters.categoryIds.filter((id) => categories.some((category) => category.id === id));
+  const effectiveWalletId =
+    filters.walletId !== null && !walletsLoading && !wallets.some((wallet) => wallet.id === filters.walletId)
+      ? null
+      : filters.walletId;
+
+  // Un seul objet de filtres pour la liste et pour les totaux : les en-têtes de jour doivent décrire exactement les lignes affichées dessous. Les catégories sont triées : l'ordre des touchers ne doit pas ouvrir une seconde entrée de cache pour la même sélection.
   const queryFilters: TransactionFilters = {
     from: preset.from,
     to: preset.to,
-    categoryId: effectiveCategoryId,
+    categoryIds: effectiveCategoryIds.length > 0 ? [...effectiveCategoryIds].sort() : null,
     type: filters.type,
     search,
+    walletId: effectiveWalletId,
+    tag: filters.tag,
   };
 
   const {
@@ -150,7 +164,7 @@ export default function HistoryScreen() {
       filters: queryFilters,
       // Les libellés viennent d'ici : c'est l'écran qui possède les filtres affichés, et le relevé doit porter les mêmes mots que la barre de filtres.
       periodLabel: preset.from && preset.to ? formatPeriodLabel(preset.from, preset.to) : 'depuis le début',
-      filtersLabel: exportFiltersLabel(filters, categories),
+      filtersLabel: exportFiltersLabel(queryFilters, categories, wallets),
     });
   }
 
@@ -345,7 +359,8 @@ export default function HistoryScreen() {
               <FilterBar
                 state={filters}
                 presets={presets}
-                effectiveCategoryId={effectiveCategoryId}
+                effectiveCategoryIds={effectiveCategoryIds}
+                effectiveWalletId={effectiveWalletId}
                 onChange={setFilters}
               />
               {filtersTouched ? (

@@ -217,6 +217,9 @@ describe('formatActivity — créations et nouveaux sujets', () => {
       `Marie a noté l’emprunt à Cousin (${formatMoney(10000)})`
     );
     expect(
+      formatActivity(created('debt', { ...loan, direction: 'credit_sale', counterparty: 'Mama Ngo' }), null, categories)
+    ).toBe(`Marie a noté la vente à crédit à Mama Ngo (${formatMoney(10000)})`);
+    expect(
       formatActivity(
         entry({ subject: 'debt', old_values: loan, new_values: { ...loan, due_on: '2026-10-01' }, changed_fields: ['due_on'] }),
         null,

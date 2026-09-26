@@ -238,12 +238,17 @@ function formatBudget(
   return change === null ? `${actor} le budget ${name}` : `${actor} le plafond ${name} : ${change}`;
 }
 
-/** « le prêt à Cousin », « l'emprunt à Tante Awa ». */
+/** « le prêt à Cousin », « l'emprunt à Tante Awa », « la vente à crédit à Mama Ngo ». */
 function debtLabel(values: JsonObject): string {
   const counterparty = readString(values, 'counterparty') ?? 'un proche';
-  return readString(values, 'direction') === 'borrowed'
-    ? `l’emprunt à ${counterparty}`
-    : `le prêt à ${counterparty}`;
+  switch (readString(values, 'direction')) {
+    case 'borrowed':
+      return `l’emprunt à ${counterparty}`;
+    case 'credit_sale':
+      return `la vente à crédit à ${counterparty}`;
+    default:
+      return `le prêt à ${counterparty}`;
+  }
 }
 
 function formatDebt(

@@ -31,8 +31,17 @@ export function useSavingsGoalMutations() {
   });
 
   const addToGoal = useMutation({
-    mutationFn: ({ id, delta, requestId }: { id: string; delta: number; requestId: string }) =>
-      addToSavingsGoal(id, delta, todayIso(), requestId),
+    mutationFn: ({
+      id,
+      delta,
+      requestId,
+      walletId,
+    }: {
+      id: string;
+      delta: number;
+      requestId: string;
+      walletId: string | null;
+    }) => addToSavingsGoal(id, delta, todayIso(), requestId, walletId),
     onSuccess: () => {
       invalidate();
       // Le versement est aussi une opération du compte personnel : solde, historique et totaux en dépendent, tous rangés sous ['transactions'].
