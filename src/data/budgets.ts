@@ -62,10 +62,16 @@ export async function create(input: CreateBudgetInput): Promise<Tables<'budgets'
  * Augmente (`delta` positif) ou réduit (`delta` négatif) le plafond d'une enveloppe.
  *
  * Il n'y a pas de fonction pour réécrire le plafond : dans un budget partagé, deux membres qui ajustent la même enveloppe verraient le second écraser le premier. L'addition se fait en base, dans un seul update, et passe par le journal comme toute modification.
+ *
+ * `requestId` identifie le geste : un renvoi après une réponse perdue ne l'ajoute pas une seconde fois (migration idempotent_deltas).
  */
-export async function adjust(id: string, delta: number): Promise<Tables<'budgets'>> {
+export async function adjust(
+  id: string,
+  delta: number,
+  requestId: string
+): Promise<Tables<'budgets'>> {
   const { data, error } = await supabase
-    .rpc('adjust_budget_amount', { p_budget_id: id, p_delta: delta })
+    .rpc('adjust_budget_amount', { p_budget_id: id, p_delta: delta, p_id: requestId })
     .single();
 
   if (error) {

@@ -75,7 +75,8 @@ export function LockScreen() {
   function confirmForget() {
     Alert.alert(
       'Code oublié ?',
-      'Vous allez être déconnecté de ce téléphone. Reconnectez-vous avec votre mot de passe : vos données sont intactes, et vous pourrez choisir un nouveau code dans les Paramètres.',
+      // Les saisies en file ne sont pas perdues (usePersistedQueryCache) : le dire, sinon l'utilisateur hésiterait à se déconnecter pour rien.
+      'Vous allez être déconnecté de ce téléphone. Reconnectez-vous avec votre mot de passe : vos données sont intactes, les opérations pas encore envoyées partiront à la reconnexion, et vous pourrez choisir un nouveau code dans les Paramètres.',
       [
         { text: 'Annuler', style: 'cancel' },
         { text: 'Se déconnecter', style: 'destructive', onPress: () => void forget() },

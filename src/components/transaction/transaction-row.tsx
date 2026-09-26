@@ -46,7 +46,7 @@ export function TransactionRow({
   const isDark = useIsDark();
   const { fontScale } = useWindowDimensions();
   // Dans un budget partagé, la première question devant une dépense est « qui l'a faite ? ». `null` dans le compte personnel.
-  const author = useTransactionAuthor(transaction.user_id);
+  const author = useTransactionAuthor(transaction.user_id, transaction.author_name);
   // Le portefeuille n'est nommé que s'il y a un choix : avec le seul « Principal », la mention répéterait le même mot sur chaque ligne.
   const { wallets } = useWallets();
   const walletName =

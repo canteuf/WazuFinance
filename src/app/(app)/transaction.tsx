@@ -1,7 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { randomUUID } from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -25,7 +25,7 @@ import { useSheetMaxHeight } from '@/hooks/use-sheet-max-height';
 import { useTransaction } from '@/hooks/use-transaction';
 import { useToast } from '@/hooks/use-toast';
 import { useTransactionMutations } from '@/hooks/use-transaction-mutations';
-import { dataErrorMessage } from '@/lib/data-errors';
+import { dataErrorMessage, isTransportError } from '@/lib/data-errors';
 import { formatMoney } from '@/lib/money';
 import { anchorFor, describeRecurrence, nextDueAfter } from '@/lib/recurrence';
 import { font, spacing, useColors } from '@/theme/tokens';
@@ -46,8 +46,14 @@ export default function TransactionScreen() {
     isLoading: groupLoading,
     error: groupError,
   } = useActiveGroup();
-  const { createTransaction, updateTransaction, deleteTransaction, isSaving, isDeleting } =
-    useTransactionMutations();
+  const {
+    createTransaction,
+    updateTransaction,
+    deleteTransaction,
+    isSaving,
+    isDeleting,
+    isRetrying,
+  } = useTransactionMutations();
   const online = useIsOnline();
   const toast = useToast();
   const recurringMutations = useRecurringMutations();
@@ -56,6 +62,19 @@ export default function TransactionScreen() {
   const [newId] = useState(randomUUID);
 
   const existing = useTransaction(id);
+  // Version de la ligne sur laquelle le formulaire s'est ouvert : il lit ses valeurs au montage, et une relecture arrivée ensuite (Realtime, retour du réseau) ne les change pas. La modification n'est écrite que si la ligne en est toujours là (voir `update` dans src/data/transactions.ts).
+  const [baseVersion, setBaseVersion] = useState<string>();
+  if (existing.data && baseVersion === undefined) {
+    setBaseVersion(existing.data.updated_at);
+  }
+
+  // Une écriture qui bute sur un réseau instable (NetInfo dit « connecté », la requête échoue) est renvoyée seule, et gardée sur le disque d'ici là : la feuille n'a plus à l'attendre derrière un bouton qui tourne.
+  useEffect(() => {
+    if (isRetrying) {
+      toast.show('Réseau instable. L’opération est gardée sur le téléphone et partira dès que possible.', 'info');
+      goBackOr(router, '/');
+    }
+  }, [isRetrying, toast, router]);
 
   const userId = session?.user.id;
 
@@ -80,22 +99,36 @@ export default function TransactionScreen() {
     );
   }
 
-  if (typeof id === 'string' && existing.isLoading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
-  }
-
-  // React Query v5 laisse isLoading à false une fois l'échec établi : sans ce garde, un fetch en échec (réseau, ligne supprimée, accès révoqué) laisse passer un formulaire vide sous le titre « Modifier », et l'enregistrer écraserait la vraie transaction avec des valeurs ressaisies de zéro.
-  if (typeof id === 'string' && existing.isError) {
+  // React Query v5 laisse isLoading à false une fois l'échec établi : sans ce garde, un fetch en échec (réseau, ligne supprimée, accès révoqué) laisse passer un formulaire vide sous le titre « Modifier », et l'enregistrer écraserait la vraie transaction avec des valeurs ressaisies de zéro. Une ligne supprimée par un autre membre pendant que la feuille était ouverte tombe aussi ici : Realtime relit la fiche, qui échoue. Une relecture qui échoue faute de réseau, elle, laisse le formulaire ouvert sur la ligne déjà connue.
+  if (
+    typeof id === 'string' &&
+    existing.isError &&
+    (!existing.data || !isTransportError(existing.error))
+  ) {
     return (
       <View style={styles.centered}>
         <Text style={[styles.errorTitle, { color: colors.danger }]}>
           {dataErrorMessage(existing.error)}
         </Text>
         <Button title="Retour" variant="ghost" onPress={() => goBackOr(router, '/')} />
+      </View>
+    );
+  }
+
+  // Aucune donnée : jamais de formulaire sous « Modifier ». Hors ligne, la requête d'une fiche jamais lue et absente des listes en cache est en pause — ni `isLoading` ni `isError` en TanStack Query v5 — et le formulaire s'ouvrait vide ; l'enregistrer écrasait la vraie ligne (date du jour, note vide, portefeuille par défaut).
+  if (typeof id === 'string' && !existing.data) {
+    return (
+      <View style={styles.centered}>
+        {existing.fetchStatus === 'paused' ? (
+          <>
+            <Text style={[styles.errorTitle, { color: colors.text }]}>
+              Cette opération n’est pas encore sur le téléphone. Ouvrez-la avec du réseau pour la modifier.
+            </Text>
+            <Button title="Retour" variant="ghost" onPress={() => goBackOr(router, '/')} />
+          </>
+        ) : (
+          <ActivityIndicator color={colors.primary} />
+        )}
       </View>
     );
   }
@@ -124,7 +157,7 @@ export default function TransactionScreen() {
       // `repeat` n'a pas de sens en modification, et ne doit pas partir dans les variables de la mutation, qui sont gardées sur le disque hors ligne.
       const { repeat: _repeat, ...patch } = values;
       updateTransaction.mutate(
-        { id, patch },
+        { id, patch, expectedUpdatedAt: baseVersion },
         { onSuccess: () => succeed(`${what} modifié${values.type === 'expense' ? 'e' : ''}`), onError }
       );
     } else {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import {
   SettingsDivider,
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { TextField } from '@/components/ui/text-field';
 import { useAuth } from '@/hooks/use-auth';
+import { usePendingWrites } from '@/hooks/use-offline-status';
 import { authErrorMessage, CurrentPasswordError } from '@/lib/auth-errors';
 import { validatePassword } from '@/lib/validation';
 import { font, spacing, useColors } from '@/theme/tokens';
@@ -31,6 +32,7 @@ type Errors = {
 export function SecuritySection() {
   const colors = useColors();
   const { changePassword, signOut } = useAuth();
+  const pendingWrites = usePendingWrites();
 
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState('');
@@ -148,7 +150,23 @@ export function SecuritySection() {
         subtitle="Clôturer la session sur cet appareil"
         onPress={() => {
           setSignOutError(undefined);
-          signOut().catch((error: unknown) => setSignOutError(authErrorMessage(error)));
+          const leave = () =>
+            signOut().catch((error: unknown) => setSignOutError(authErrorMessage(error)));
+          if (pendingWrites === 0) {
+            void leave();
+            return;
+          }
+          // Les saisies en file restent sur le téléphone et partent à la prochaine connexion du même compte (usePersistedQueryCache) ; l'utilisateur doit le savoir avant de partir, faute de quoi il les croirait envoyées — ou perdues.
+          Alert.alert(
+            'Opérations pas encore envoyées',
+            pendingWrites > 1
+              ? `${pendingWrites} opérations attendent encore le réseau. Elles resteront sur ce téléphone et partiront à votre prochaine connexion avec ce compte.`
+              : 'Une opération attend encore le réseau. Elle restera sur ce téléphone et partira à votre prochaine connexion avec ce compte.',
+            [
+              { text: 'Annuler', style: 'cancel' },
+              { text: 'Se déconnecter', style: 'destructive', onPress: () => void leave() },
+            ]
+          );
         }}
       />
       {signOutError ? (

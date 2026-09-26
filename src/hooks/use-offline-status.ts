@@ -56,6 +56,7 @@ export function usePendingTransactions(): TransactionWithCategory[] {
         id: `pending-${mutationId}`,
         group_id: values.groupId,
         user_id: values.userId,
+        author_name: null,
         category_id: values.categoryId,
         savings_goal_id: null,
         is_savings: false,

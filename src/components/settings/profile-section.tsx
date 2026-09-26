@@ -152,11 +152,11 @@ export function ProfileSection() {
 
       <SettingsDivider />
 
-      {/* Pas de chevron : changer d'email passe par un lien de confirmation qui doit rouvrir l'app, et aucune infrastructure de lien profond n'existe encore. Une rangée sans action ne promet rien. */}
+      {/* Pas de chevron : changer d'email passe par un lien de confirmation qui doit rouvrir l'app, et aucune infrastructure de lien profond n'existe encore. Une rangée sans action ne promet rien. L'adresse vient de la session : la base ne laisse plus lire users.email. */}
       <SettingsRow
         icon="email-outline"
         label="Adresse e-mail"
-        value={profile.email}
+        value={session?.user.email ?? ''}
         plainValue
         trailing={verified ? <StatusBadge tone="ok" label="Vérifié" /> : undefined}
       />

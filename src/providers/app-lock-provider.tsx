@@ -77,6 +77,17 @@ export function AppLockProvider({ children }: { children: ReactNode }) {
     };
   }, [userId]);
 
+  // Un dernier échec daté du futur veut dire que l'horloge a reculé depuis : lockoutRemainingMs() plafonne l'attente, mais elle ne décompterait pas tant que l'horloge n'aurait pas rattrapé la date enregistrée. On la ramène à maintenant, et l'attente normale court de là.
+  useEffect(() => {
+    if (!userId || !settings?.lastFailureAt || settings.lastFailureAt <= Date.now()) {
+      return;
+    }
+    const corrected = { ...settings, lastFailureAt: Date.now() };
+    writeAppLock(userId, corrected)
+      .then(() => setSettings(corrected))
+      .catch((error: unknown) => reportError(error, 'app-lock-clock'));
+  }, [settings, userId]);
+
   const onAppStateChange = useEffectEvent((state: string) => {
     // `inactive` (iOS : centre de contrôle, invite biométrique) ne compte pas comme un départ.
     if (state === 'background') {

@@ -32,6 +32,8 @@ export function useMembershipsRealtime(): void {
     const channel = supabase
       .channel(`memberships:${userId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'account_memberships' }, invalidate)
+      // Le nom et le jour de début de période d'un groupe arrivent avec les adhésions (listMemberships). Sans cet abonnement, un propriétaire qui déplaçait le début de période ne le faisait voir aux autres membres qu'à leur prochain rechargement, et leurs totaux décrivaient une autre période que les siens. UPDATE seulement : une création ou une suppression de groupe passe déjà par les adhésions. RLS filtre les messages comme les lectures.
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'budget_groups' }, invalidate)
       .subscribe((status) => {
         // Même raison que use-transactions-realtime : SUBSCRIBED suit aussi une reconnexion, invalider rattrape ce qui a changé pendant la coupure.
         if (status === 'SUBSCRIBED') {

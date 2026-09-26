@@ -3,12 +3,15 @@ import { createContext, useEffect, useMemo, useRef, useState, type ReactNode } f
 
 import { deleteOwnAccount } from '@/data/account';
 import { CurrentPasswordError } from '@/lib/auth-errors';
+import { clockSkewMs as measureClockSkew } from '@/lib/clock';
 import { supabase } from '@/lib/supabase';
 
 export type AuthState = {
   session: Session | null;
   /** Vrai tant que la session persistée n'a pas été relue au démarrage. */
   isLoading: boolean;
+  /** Décalage de l'horloge du téléphone sur celle du serveur, mesuré au dernier jeton reçu (`src/lib/clock.ts`) ; `null` tant qu'aucun jeton neuf n'est arrivé depuis le lancement. */
+  clockSkewMs: number | null;
   signIn: (email: string, password: string) => Promise<void>;
   /**
    * Renvoie `needsEmailConfirmation` : quand la confirmation d'email est activée sur le projet Supabase, signUp ne crée pas de session et l'utilisateur doit d'abord cliquer le lien reçu.
@@ -35,6 +38,7 @@ export const AuthContext = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [clockSkewMs, setClockSkewMs] = useState<number | null>(null);
   // Vrai pendant une réinitialisation de mot de passe : voir `resetPasswordWithCode`.
   const recovering = useRef(false);
 
@@ -50,7 +54,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     // Couvre connexion, déconnexion et TOKEN_REFRESHED, y compris depuis un autre onglet ou après expiration.
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      // Seul un jeton qui vient d'être émis dit l'heure du serveur : celui relu du stockage au démarrage (INITIAL_SESSION) date de sa dernière émission.
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && nextSession) {
+        setClockSkewMs(measureClockSkew(nextSession.access_token, Date.now()));
+      }
       if (recovering.current) {
         return;
       }
@@ -89,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return {
       session,
       isLoading,
+      clockSkewMs,
       async signIn(email, password) {
         const { error } = await supabase.auth.signInWithPassword({
           email: email.trim(),
@@ -165,7 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await supabase.auth.signOut({ scope: 'local' });
       },
     };
-  }, [session, isLoading]);
+  }, [session, isLoading, clockSkewMs]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

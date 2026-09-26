@@ -1,5 +1,4 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { randomUUID } from 'expo-crypto';
 import { Link } from 'expo-router';
 import { Fragment } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -8,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import type { RecurringWithCategory } from '@/data/recurring';
 import { useRecurring } from '@/hooks/use-recurring';
 import { useRecurringMutations } from '@/hooks/use-recurring-mutations';
+import { useRequestIds } from '@/hooks/use-request-ids';
 import { useToast } from '@/hooks/use-toast';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { formatOccurredOn, todayIso } from '@/lib/dates';
@@ -32,6 +32,8 @@ export function DueRecurring() {
   const { due } = useRecurring();
   const { confirm, skip } = useRecurringMutations();
   const toast = useToast();
+  // Un identifiant par échéance, pas par toucher : après une réponse perdue, le second « Enregistrer » retrouve l'opération créée par le premier. Un nouvel identifiant à chaque toucher faisait lire « déjà traitée par un autre membre » à celui qui venait de la traiter.
+  const transactionIdFor = useRequestIds();
 
   if (due.length === 0) {
     return null;
@@ -42,7 +44,7 @@ export function DueRecurring() {
       {
         id: item.id,
         dueOn: item.next_due_on,
-        transactionId: randomUUID(),
+        transactionId: transactionIdFor(`${item.id}:${item.next_due_on}`),
         amount: null,
         occurredOn: todayIso(),
       },

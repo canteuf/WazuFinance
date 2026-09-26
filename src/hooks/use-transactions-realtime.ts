@@ -5,6 +5,9 @@ import { useActiveGroup } from '@/hooks/use-active-group';
 import { queryKeys } from '@/lib/query-keys';
 import { supabase } from '@/lib/supabase';
 
+/** Fenêtre pendant laquelle les événements Realtime s'additionnent en un seul rechargement. Assez courte pour que la saisie d'un autre membre paraisse immédiate. */
+const REALTIME_BATCH_MS = 1_500;
+
 /**
  * Sync temps réel des transactions du groupe actif (spec 4.2) : un membre voit les dépenses de l'autre sans recharger l'app.
  *
@@ -27,6 +30,18 @@ export function useTransactionsRealtime(): void {
       });
     }
 
+    // Les événements d'une rafale — une réunion de tontine où chacun saisit sa cotisation — ne déclenchent qu'un rechargement, à la fin de la fenêtre. Chaque invalidation relit toutes les requêtes affichées, pages d'historique comprises : une par ligne saisie coûtait cher sur un réseau 2G.
+    let pending: ReturnType<typeof setTimeout> | undefined;
+    function invalidateSoon() {
+      if (pending !== undefined) {
+        return;
+      }
+      pending = setTimeout(() => {
+        pending = undefined;
+        invalidate();
+      }, REALTIME_BATCH_MS);
+    }
+
     const channel = supabase
       .channel(`transactions:${activeGroupId}`)
       .on(
@@ -37,13 +52,13 @@ export function useTransactionsRealtime(): void {
           table: 'transactions',
           filter: `group_id=eq.${activeGroupId}`,
         },
-        invalidate
+        invalidateSoon
       )
       // Second abonnement DELETE, volontairement sans filtre serveur. La migration de schéma n'active pas `replica identity full` sur `transactions` (choix délibéré : Supabase n'applique pas RLS aux événements DELETE, donc une identité complète diffuserait la ligne entière — tous ses champs, pas seulement l'id — à tout abonné). Sans elle, l'ancien tuple d'un DELETE ne porte que la clé primaire, sans `group_id` : le filtre `group_id=eq.…` de l'abonnement ci-dessus ne peut donc jamais correspondre à une suppression, et un membre voit une ligne que l'autre a déjà supprimée. Cet abonnement-ci ne reçoit que des identifiants (aucune fuite) et se contente d'invalider, quitte à recharger pour un groupe qui n'est pas affiché. Ne pas le fusionner dans l'abonnement filtré au-dessus : ça réintroduirait le bug (en gardant le filtre) ou la fuite (en posant l'identité complète).
       .on(
         'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'transactions' },
-        invalidate
+        invalidateSoon
       )
       .subscribe((status) => {
         // CHANNEL_ERROR et TIMED_OUT seraient sinon silencieux. SUBSCRIBED se déclenche aussi bien à la connexion initiale qu'à une reconnexion après une coupure : invalider à ce moment-là rattrape tout ce qui a pu changer côté serveur pendant le trou, que la reconnexion vienne du retour au premier plan (focusManager, voir query-provider.tsx) ou du réseau qui revient.
@@ -53,6 +68,7 @@ export function useTransactionsRealtime(): void {
       });
 
     return () => {
+      clearTimeout(pending);
       void supabase.removeChannel(channel);
     };
   }, [activeGroupId, queryClient]);

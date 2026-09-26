@@ -4,6 +4,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   persistQueryClientRestore,
   persistQueryClientSubscribe,
+  type PersistedClient,
+  type Persister,
   type PersistQueryClientOptions,
 } from '@tanstack/react-query-persist-client';
 import Constants from 'expo-constants';
@@ -11,6 +13,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/hooks/use-auth';
 import { deserializeCache, serializeCache } from '@/lib/cache-serialization';
+import { keepQueueAcrossVersions, prepareForDisk, queueOnly } from '@/lib/offline-queue';
 import { mutationKeys } from '@/lib/query-keys';
 
 const STORAGE_PREFIX = 'query-cache:';
@@ -30,20 +33,57 @@ function storageKey(userId: string): string {
 }
 
 /**
- * Supprime les caches écrits pour d'autres utilisateurs que `keep`. Un cache ne survit pas à la déconnexion : c'est la même frontière que le vidage en mémoire, étendue au disque, pour qu'un téléphone prêté ou revendu ne garde pas les comptes de quelqu'un d'autre. Balayer par préfixe rattrape aussi une déconnexion interrompue avant la fin.
+ * Réduit les caches écrits pour d'autres utilisateurs que `keep` à leurs seules saisies en file. Les données lues ne survivent pas à la déconnexion : c'est la même frontière que le vidage en mémoire, étendue au disque, pour qu'un téléphone prêté ou revendu ne garde pas les comptes de quelqu'un d'autre. Balayer par préfixe rattrape aussi une déconnexion interrompue avant la fin.
+ *
+ * Les saisies pas encore envoyées, elles, restent : une déconnexion — volontaire, « Code oublié », ou dix codes faux — les effaçait en silence, alors qu'elles ne sont nulle part ailleurs. Elles partent à la prochaine connexion du même compte sur ce téléphone. Un cache sans saisie en file est effacé entièrement, comme avant.
  */
 async function discardOtherCaches(keep: string | null): Promise<void> {
   try {
     const keys = await AsyncStorage.getAllKeys();
-    const stale = keys.filter(
+    const others = keys.filter(
       (key) => key.startsWith(STORAGE_PREFIX) && (keep === null || key !== storageKey(keep))
     );
-    if (stale.length > 0) {
-      await AsyncStorage.multiRemove(stale);
+    for (const key of others) {
+      const raw = await AsyncStorage.getItem(key);
+      let remaining: PersistedClient | null = null;
+      try {
+        remaining = raw === null ? null : queueOnly(deserializeCache<PersistedClient>(raw));
+      } catch {
+        // Illisible : rien à sauver.
+      }
+      if (remaining === null) {
+        await AsyncStorage.removeItem(key);
+        continue;
+      }
+      // Déjà réduit lors d'un balayage précédent : rien à réécrire.
+      const stripped = serializeCache(remaining);
+      if (stripped !== raw) {
+        await AsyncStorage.setItem(key, stripped);
+      }
     }
   } catch {
     // Un balayage manqué sera refait au prochain changement de session ; il ne bloque rien.
   }
+}
+
+/**
+ * Le persister de la bibliothèque, entouré de deux transformations (`offline-queue.ts`) : à l'écriture, les saisies en cours d'envoi passent sur le disque comme des pauses et les historiques n'y gardent que leurs premières pages ; à la relecture, un cache écrit par une autre version de l'app garde ses saisies en file et perd seulement ses données lues.
+ */
+function createPersister(userId: string, buster: string): Persister {
+  const base = createAsyncStoragePersister({
+    storage: AsyncStorage,
+    key: storageKey(userId),
+    serialize: serializeCache,
+    deserialize: deserializeCache,
+  });
+  return {
+    persistClient: (client) => base.persistClient(prepareForDisk(client)),
+    restoreClient: async () => {
+      const client = await base.restoreClient();
+      return client ? keepQueueAcrossVersions(client, buster) : client;
+    },
+    removeClient: () => base.removeClient(),
+  };
 }
 
 /**
@@ -81,21 +121,17 @@ export function usePersistedQueryCache(): boolean {
 
     let cancelled = false;
     let unsubscribe: (() => void) | undefined;
+    // Une nouvelle version de l'app peut changer la forme des données en cache : les données lues d'un cache d'une autre version sont jetées plutôt que relues dans un format qu'aucun écran n'attend plus. Les saisies en file, elles, sont gardées (createPersister) : une mise à jour installée depuis le Play Store, un APK ou EAS Update pendant qu'elles attendaient le réseau ne doit pas les perdre.
+    const buster = `${Constants.expoConfig?.version ?? ''}#${CACHE_FORMAT}`;
     const options: PersistQueryClientOptions = {
       queryClient,
-      persister: createAsyncStoragePersister({
-        storage: AsyncStorage,
-        key: storageKey(userId),
-        serialize: serializeCache,
-        deserialize: deserializeCache,
-      }),
+      persister: createPersister(userId, buster),
       maxAge: PERSISTED_CACHE_MAX_AGE,
-      // Une nouvelle version de l'app peut changer la forme des données en cache : on repart alors d'un cache vide plutôt que de relire un format qu'aucun écran n'attend plus. Les saisies en file sont perdues avec lui — une mise à jour se télécharge en ligne, donc en pratique après leur envoi.
-      buster: `${Constants.expoConfig?.version ?? ''}#${CACHE_FORMAT}`,
+      buster,
       dehydrateOptions: {
-        // Seules les écritures sur les opérations ont une fonction enregistrée sous leur clé (registerTransactionMutationDefaults) : toute autre écriture relue au démarrage ne saurait pas quoi exécuter.
+        // Seules les écritures sur les opérations ont une fonction enregistrée sous leur clé (registerTransactionMutationDefaults) : toute autre écriture relue au démarrage ne saurait pas quoi exécuter. En pause ou en cours d'envoi : une saisie qui partait quand Android a tué l'app doit être sur le disque, sinon elle est perdue (prepareForDisk la relance au démarrage).
         shouldDehydrateMutation: (mutation) =>
-          mutation.state.isPaused &&
+          mutation.state.status === 'pending' &&
           mutation.options.mutationKey?.[0] === mutationKeys.transactionWrites()[0],
       },
     };

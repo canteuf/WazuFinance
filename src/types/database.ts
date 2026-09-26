@@ -147,6 +147,32 @@ export type Database = {
           },
         ]
       }
+      applied_requests: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applied_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       budget_groups: {
         Row: {
           created_at: string
@@ -265,6 +291,7 @@ export type Database = {
       debts: {
         Row: {
           amount: number
+          author_name: string | null
           counterparty: string
           created_at: string
           direction: Database["public"]["Enums"]["debt_direction"]
@@ -273,10 +300,11 @@ export type Database = {
           id: string
           note: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           amount: number
+          author_name?: string | null
           counterparty: string
           created_at?: string
           direction: Database["public"]["Enums"]["debt_direction"]
@@ -285,10 +313,11 @@ export type Database = {
           id?: string
           note?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           amount?: number
+          author_name?: string | null
           counterparty?: string
           created_at?: string
           direction?: Database["public"]["Enums"]["debt_direction"]
@@ -297,7 +326,7 @@ export type Database = {
           id?: string
           note?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -401,6 +430,7 @@ export type Database = {
         Row: {
           amount: number
           anchor_day: number
+          author_name: string | null
           category_id: string | null
           created_at: string
           frequency: Database["public"]["Enums"]["recurrence_frequency"]
@@ -410,11 +440,12 @@ export type Database = {
           note: string | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           amount: number
           anchor_day: number
+          author_name?: string | null
           category_id?: string | null
           created_at?: string
           frequency: Database["public"]["Enums"]["recurrence_frequency"]
@@ -424,11 +455,12 @@ export type Database = {
           note?: string | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           amount?: number
           anchor_day?: number
+          author_name?: string | null
           category_id?: string | null
           created_at?: string
           frequency?: Database["public"]["Enums"]["recurrence_frequency"]
@@ -438,7 +470,7 @@ export type Database = {
           note?: string | null
           type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -511,6 +543,7 @@ export type Database = {
       transactions: {
         Row: {
           amount: number
+          author_name: string | null
           category_id: string | null
           created_at: string
           debt_id: string | null
@@ -522,11 +555,12 @@ export type Database = {
           savings_goal_id: string | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
-          user_id: string
+          user_id: string | null
           wallet_id: string | null
         }
         Insert: {
           amount: number
+          author_name?: string | null
           category_id?: string | null
           created_at?: string
           debt_id?: string | null
@@ -538,11 +572,12 @@ export type Database = {
           savings_goal_id?: string | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           wallet_id?: string | null
         }
         Update: {
           amount?: number
+          author_name?: string | null
           category_id?: string | null
           created_at?: string
           debt_id?: string | null
@@ -554,7 +589,7 @@ export type Database = {
           savings_goal_id?: string | null
           type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           wallet_id?: string | null
         }
         Relationships: [
@@ -629,6 +664,7 @@ export type Database = {
       wallet_transfers: {
         Row: {
           amount: number
+          author_name: string | null
           created_at: string
           fee_transaction_id: string | null
           from_wallet_id: string
@@ -637,10 +673,11 @@ export type Database = {
           note: string | null
           occurred_on: string
           to_wallet_id: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           amount: number
+          author_name?: string | null
           created_at?: string
           fee_transaction_id?: string | null
           from_wallet_id: string
@@ -649,10 +686,11 @@ export type Database = {
           note?: string | null
           occurred_on: string
           to_wallet_id: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           amount?: number
+          author_name?: string | null
           created_at?: string
           fee_transaction_id?: string | null
           from_wallet_id?: string
@@ -661,7 +699,7 @@ export type Database = {
           note?: string | null
           occurred_on?: string
           to_wallet_id?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -748,7 +786,12 @@ export type Database = {
     }
     Functions: {
       add_to_savings_goal: {
-        Args: { p_delta: number; p_goal_id: string; p_occurred_on?: string }
+        Args: {
+          p_delta: number
+          p_goal_id: string
+          p_id?: string
+          p_occurred_on?: string
+        }
         Returns: {
           created_at: string
           current_amount: number
@@ -768,7 +811,7 @@ export type Database = {
         }
       }
       adjust_budget_amount: {
-        Args: { p_budget_id: string; p_delta: number }
+        Args: { p_budget_id: string; p_delta: number; p_id?: string }
         Returns: {
           amount: number
           category_id: string
@@ -806,6 +849,7 @@ export type Database = {
           total: number
         }[]
       }
+      claim_request: { Args: { p_id: string }; Returns: boolean }
       confirm_recurring: {
         Args: {
           p_amount?: number
@@ -816,6 +860,7 @@ export type Database = {
         }
         Returns: {
           amount: number
+          author_name: string | null
           category_id: string | null
           created_at: string
           debt_id: string | null
@@ -827,7 +872,7 @@ export type Database = {
           savings_goal_id: string | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
-          user_id: string
+          user_id: string | null
           wallet_id: string | null
         }
         SetofOptions: {
@@ -851,6 +896,7 @@ export type Database = {
         }
         Returns: {
           amount: number
+          author_name: string | null
           counterparty: string
           created_at: string
           direction: Database["public"]["Enums"]["debt_direction"]
@@ -859,7 +905,7 @@ export type Database = {
           id: string
           note: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -947,6 +993,10 @@ export type Database = {
           shared_monthly_total: number
         }[]
       }
+      is_author_departure: {
+        Args: { p_new: Json; p_old: Json }
+        Returns: boolean
+      }
       is_group_member: { Args: { gid: string }; Returns: boolean }
       is_group_owner: { Args: { gid: string }; Returns: boolean }
       join_group_with_code: {
@@ -988,6 +1038,7 @@ export type Database = {
         }
         Returns: {
           amount: number
+          author_name: string | null
           category_id: string | null
           created_at: string
           debt_id: string | null
@@ -999,7 +1050,7 @@ export type Database = {
           savings_goal_id: string | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
-          user_id: string
+          user_id: string | null
           wallet_id: string | null
         }
         SetofOptions: {
@@ -1041,6 +1092,7 @@ export type Database = {
         }
         Returns: {
           amount: number
+          author_name: string | null
           created_at: string
           fee_transaction_id: string | null
           from_wallet_id: string
@@ -1049,7 +1101,7 @@ export type Database = {
           note: string | null
           occurred_on: string
           to_wallet_id: string
-          user_id: string
+          user_id: string | null
         }
         SetofOptions: {
           from: "*"

@@ -13,6 +13,9 @@ const MESSAGES: Record<string, string> = {
   PGRST116: 'Cette opération est introuvable.',
   // Pas un SQLSTATE : le code `INVITATION_REJECTED` que `joinGroupWithCode` donne au refus d'une invitation, que la base signale par un NULL (voir src/data/groups.ts). Un seul message pour tous les cas, comme la base.
   INVITATION_REJECTED: 'Code invalide ou expiré. Demandez un nouveau code au propriétaire du groupe.',
+  // Pas un SQLSTATE non plus : `update()` (src/data/transactions.ts) le lève quand la ligne a changé depuis que le formulaire l'a lue.
+  TRANSACTION_CONFLICT:
+    'Cette opération a été modifiée par un autre membre entre-temps. Rouvrez-la pour voir sa version actuelle, puis refaites votre modification.',
 };
 
 const GENERIC = 'Une erreur inattendue est survenue.';
@@ -38,6 +41,17 @@ function hasMessage(error: unknown): error is { message: string } {
   );
 }
 
+/**
+ * Vrai pour une panne de transport — la requête n'a pas eu de réponse —, faux pour tout refus de la base, qui porte un code. C'est ce qui sépare une écriture à renvoyer plus tard d'une écriture à abandonner.
+ */
+export function isTransportError(error: unknown): boolean {
+  return (
+    !hasCode(error) &&
+    hasMessage(error) &&
+    NETWORK_MESSAGE_PATTERNS.some((pattern) => error.message.includes(pattern))
+  );
+}
+
 export function dataErrorMessage(error: unknown): string {
   if (hasCode(error)) {
     // P0001 est le code générique de tout `raise exception` sans code explicite : plusieurs messages distincts le partagent (les gardes, join_group_with_code()), donc pas de table de correspondance possible ici — le message porté par l'exception est déjà le texte français à afficher tel quel.
@@ -47,10 +61,7 @@ export function dataErrorMessage(error: unknown): string {
     return MESSAGES[error.code] ?? GENERIC;
   }
 
-  if (
-    hasMessage(error) &&
-    NETWORK_MESSAGE_PATTERNS.some((pattern) => error.message.includes(pattern))
-  ) {
+  if (isTransportError(error)) {
     return 'Pas de connexion. Réessayez.';
   }
 

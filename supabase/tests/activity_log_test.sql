@@ -368,11 +368,7 @@ SELECT is(
 );
 
 -- spec 14, 15 : Bob supprime son propre compte — la session est la sienne.
--- Ses opérations dans le groupe partagé partent en cascade et sont
--- journalisées ; son profil users est déjà effacé à ce moment-là. Si
--- log_activity() prenait auth.uid() tel quel, il insérerait un actor_id qui
--- ne pointe plus vers rien, la clé étrangère lèverait une erreur et la
--- suppression du compte serait annulée.
+-- Ses opérations dans le groupe partagé restent, sans auteur (20260926000200_departed_member_history.sql) ; son profil users est déjà effacé quand la cascade les atteint. Si log_activity() prenait auth.uid() tel quel pour une entrée écrite pendant la cascade, il insérerait un actor_id qui ne pointe plus vers rien, la clé étrangère lèverait une erreur et la suppression du compte serait annulée.
 select set_config('request.jwt.claims',
   '{"sub":"00000000-0000-0000-0000-0000000000f2","role":"authenticated"}', true);
 
@@ -398,14 +394,13 @@ SELECT is(
   'Aucune entree ne pointe plus vers le compte supprime'
 );
 
+-- L'opération de Bob reste dans le groupe ; perdre son auteur n'est pas une modification, et n'écrit rien au journal.
 SELECT is(
-  (select count(*)::int from public.activity_log
-    where subject_id = '00000000-0000-0000-0000-0000000000fb'
-      and action = 'delete'
-      and actor_id is null
-      and actor_name is null),
+  (select count(*)::int from public.transactions
+    where id = '00000000-0000-0000-0000-0000000000fb'
+      and user_id is null),
   1,
-  'La suppression en cascade de l''operation de Bob est journalisee, sans auteur'
+  'L''operation de Bob reste dans le groupe, sans auteur'
 );
 
 SELECT * FROM finish();

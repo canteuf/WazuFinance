@@ -43,12 +43,17 @@ export function lockoutDelayMs(failures: number): number {
   return delays[failures - 5] ?? 15 * 60_000;
 }
 
-/** Millisecondes restantes avant le prochain essai autorisé ; 0 quand on peut saisir. */
+/**
+ * Millisecondes restantes avant le prochain essai autorisé ; 0 quand on peut saisir.
+ *
+ * Jamais plus que l'attente due à ce nombre d'échecs : si l'horloge du téléphone recule après un échec (réglage manuel, batterie retirée, réseau qui corrige l'heure), `lastFailureAt` se retrouve dans le futur, et le calcul brut imposait des jours ou des mois d'attente. Elle est donc plafonnée à sa durée normale.
+ */
 export function lockoutRemainingMs(failures: number, lastFailureAt: number | null, now: number): number {
   if (lastFailureAt === null) {
     return 0;
   }
-  return Math.max(0, lastFailureAt + lockoutDelayMs(failures) - now);
+  const delay = lockoutDelayMs(failures);
+  return Math.min(delay, Math.max(0, lastFailureAt + delay - now));
 }
 
 /** « 30 s », « 1 min », « 5 min » : arrondi au-dessus, pour ne jamais annoncer moins que l'attente réelle. */

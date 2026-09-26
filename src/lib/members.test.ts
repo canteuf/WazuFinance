@@ -3,7 +3,18 @@ import {
   formatInvitationCode,
   normalizeInvitationCode,
 } from '@/lib/invitation-code';
-import { initials, pairMembers, toneIndex } from '@/lib/members';
+import { departedAuthorName, initials, pairMembers, toneIndex } from '@/lib/members';
+
+describe('departedAuthorName', () => {
+  it('garde le nom figé au départ, marqué comme ancien membre', () => {
+    expect(departedAuthorName('Bob')).toBe('Bob (ancien membre)');
+  });
+
+  it('dit « Ancien membre » quand aucun nom n’a été figé', () => {
+    expect(departedAuthorName(null)).toBe('Ancien membre');
+    expect(departedAuthorName('  ')).toBe('Ancien membre');
+  });
+});
 
 describe('initials', () => {
   it('prend les deux premiers mots', () => {

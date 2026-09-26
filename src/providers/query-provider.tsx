@@ -38,7 +38,7 @@ if (Platform.OS !== 'web') {
 }
 
 /**
- * Les saisies mises en file hors ligne sont envoyées plus tard, souvent après la fermeture du formulaire qui les a faites : si la base les refuse alors (catégorie supprimée entre-temps, accès retiré au groupe), plus aucun écran n'est là pour afficher l'erreur. On retient donc les mutations passées par la pause, et c'est à elles seules qu'une alerte est réservée — une erreur sur une saisie envoyée tout de suite s'affiche déjà sous le formulaire, et l'alerte ferait doublon.
+ * Les saisies mises en file hors ligne sont envoyées plus tard, souvent après la fermeture du formulaire qui les a faites : si la base les refuse alors (catégorie supprimée entre-temps, accès retiré au groupe, opération modifiée par un autre membre), plus aucun écran n'est là pour afficher l'erreur. On retient donc les mutations passées par la pause, et c'est à elles seules qu'une alerte est réservée — une erreur sur une saisie envoyée tout de suite s'affiche déjà sous le formulaire, et l'alerte ferait doublon.
  */
 function createMutationCache(): MutationCache {
   const queued = new WeakSet<object>();
@@ -52,8 +52,11 @@ function createMutationCache(): MutationCache {
   });
 
   cache.subscribe((event) => {
-    // Une mutation relue du disque au démarrage arrive déjà en pause (« added ») ; une saisie faite hors ligne le devient en cours de route (« updated »).
-    if ((event.type === 'added' || event.type === 'updated') && event.mutation.state.isPaused) {
+    // Une mutation relue du disque au démarrage arrive déjà en pause (« added ») ; une saisie faite hors ligne le devient en cours de route (« updated »). Une saisie qui a buté sur un réseau instable (`failureCount`) est renvoyée seule après la fermeture de sa feuille : elle compte aussi.
+    if (
+      (event.type === 'added' || event.type === 'updated') &&
+      (event.mutation.state.isPaused || event.mutation.state.failureCount > 0)
+    ) {
       queued.add(event.mutation);
     }
   });

@@ -5,6 +5,7 @@ import { getFilteredTotals } from '@/data/summary';
 import { listAllForExport, type TransactionFilters } from '@/data/transactions';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { buildTransactionsCsv, exportFileName, type ExportRow } from '@/lib/csv';
+import { departedAuthorName } from '@/lib/members';
 import { buildTransactionsReportHtml } from '@/lib/pdf-report';
 import { saveHtmlAsPdf, saveTextFile } from '@/lib/save-file';
 
@@ -29,7 +30,7 @@ const editedAtFormatter = new Intl.DateTimeFormat('fr-FR', {
  *
  * Une mutation plutôt qu'une requête : l'export est une action ponctuelle, rien à garder en cache, et `isPending` suffit à l'écran pour désactiver le bouton pendant la préparation.
  *
- * L'auteur vient de listGroupMembers() et non d'une jointure sur `users` : la policy `users_select_self_or_covisible` ne montre que les membres actuels, donc une jointure ne ferait pas mieux pour les opérations d'un membre parti — leur colonne « Saisie par » reste vide dans les deux cas.
+ * L'auteur vient de listGroupMembers() et non d'une jointure sur `users` : la policy `users_select_self_or_covisible` ne montre que les membres actuels, donc une jointure ne ferait pas mieux pour les opérations d'un membre parti du groupe — leur colonne « Saisie par » reste vide dans les deux cas. Un compte supprimé, lui, a laissé son nom sur la ligne (`author_name`).
  *
  * Les totaux du relevé viennent de filtered_totals(), sommés par Postgres : les additionner ici passerait par des flottants binaires.
  */
@@ -59,7 +60,10 @@ export function useExportTransactions() {
             ? 'Prêt ou dette'
             : (transaction.category?.name ?? null),
         note: transaction.note,
-        authorName: names.get(transaction.user_id) ?? null,
+        authorName:
+          transaction.user_id === null
+            ? departedAuthorName(transaction.author_name)
+            : (names.get(transaction.user_id) ?? null),
       }));
 
       const name = exportFileName(activeGroup.name, filters.from, filters.to, format);

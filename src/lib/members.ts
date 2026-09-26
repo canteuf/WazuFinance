@@ -14,6 +14,14 @@ export function pairMembers(names: string[], avatars: (string | null)[]): Member
 }
 
 /**
+ * Auteur d'une ligne dont le compte a été supprimé : la base a remis `user_id` à NULL et gardé le nom qu'il avait dans `author_name`. Sans nom — compte supprimé depuis le tableau de bord Supabase, qui ne le fige pas —, la ligne dit seulement « Ancien membre ».
+ */
+export function departedAuthorName(authorName: string | null): string {
+  const name = authorName?.trim();
+  return name ? `${name} (ancien membre)` : 'Ancien membre';
+}
+
+/**
  * Initiales d'un nom affiché, pour une pastille d'avatar : « Camille Martin » → « CM », « Bob » → « B ».
  *
  * Deux lettres au plus, prises aux deux premiers mots : au-delà, la pastille de 32 px ne les tient plus. `Array.from` et non un index sur la chaîne, pour qu'un prénom commençant par une lettre hors du plan de base Unicode ne soit pas coupé en deux moitiés illisibles.

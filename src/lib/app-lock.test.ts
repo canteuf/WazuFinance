@@ -70,6 +70,13 @@ describe('lockoutRemainingMs', () => {
   it('ne bloque rien sans échec enregistré', () => {
     expect(lockoutRemainingMs(7, null, 0)).toBe(0);
   });
+
+  it('n’attend jamais plus que le délai dû quand l’horloge a reculé', () => {
+    const lastFailureAt = Date.UTC(2026, 8, 26);
+    const clockPushedBackAMonth = lastFailureAt - 30 * 24 * 60 * 60 * 1000;
+    expect(lockoutRemainingMs(5, lastFailureAt, clockPushedBackAMonth)).toBe(30_000);
+    expect(lockoutRemainingMs(8, lastFailureAt, clockPushedBackAMonth)).toBe(15 * 60_000);
+  });
 });
 
 describe('formatWait', () => {

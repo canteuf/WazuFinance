@@ -1,9 +1,9 @@
 import type { AvatarId } from '@/lib/avatars';
 import { supabase } from '@/lib/supabase';
 
+/** Sans l'email : la base ne laisse plus lire la colonne `users.email` (20260926000300_hide_member_emails.sql). L'écran le prend dans la session, qui le tient de `auth.users`. */
 export type Profile = {
   id: string;
-  email: string;
   displayName: string;
   /** Valeur brute de `users.avatar`, `null` pour les initiales. À passer par `parseAvatarId` avant d'en faire une image. */
   avatar: string | null;
@@ -13,7 +13,7 @@ export type Profile = {
 export async function getProfile(userId: string): Promise<Profile> {
   const { data, error } = await supabase
     .from('users')
-    .select('id, email, display_name, avatar')
+    .select('id, display_name, avatar')
     .eq('id', userId)
     .single();
 
@@ -21,7 +21,7 @@ export async function getProfile(userId: string): Promise<Profile> {
     throw error;
   }
 
-  return { id: data.id, email: data.email, displayName: data.display_name, avatar: data.avatar };
+  return { id: data.id, displayName: data.display_name, avatar: data.avatar };
 }
 
 /**
@@ -45,7 +45,7 @@ export async function updateAvatar(userId: string, avatar: AvatarId | null): Pro
 }
 
 /**
- * Seul `display_name` est modifiable : un privilège par colonne le garantit en base, l'email restant la copie de `auth.users`.
+ * Seul `display_name` est modifiable : un privilège par colonne le garantit en base.
  *
  * `.select('id').single()` force une erreur si RLS filtre la ligne, au lieu d'une réussite silencieuse sur zéro ligne — même précédent que `removeMember`.
  */

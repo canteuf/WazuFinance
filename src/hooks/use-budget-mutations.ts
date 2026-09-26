@@ -25,7 +25,8 @@ export function useBudgetMutations() {
   });
 
   const adjustBudget = useMutation({
-    mutationFn: ({ id, delta }: { id: string; delta: number }) => adjust(id, delta),
+    mutationFn: ({ id, delta, requestId }: { id: string; delta: number; requestId: string }) =>
+      adjust(id, delta, requestId),
     onSuccess: invalidate,
   });
 

@@ -21,6 +21,7 @@ import { useBudgetMutations } from '@/hooks/use-budget-mutations';
 import { useBudgets } from '@/hooks/use-budgets';
 import { useCategories } from '@/hooks/use-categories';
 import { useCategoryBreakdown } from '@/hooks/use-category-breakdown';
+import { useRequestIds } from '@/hooks/use-request-ids';
 import { useSheetMaxHeight } from '@/hooks/use-sheet-max-height';
 import { budgetProgress, WARNING_RATIO } from '@/lib/budget-progress';
 import { dataErrorMessage } from '@/lib/data-errors';
@@ -49,6 +50,8 @@ export default function BudgetScreen() {
   const { slices, isLoading: slicesLoading, error: slicesError } = useCategoryBreakdown();
   const { createBudget, adjustBudget, deleteBudget, isDeleting } = useBudgetMutations();
   const [errorText, setErrorText] = useState<string>();
+  // Un identifiant par montant : retoucher le même ajustement après « Pas de connexion » ne l'ajoute pas deux fois si le premier envoi était passé.
+  const requestIdFor = useRequestIds();
 
   const existing = typeof id === 'string' ? budgets.find((budget) => budget.id === id) : undefined;
   // La dépense de l'enveloppe, par la même fonction que la liste : la feuille et la carte touchée affichent les mêmes chiffres.
@@ -141,7 +144,7 @@ export default function BudgetScreen() {
     }
     setErrorText(undefined);
     adjustBudget.mutate(
-      { id: existing.id, delta },
+      { id: existing.id, delta, requestId: requestIdFor(String(delta)) },
       {
         onSuccess: () => goBackOr(router, '/budgets'),
         onError: (error) => setErrorText(dataErrorMessage(error)),

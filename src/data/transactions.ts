@@ -1,3 +1,4 @@
+import { patchIsApplied } from '@/lib/offline-queue';
 import { containsPattern } from '@/lib/search';
 import { supabase } from '@/lib/supabase';
 import type { Tables } from '@/types/database';
@@ -108,40 +109,66 @@ export async function create(
   return data ?? getById(input.id);
 }
 
+/** Code de l'erreur levée quand la ligne a changé depuis que le formulaire l'a lue ; `data-errors.ts` lui associe son message. */
+export const TRANSACTION_CONFLICT = 'TRANSACTION_CONFLICT';
+
+/**
+ * Modifie une opération, à condition qu'elle n'ait pas changé depuis que le formulaire l'a lue.
+ *
+ * `expectedUpdatedAt` est le `updated_at` de la ligne affichée à l'ouverture du formulaire, tel que PostgREST l'a rendu — microsecondes comprises, sans passer par `Date`. Une modification faite hors ligne peut partir des heures plus tard : si un autre membre a corrigé la même opération entre-temps, l'écrire quand même effacerait sa correction sans que personne ne le voie. Le `where` porte donc aussi sur `updated_at`, et une ligne qui a bougé n'est pas touchée.
+ *
+ * Absent — modification mise en file par une version de l'app antérieure à ce contrôle —, la ligne est écrite sans condition, comme avant.
+ */
 export async function update(
   id: string,
-  patch: UpdateTransactionInput
+  patch: UpdateTransactionInput,
+  expectedUpdatedAt?: string
 ): Promise<Tables<'transactions'>> {
-  const { data, error } = await supabase
-    .from('transactions')
-    .update({
-      category_id: patch.categoryId,
-      type: patch.type,
-      amount: patch.amount,
-      occurred_on: patch.occurredOn,
-      note: patch.note,
-      // Absent d'une modification mise en file avant les portefeuilles : on ne touche alors pas à celui de la ligne.
-      ...(patch.walletId === undefined ? {} : { wallet_id: patch.walletId }),
-    })
-    .eq('id', id)
-    .select()
-    .single();
+  const fields = {
+    category_id: patch.categoryId,
+    type: patch.type,
+    amount: patch.amount,
+    occurred_on: patch.occurredOn,
+    note: patch.note,
+    // Absent d'une modification mise en file avant les portefeuilles : on ne touche alors pas à celui de la ligne.
+    ...(patch.walletId === undefined ? {} : { wallet_id: patch.walletId }),
+  };
+
+  let query = supabase.from('transactions').update(fields).eq('id', id);
+
+  if (expectedUpdatedAt !== undefined) {
+    query = query.eq('updated_at', expectedUpdatedAt);
+  }
+
+  const { data, error } = await query.select().maybeSingle();
 
   if (error) {
     throw error;
   }
+  if (data !== null) {
+    return data;
+  }
 
-  return data;
+  // Aucune ligne touchée : supprimée entre-temps (getById lève alors PGRST116, « introuvable »), ou modifiée depuis la lecture du formulaire.
+  const current = await getById(id);
+  // Cette modification elle-même, déjà passée lors d'un envoi dont la réponse s'est perdue : la ligne porte ses valeurs.
+  if (patchIsApplied(current, fields)) {
+    return current;
+  }
+  if (expectedUpdatedAt !== undefined && current.updated_at !== expectedUpdatedAt) {
+    throw Object.assign(new Error('Opération modifiée entre-temps'), { code: TRANSACTION_CONFLICT });
+  }
+  // La ligne existe et n'a pas bougé, mais rien n'a été écrit : ne jamais le faire passer pour un succès.
+  throw new Error('Modification non appliquée');
 }
 
+/**
+ * Supprime une opération. Une ligne déjà absente n'est pas une erreur : c'est ce qu'on voulait.
+ *
+ * Une suppression peut atteindre la base sans que sa réponse revienne, puis être rejouée depuis la file après un redémarrage : elle ne trouve plus rien à supprimer. L'ancienne version levait alors « introuvable », et une alerte annonçait l'échec d'une suppression réussie. Le cas d'un accès retiré au groupe, que RLS rend lui aussi par zéro ligne, aboutit au même état pour l'utilisateur : la ligne ne lui est plus visible.
+ */
 export async function remove(id: string): Promise<void> {
-  // .select().single() force une erreur si RLS a filtré la ligne cible (id erroné, appartenance périmée) : sans lui, zéro ligne supprimée serait encore un succès silencieux, contrairement à update().
-  const { error } = await supabase
-    .from('transactions')
-    .delete()
-    .eq('id', id)
-    .select('id')
-    .single();
+  const { error } = await supabase.from('transactions').delete().eq('id', id);
 
   if (error) {
     throw error;

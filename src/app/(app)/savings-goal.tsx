@@ -19,6 +19,7 @@ import { ProgressBar } from '@/components/ui/progress-bar';
 import { CONTENT_GUTTER, contentColumn } from '@/components/ui/screen';
 import { SheetScrollView } from '@/components/ui/sheet-scroll-view';
 import { useAuth } from '@/hooks/use-auth';
+import { useRequestIds } from '@/hooks/use-request-ids';
 import { useSavingsGoalMutations } from '@/hooks/use-savings-goal-mutations';
 import { useSavingsGoals } from '@/hooks/use-savings-goals';
 import { useSheetMaxHeight } from '@/hooks/use-sheet-max-height';
@@ -45,6 +46,8 @@ export default function SavingsGoalScreen() {
     useSavingsGoalMutations();
   const [errorText, setErrorText] = useState<string>();
   const [adjustError, setAdjustError] = useState<string>();
+  // Un identifiant par montant : retoucher « Verser » après « Pas de connexion » ne verse pas deux fois si le premier envoi était passé.
+  const requestIdFor = useRequestIds();
 
   const existing = typeof id === 'string' ? goals.find((goal) => goal.id === id) : undefined;
 
@@ -126,7 +129,7 @@ export default function SavingsGoalScreen() {
     }
     setAdjustError(undefined);
     addToGoal.mutate(
-      { id: existing.id, delta },
+      { id: existing.id, delta, requestId: requestIdFor(String(delta)) },
       {
         onSuccess: () => goBackOr(router, '/savings-goals'),
         onError: (mutationError) => setAdjustError(dataErrorMessage(mutationError)),

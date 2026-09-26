@@ -100,17 +100,17 @@ export function DeleteAccountSection() {
               . Excluez ces membres avant de supprimer votre compte.
             </Text>
           ) : confirming ? (
-            // Tout ce qui part est nommé, y compris ce qui disparaîtra pour d'autres : les opérations dans un groupe partagé ne sont pas qu'à soi.
+            // Ce qui part et ce qui reste sont nommés tous les deux : les opérations d'un groupe partagé ne sont pas qu'à soi, et les garder à son nom est une donnée personnelle qu'on doit annoncer.
             <Text style={[styles.body, { color: colors.text }]}>
               Seront supprimés : votre compte personnel et toutes ses opérations, budgets et
-              objectifs d’épargne ; les groupes partagés dont vous êtes le seul membre ; vos
-              opérations dans les autres groupes partagés, y compris ceux que vous avez quittés,
-              qui disparaîtront aussi pour leurs membres.
+              objectifs d’épargne ; les groupes partagés dont vous êtes le seul membre. Resteront
+              dans les autres groupes partagés, à votre nom, les opérations, prêts et transferts
+              que vous y avez saisis : leurs membres gardent des comptes justes.
             </Text>
           ) : (
             <Text style={[styles.body, { color: colors.textMuted }]}>
-              Action irréversible. Votre compte personnel et vos opérations, y compris dans les
-              groupes partagés, seront définitivement effacés.
+              Action irréversible. Votre compte personnel est effacé ; vos saisies dans les groupes
+              partagés restent à votre nom pour leurs membres.
             </Text>
           )}
         </View>

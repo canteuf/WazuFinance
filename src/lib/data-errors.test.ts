@@ -1,4 +1,4 @@
-import { dataErrorMessage } from '@/lib/data-errors';
+import { dataErrorMessage, isTransportError } from '@/lib/data-errors';
 
 describe('dataErrorMessage', () => {
   it("traduit un refus de RLS", () => {
@@ -70,5 +70,23 @@ describe('dataErrorMessage', () => {
 
   it("supporte une valeur qui n'est pas une erreur", () => {
     expect(dataErrorMessage(undefined)).toBe('Une erreur inattendue est survenue.');
+  });
+
+  it('traduit le conflit levé par une modification périmée', () => {
+    const error = Object.assign(new Error('conflit'), { code: 'TRANSACTION_CONFLICT' });
+    expect(dataErrorMessage(error)).toMatch(/modifiée par un autre membre/);
+  });
+});
+
+describe('isTransportError', () => {
+  it('reconnaît une requête restée sans réponse', () => {
+    expect(isTransportError({ message: 'TypeError: Network request failed', code: '' })).toBe(true);
+    expect(isTransportError(new TypeError('Failed to fetch'))).toBe(true);
+  });
+
+  it('ne prend jamais un refus de la base pour une panne réseau', () => {
+    expect(isTransportError({ code: '42501', message: 'Network request failed' })).toBe(false);
+    expect(isTransportError({ code: 'P0001', message: 'Le remboursement dépasse ce qui reste dû.' })).toBe(false);
+    expect(isTransportError(undefined)).toBe(false);
   });
 });

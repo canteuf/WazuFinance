@@ -91,7 +91,6 @@ export async function getGroupOverviews(): Promise<GroupOverviews> {
 export type GroupMember = {
   userId: string;
   displayName: string;
-  email: string;
   /** Valeur brute de `users.avatar`, `null` pour les initiales. */
   avatar: string | null;
   role: MembershipRole;
@@ -101,11 +100,13 @@ export type GroupMember = {
  * Membres d'un groupe, avec leur rôle.
  *
  * Filtré par `group_id` : la policy `account_memberships_select_member` ne restreint qu'aux groupes dont l'appelant est membre, elle ne réduit pas à un seul groupe à la fois — le filtre explicite reste nécessaire ici.
+ *
+ * Sans l'email : un membre ne lit plus celui des autres (20260926000300_hide_member_emails.sql).
  */
 export async function listGroupMembers(groupId: string): Promise<GroupMember[]> {
   const { data, error } = await supabase
     .from('account_memberships')
-    .select('role, users(id, display_name, email, avatar)')
+    .select('role, users(id, display_name, avatar)')
     .eq('group_id', groupId)
     .order('created_at', { ascending: true });
 
@@ -122,7 +123,6 @@ export async function listGroupMembers(groupId: string): Promise<GroupMember[]> 
       {
         userId: user.id,
         displayName: user.display_name,
-        email: user.email,
         avatar: user.avatar,
         role: row.role,
       },

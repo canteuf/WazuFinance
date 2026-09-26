@@ -34,7 +34,7 @@ values ('00000000-0000-0000-0000-0000000000c2', 'Solo', '00000000-0000-0000-0000
 insert into public.account_memberships (group_id, user_id, role)
 values ('00000000-0000-0000-0000-0000000000c2', '00000000-0000-0000-0000-0000000000e3', 'owner');
 
--- Une opération de Bob et une d'Alice dans Coloc : à la suppression du compte de Bob, la sienne part et celle d'Alice reste.
+-- Une opération de Bob et une d'Alice dans Coloc : à la suppression du compte de Bob, les deux restent, la sienne sans auteur (departed_member_test.sql en couvre le détail).
 insert into public.transactions (id, group_id, user_id, category_id, type, amount, occurred_on) values
   ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000c1',
    '00000000-0000-0000-0000-0000000000e2',
@@ -212,12 +212,12 @@ SELECT lives_ok(
 
 set local role postgres;
 
--- Les opérations du membre partent avec lui, y compris dans un groupe qui lui survit : comportement du on delete cascade sur transactions.user_id, conservé plutôt que d'effacer l'auteur — voir la spec, section 1.
+-- Les opérations du membre restent dans un groupe qui lui survit, sans auteur mais à son nom : la caisse du groupe ne change pas quand un membre part (20260926000200_departed_member_history.sql).
 SELECT is(
-  (select count(*)::integer from public.transactions
-    where id = '00000000-0000-0000-0000-0000000000d1'),
-  0,
-  'Les opérations du membre supprimé disparaissent'
+  (select author_name from public.transactions
+    where id = '00000000-0000-0000-0000-0000000000d1' and user_id is null),
+  'Bob',
+  'Les opérations du membre supprimé restent, à son nom'
 );
 
 SELECT is(
