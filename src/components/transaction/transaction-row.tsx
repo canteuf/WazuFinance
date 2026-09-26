@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-na
 import { MemberAvatar } from '@/components/ui/member-avatar';
 import type { TransactionWithCategory } from '@/data/transactions';
 import { useTransactionAuthor } from '@/hooks/use-transaction-author';
+import { useWallets } from '@/hooks/use-wallets';
 import { wasEdited } from '@/lib/activity-format';
 import { formatOccurredOn } from '@/lib/dates';
 import { formatSigned, spokenAmount } from '@/lib/money';
@@ -46,6 +47,10 @@ export function TransactionRow({
   const { fontScale } = useWindowDimensions();
   // Dans un budget partagé, la première question devant une dépense est « qui l'a faite ? ». `null` dans le compte personnel.
   const author = useTransactionAuthor(transaction.user_id);
+  // Le portefeuille n'est nommé que s'il y a un choix : avec le seul « Principal », la mention répéterait le même mot sur chaque ligne.
+  const { wallets } = useWallets();
+  const walletName =
+    wallets.length > 1 ? wallets.find((wallet) => wallet.id === transaction.wallet_id)?.name : undefined;
 
   // Au-delà du seuil, le montant passe sous le nom plutôt que de l'écraser.
   const stacked = fontScale >= stackAtFontScale;
@@ -79,6 +84,7 @@ export function TransactionRow({
   const meta = [
     author?.name ?? null,
     ledger ? null : formatOccurredOn(transaction.occurred_on),
+    walletName ?? null,
     pending ? 'en attente d’envoi' : edited ? 'modifié' : null,
   ]
     .filter((part): part is string => Boolean(part))
@@ -92,6 +98,7 @@ export function TransactionRow({
     `${income ? 'Revenu' : 'Dépense'} de ${spokenAmount(Number(transaction.amount))}`,
     formatOccurredOn(transaction.occurred_on),
     author ? `saisie par ${author.name === 'Vous' ? 'vous' : author.name}` : null,
+    walletName ? `portefeuille ${walletName}` : null,
     pending ? 'en attente d’envoi' : edited ? 'modifiée' : null,
     savings ? 'se gère depuis l’écran Épargne' : null,
     debt ? 'se gère depuis l’écran Prêts et dettes' : null,

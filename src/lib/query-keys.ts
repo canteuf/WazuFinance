@@ -43,6 +43,11 @@ export const queryKeys = {
   // Sous ['transactions'] : ce qui reste dû se calcule à partir des mouvements, qui sont des opérations. Une saisie, une suppression en cascade ou un événement Realtime sur transactions les rafraîchit sans qu'aucune mutation ait à les connaître.
   debts: (groupId: string) => ['transactions', 'debts', groupId] as const,
   debtTotals: (groupId: string) => ['transactions', 'debtTotals', groupId] as const,
+  // Sous ['transactions'] : le solde d'un portefeuille se calcule à partir des opérations. Une saisie le rafraîchit sans que la mutation connaisse les portefeuilles. Les racines walletsAll et transfersAll servent aux invalidations Realtime, qui ne disent pas de quel groupe il s'agit.
+  walletsAll: () => ['transactions', 'wallets'] as const,
+  wallets: (groupId: string) => ['transactions', 'wallets', groupId] as const,
+  transfersAll: () => ['transactions', 'transfers'] as const,
+  transfers: (groupId: string) => ['transactions', 'transfers', groupId] as const,
   // Hors de ['transactions'] : un modèle récurrent n'est pas dérivé des opérations, et le nicher le rechargerait à chaque saisie. Racine réservée aux invalidations, comme budgetsAll : une confirmation ou un événement Realtime peut arriver après un changement de groupe actif.
   recurringAll: () => ['recurring'] as const,
   recurring: (groupId: string) => ['recurring', groupId] as const,

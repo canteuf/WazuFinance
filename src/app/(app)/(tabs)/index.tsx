@@ -12,6 +12,7 @@ import { BudgetsEntry } from "@/components/dashboard/budgets-entry";
 import { CategoryBreakdown } from "@/components/dashboard/category-breakdown";
 import { DebtsEntry } from "@/components/dashboard/debts-entry";
 import { DueRecurring } from "@/components/dashboard/due-recurring";
+import { WalletsEntry } from "@/components/dashboard/wallets-entry";
 import { PendingTransactions } from "@/components/dashboard/pending-transactions";
 import { PeriodSummary } from "@/components/dashboard/period-summary";
 import { RecentTransactions } from "@/components/dashboard/recent-transactions";
@@ -111,6 +112,9 @@ export default function DashboardScreen() {
 
       {/* Juste sous le solde, que ces saisies ne comptent pas encore : c'est là que l'œil les cherche en revenant de la feuille, et la liste des dernières opérations est souvent sous la ligne de flottaison. Ne rend rien quand rien n'attend. */}
       <PendingTransactions />
+
+      {/* Où est l'argent, juste sous ce qui en est entré et sorti : les deux soldes se lisent ensemble. */}
+      <WalletsEntry />
 
       {/* Ne rend rien tant qu'aucune dépense n'existe sur la période : la liste voisine annonce déjà l'absence d'opérations, et un second état vide ne ferait que répéter la même chose. */}
       <CategoryBreakdown />

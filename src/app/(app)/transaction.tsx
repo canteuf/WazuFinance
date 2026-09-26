@@ -185,6 +185,7 @@ export default function TransactionScreen() {
         occurredOn: existing.data.occurred_on,
         note: existing.data.note,
         repeat: null,
+        walletId: existing.data.wallet_id,
       }
     : undefined;
 

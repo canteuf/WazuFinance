@@ -26,3 +26,20 @@ export async function writeLastCategory(groupId: string, categoryId: string): Pr
     // Sans effet sur la transaction enregistrée : on ne remonte pas l'erreur.
   }
 }
+
+/** Dernier portefeuille utilisé, par groupe : même principe que la catégorie, pour que la saisie courante ne demande pas un geste de plus. */
+export async function readLastWallet(groupId: string): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(`last-wallet:${groupId}`);
+  } catch {
+    return null;
+  }
+}
+
+export async function writeLastWallet(groupId: string, walletId: string): Promise<void> {
+  try {
+    await AsyncStorage.setItem(`last-wallet:${groupId}`, walletId);
+  } catch {
+    // Préférence d'affichage seulement.
+  }
+}

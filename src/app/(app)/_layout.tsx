@@ -7,6 +7,7 @@ import { useMembershipsRealtime } from '@/hooks/use-memberships-realtime';
 import { useRecurringRealtime } from '@/hooks/use-recurring-realtime';
 import { useSavingsGoalsRealtime } from '@/hooks/use-savings-goals-realtime';
 import { useTransactionsRealtime } from '@/hooks/use-transactions-realtime';
+import { useWalletsRealtime } from '@/hooks/use-wallets-realtime';
 import { ActiveGroupProvider } from '@/providers/active-group-provider';
 import { StackFrameProvider } from '@/providers/stack-frame-provider';
 import { ToastProvider } from '@/providers/toast-provider';
@@ -29,6 +30,7 @@ function AppStack() {
   useSavingsGoalsRealtime();
   useMembershipsRealtime();
   useRecurringRealtime();
+  useWalletsRealtime();
 
   return (
     <View style={styles.root}>
@@ -81,6 +83,25 @@ function AppStack() {
           <Stack.Screen name="group" options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="recurring-list" options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="debts" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="wallets" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen
+            name="wallet"
+            options={{
+              presentation: 'formSheet',
+              sheetAllowedDetents: 'fitToContents',
+              sheetGrabberVisible: true,
+              sheetCornerRadius: 24,
+            }}
+          />
+          <Stack.Screen
+            name="wallet-transfer"
+            options={{
+              presentation: 'formSheet',
+              sheetAllowedDetents: 'fitToContents',
+              sheetGrabberVisible: true,
+              sheetCornerRadius: 24,
+            }}
+          />
           <Stack.Screen
             name="debt"
             options={{

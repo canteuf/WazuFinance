@@ -523,6 +523,7 @@ export type Database = {
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
           user_id: string
+          wallet_id: string | null
         }
         Insert: {
           amount: number
@@ -538,6 +539,7 @@ export type Database = {
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
           user_id: string
+          wallet_id?: string | null
         }
         Update: {
           amount?: number
@@ -553,6 +555,7 @@ export type Database = {
           type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
           user_id?: string
+          wallet_id?: string | null
         }
         Relationships: [
           {
@@ -590,6 +593,13 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
         ]
       }
       users: {
@@ -615,6 +625,122 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      wallet_transfers: {
+        Row: {
+          amount: number
+          created_at: string
+          fee_transaction_id: string | null
+          from_wallet_id: string
+          group_id: string
+          id: string
+          note: string | null
+          occurred_on: string
+          to_wallet_id: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          fee_transaction_id?: string | null
+          from_wallet_id: string
+          group_id: string
+          id?: string
+          note?: string | null
+          occurred_on: string
+          to_wallet_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          fee_transaction_id?: string | null
+          from_wallet_id?: string
+          group_id?: string
+          id?: string
+          note?: string | null
+          occurred_on?: string
+          to_wallet_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transfers_fee_transaction_id_fkey"
+            columns: ["fee_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transfers_from_wallet_id_fkey"
+            columns: ["from_wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transfers_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "budget_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transfers_to_wallet_id_fkey"
+            columns: ["to_wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transfers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallets: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          is_default: boolean
+          kind: Database["public"]["Enums"]["wallet_kind"]
+          name: string
+          opening_balance: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          is_default?: boolean
+          kind?: Database["public"]["Enums"]["wallet_kind"]
+          name: string
+          opening_balance?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          is_default?: boolean
+          kind?: Database["public"]["Enums"]["wallet_kind"]
+          name?: string
+          opening_balance?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallets_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "budget_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -659,6 +785,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      adjust_wallet_balance: {
+        Args: { p_actual: number; p_wallet_id: string }
+        Returns: number
+      }
       budget_totals: {
         Args: { p_from: string; p_group_id: string; p_to: string }
         Returns: {
@@ -698,6 +828,7 @@ export type Database = {
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
           user_id: string
+          wallet_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -869,6 +1000,7 @@ export type Database = {
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
           user_id: string
+          wallet_id: string | null
         }
         SetofOptions: {
           from: "*"
@@ -896,6 +1028,47 @@ export type Database = {
         Args: { p_due_on: string; p_id: string }
         Returns: undefined
       }
+      transfer_between_wallets: {
+        Args: {
+          p_amount: number
+          p_fee?: number
+          p_fee_transaction_id: string
+          p_from_wallet_id: string
+          p_id: string
+          p_note?: string
+          p_occurred_on: string
+          p_to_wallet_id: string
+        }
+        Returns: {
+          amount: number
+          created_at: string
+          fee_transaction_id: string | null
+          from_wallet_id: string
+          group_id: string
+          id: string
+          note: string | null
+          occurred_on: string
+          to_wallet_id: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "wallet_transfers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      wallets_overview: {
+        Args: { p_group_id: string }
+        Returns: {
+          balance: number
+          id: string
+          is_default: boolean
+          kind: Database["public"]["Enums"]["wallet_kind"]
+          name: string
+          opening_balance: number
+        }[]
+      }
     }
     Enums: {
       activity_action: "update" | "delete"
@@ -905,6 +1078,7 @@ export type Database = {
       membership_role: "owner" | "member"
       recurrence_frequency: "weekly" | "monthly"
       transaction_type: "expense" | "income"
+      wallet_kind: "cash" | "mobile_money" | "bank" | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1042,6 +1216,7 @@ export const Constants = {
       membership_role: ["owner", "member"],
       recurrence_frequency: ["weekly", "monthly"],
       transaction_type: ["expense", "income"],
+      wallet_kind: ["cash", "mobile_money", "bank", "other"],
     },
   },
 } as const
@@ -1054,3 +1229,4 @@ export type ActivitySubject = Enums<'activity_subject'>;
 export type ActivityAction = Enums<'activity_action'>;
 export type RecurrenceFrequency = Enums<'recurrence_frequency'>;
 export type DebtDirection = Enums<'debt_direction'>;
+export type WalletKind = Enums<'wallet_kind'>;

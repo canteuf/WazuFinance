@@ -7,7 +7,7 @@ import {
   type CreateTransactionInput,
   type UpdateTransactionInput,
 } from '@/data/transactions';
-import { writeLastCategory } from '@/lib/last-used';
+import { writeLastCategory, writeLastWallet } from '@/lib/last-used';
 import { mutationKeys, queryKeys } from '@/lib/query-keys';
 import type { Tables } from '@/types/database';
 
@@ -33,6 +33,9 @@ export function registerTransactionMutationDefaults(queryClient: QueryClient): v
     onSuccess: async (_data: unknown, input: CreateTransactionInput) => {
       // La préférence n'est mémorisée qu'une fois la ligne acceptée par la base : une saisie refusée ne doit pas changer le défaut.
       await writeLastCategory(input.groupId, input.categoryId);
+      if (input.walletId) {
+        await writeLastWallet(input.groupId, input.walletId);
+      }
       void invalidate();
     },
   });

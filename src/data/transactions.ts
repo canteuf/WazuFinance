@@ -62,6 +62,10 @@ export type CreateTransactionInput = {
   amount: number;
   occurredOn: string;
   note: string | null;
+  /**
+   * Portefeuille de l'opération. `null` laisse la base choisir celui par défaut du groupe (assign_transaction_wallet()). Une saisie mise en file par une version de l'app antérieure aux portefeuilles n'a pas ce champ du tout : il arrive `undefined`, et vaut `null`.
+   */
+  walletId: string | null;
 };
 
 export type UpdateTransactionInput = Omit<CreateTransactionInput, 'id' | 'groupId' | 'userId'>;
@@ -89,6 +93,7 @@ export async function create(
         amount: input.amount,
         occurred_on: input.occurredOn,
         note: input.note,
+        wallet_id: input.walletId ?? null,
       },
       { onConflict: 'id', ignoreDuplicates: true }
     )
@@ -115,6 +120,8 @@ export async function update(
       amount: patch.amount,
       occurred_on: patch.occurredOn,
       note: patch.note,
+      // Absent d'une modification mise en file avant les portefeuilles : on ne touche alors pas à celui de la ligne.
+      ...(patch.walletId === undefined ? {} : { wallet_id: patch.walletId }),
     })
     .eq('id', id)
     .select()

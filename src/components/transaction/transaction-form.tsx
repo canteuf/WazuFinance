@@ -17,12 +17,14 @@ import { CategoryPicker } from '@/components/transaction/category-picker';
 import { DateField } from '@/components/transaction/date-field';
 import { Button } from '@/components/ui/button';
 import { SegmentedControl } from '@/components/ui/segmented-control';
+import { WalletPicker } from '@/components/wallet/wallet-picker';
 import { CONTENT_GUTTER } from '@/components/ui/screen';
 import { useCategories } from '@/hooks/use-categories';
 import { useFrequentAmounts } from '@/hooks/use-frequent-amounts';
+import { useWallets } from '@/hooks/use-wallets';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { formatOccurredOn, todayIso } from '@/lib/dates';
-import { readLastCategory } from '@/lib/last-used';
+import { readLastCategory, readLastWallet } from '@/lib/last-used';
 import { formatMoney, parseAmount, spokenAmount, toAmountInput } from '@/lib/money';
 import { anchorFor, describeRecurrence } from '@/lib/recurrence';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
@@ -36,6 +38,8 @@ export type TransactionFormValues = {
   note: string | null;
   /** Répéter cette opération : `null` pour une fois seulement. Toujours `null` en modification. */
   repeat: RecurrenceFrequency | null;
+  /** `null` laisse la base ranger l'opération dans le portefeuille par défaut du groupe. */
+  walletId: string | null;
 };
 
 type RepeatChoice = 'once' | RecurrenceFrequency;
@@ -102,6 +106,11 @@ export function TransactionForm({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const { categories, isLoading: categoriesLoading, error: categoriesError } = useCategories(type);
+  const { wallets } = useWallets();
+  // Sélection brute, comme la catégorie : la valeur de l'opération en modification, sinon le dernier portefeuille utilisé dans ce groupe.
+  const [walletSelection, setWalletSelection] = useState<string | null>(
+    initialValues?.walletId ?? null
+  );
 
   // Présélection de la dernière catégorie, uniquement en création.
   useEffect(() => {
@@ -112,6 +121,11 @@ export function TransactionForm({
     readLastCategory(groupId).then((lastId) => {
       if (active && lastId) {
         setCategorySelection(lastId);
+      }
+    });
+    readLastWallet(groupId).then((lastId) => {
+      if (active && lastId) {
+        setWalletSelection(lastId);
       }
     });
     return () => {
@@ -126,6 +140,13 @@ export function TransactionForm({
     !categories.some((category) => category.id === categorySelection)
       ? null
       : categorySelection;
+
+  // Un portefeuille supprimé entre-temps, ou mémorisé dans un autre groupe, retombe sur celui par défaut ; avant l'arrivée de la liste, on garde la sélection, comme pour la catégorie.
+  const defaultWallet = wallets.find((wallet) => wallet.isDefault);
+  const walletId =
+    wallets.length === 0 || wallets.some((wallet) => wallet.id === walletSelection)
+      ? walletSelection
+      : (defaultWallet?.id ?? null);
 
   const amount = parseAmount(amountText);
   const amountError = touched && amount === null ? 'Montant invalide.' : undefined;
@@ -152,6 +173,7 @@ export function TransactionForm({
       occurredOn,
       note: note.trim() === '' ? null : note.trim(),
       repeat: allowRepeat && repeat !== 'once' ? repeat : null,
+      walletId,
     });
   }
 
@@ -205,6 +227,20 @@ export function TransactionForm({
           </View>
         ) : null}
       </View>
+
+      {/* Seulement quand il y a un choix à faire : avec le seul portefeuille « Principal », la saisie reste celle d'avant. Au-dessus des catégories, parce que choisir une catégorie ferme le clavier et amène le bouton « Enregistrer » ; le portefeuille doit donc être réglé avant. */}
+      {wallets.length > 1 ? (
+        <View style={styles.field}>
+          <Text style={[styles.eyebrow, { color: colors.textMuted }]}>
+            {type === 'expense' ? 'Payé avec' : 'Reçu sur'}
+          </Text>
+          <WalletPicker
+            wallets={wallets}
+            selectedId={walletId ?? defaultWallet?.id ?? null}
+            onSelect={setWalletSelection}
+          />
+        </View>
+      ) : null}
 
       <View style={styles.field}>
         <View style={styles.fieldHead}>

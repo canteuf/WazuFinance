@@ -60,6 +60,7 @@ export function usePendingTransactions(): TransactionWithCategory[] {
         savings_goal_id: null,
         is_savings: false,
         debt_id: null,
+        wallet_id: values.walletId ?? null,
         type: values.type,
         amount: values.amount,
         occurred_on: values.occurredOn,
