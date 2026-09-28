@@ -1,0 +1,83 @@
+/* Pages juridiques de Wazu Finance (politique de confidentialité, conditions d'utilisation), publiées par GitHub Pages depuis docs/. Mêmes couleurs que la page d'invitation (docs/join/) et que l'app. */
+:root {
+  --bg: #F6F8F7;
+  --surface: #FFFFFF;
+  --text: #12201C;
+  --muted: #5E6E69;
+  --primary: #08775A;
+  --border: #DDE5E2;
+  --todo-bg: #FFF1C2;
+  --todo-text: #5C4300;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #062019;
+    --surface: #0D2B23;
+    --text: #EAF3EF;
+    --muted: #9FB5AD;
+    --primary: #3CCB9A;
+    --border: #1F4238;
+    --todo-bg: #4A3A06;
+    --todo-text: #FFE7A3;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 17px;
+  line-height: 1.6;
+  padding: 24px 16px 48px;
+}
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 28px 22px;
+}
+@media (min-width: 640px) {
+  main { padding: 40px 44px; }
+}
+.brand { color: var(--primary); font-weight: 800; letter-spacing: 1.5px; font-size: 13px; text-transform: uppercase; }
+h1 { font-size: 28px; line-height: 1.2; margin: 6px 0 4px; }
+.version { color: var(--muted); font-size: 15px; margin: 0 0 20px; }
+h2 { font-size: 21px; line-height: 1.3; margin: 32px 0 8px; }
+h3 { font-size: 17px; margin: 20px 0 4px; }
+p, ul { margin: 0 0 12px; }
+ul { padding-left: 22px; }
+li { margin-bottom: 6px; }
+a { color: var(--primary); }
+.summary {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin: 16px 0 8px;
+}
+.summary ul { margin-bottom: 0; }
+.draft {
+  background: var(--todo-bg);
+  color: var(--todo-text);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 15px;
+  margin-bottom: 20px;
+}
+mark.todo {
+  background: var(--todo-bg);
+  color: var(--todo-text);
+  border-radius: 4px;
+  padding: 0 4px;
+  font-weight: 600;
+}
+table { width: 100%; border-collapse: collapse; margin: 8px 0 16px; font-size: 15px; }
+th, td { text-align: left; vertical-align: top; padding: 8px 6px; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-weight: 600; }
+/* Un tableau trop large défile seul, au lieu de faire défiler toute la page sur un téléphone. */
+.table-wrap { overflow-x: auto; }
+footer { color: var(--muted); font-size: 14px; margin-top: 32px; border-top: 1px solid var(--border); padding-top: 14px; }
