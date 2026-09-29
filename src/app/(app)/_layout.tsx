@@ -3,8 +3,10 @@ import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { TermsGate } from '@/components/legal/terms-gate';
 import { OfflineBanner, useOfflineBannerVisible } from '@/components/ui/offline-banner';
 import { useBudgetsRealtime } from '@/hooks/use-budgets-realtime';
+import { useDailyOpenEvent } from '@/hooks/use-daily-open-event';
 import { useMembershipsRealtime } from '@/hooks/use-memberships-realtime';
 import { usePendingInvite } from '@/hooks/use-pending-invite';
 import { useRecurringRealtime } from '@/hooks/use-recurring-realtime';
@@ -39,6 +41,7 @@ function AppStack() {
   useRecurringRealtime();
   useWalletsRealtime();
   usePendingInvite();
+  useDailyOpenEvent();
 
   // Le bandeau affiché occupe la zone sûre du haut : sous lui, les écrans reçoivent des marges dont le haut vaut zéro, sans quoi chacun rajoutait la hauteur de la barre d'état entre le bandeau et son en-tête.
   const insets = useSafeAreaInsets();
@@ -150,6 +153,7 @@ function AppStack() {
           </Stack>
         </StackFrameProvider>
       </SafeAreaInsetsContext.Provider>
+      <TermsGate />
     </View>
   );
 }

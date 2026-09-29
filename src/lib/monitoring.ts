@@ -2,13 +2,14 @@ import * as Sentry from '@sentry/react-native';
 import * as Updates from 'expo-updates';
 
 import { env } from '@/lib/env';
+import { scrubEvent } from '@/lib/error-scrub';
 
 /**
  * Suivi des plantages (Sentry).
  *
  * Actif seulement dans un APK (pas en développement, où l'erreur s'affiche déjà à l'écran) et seulement quand `EXPO_PUBLIC_SENTRY_DSN` est renseignée : sans elle, l'app fonctionne exactement pareil, sans rien envoyer.
  *
- * Une app de budget ne doit rien laisser partir de ce qu'on y saisit. Sentry reçoit l'erreur, sa pile, le modèle du téléphone et l'identifiant du compte (un UUID, jamais l'email). Les fils d'Ariane qui pourraient porter une donnée sont retirés : les touchers (leurs libellés d'accessibilité disent « Dépense de 5 000 francs CFA »), la console, et la partie après « ? » des adresses appelées, où passent la recherche dans les notes et les filtres.
+ * Une app de budget ne doit rien laisser partir de ce qu'on y saisit. Sentry reçoit l'erreur, sa pile, le modèle du téléphone et l'identifiant du compte (un UUID, jamais l'email). Les fils d'Ariane qui pourraient porter une donnée sont retirés : les touchers (leurs libellés d'accessibilité disent « Dépense de 5 000 francs CFA »), la console, et la partie après « ? » des adresses appelées, où passent la recherche dans les notes et les filtres. Chaque rapport passe enfin par `scrubEvent()` (error-scrub.ts), qui retire l'objet d'erreur joint et les valeurs que Postgres recopie dans ses messages.
  */
 
 let enabled = false;
@@ -24,6 +25,7 @@ export function initMonitoring(): void {
     tracesSampleRate: 0,
     // Le canal EAS Update (preview, production) sépare les erreurs des APK de test de celles des utilisateurs.
     environment: Updates.channel ?? 'unknown',
+    beforeSend: (event) => scrubEvent(event),
     beforeBreadcrumb(breadcrumb) {
       if (breadcrumb.category === 'console' || breadcrumb.category?.startsWith('ui.') || breadcrumb.category === 'touch') {
         return null;

@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { StyleSheet, Text } from 'react-native';
 
 import { AppLockSection } from '@/components/settings/app-lock-section';
+import { DataSection } from '@/components/settings/data-section';
 import { DeleteAccountSection } from '@/components/settings/delete-account-section';
 import { PreferencesSection } from '@/components/settings/preferences-section';
 import { ProfileSection } from '@/components/settings/profile-section';
@@ -42,6 +43,7 @@ export default function SettingsScreen() {
       <PreferencesSection />
       <AppLockSection />
       <SecuritySection />
+      <DataSection />
       <DeleteAccountSection />
 
       {version ? (

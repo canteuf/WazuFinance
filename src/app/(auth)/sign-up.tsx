@@ -1,7 +1,9 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { LegalLinks } from '@/components/legal/legal-links';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
@@ -21,6 +23,7 @@ type FieldErrors = {
   email?: string;
   password?: string;
   confirmation?: string;
+  consent?: string;
 };
 
 export default function SignUpScreen() {
@@ -36,6 +39,7 @@ export default function SignUpScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
+  const [consent, setConsent] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string>();
   const [notice, setNotice] = useState<string>();
@@ -47,6 +51,7 @@ export default function SignUpScreen() {
       email: validateEmail(email),
       password: validatePassword(password),
       confirmation: password === confirmation ? undefined : 'Les mots de passe ne correspondent pas.',
+      consent: consent ? undefined : 'Cochez la case pour créer votre compte.',
     };
     setFieldErrors(errors);
     setFormError(undefined);
@@ -144,6 +149,37 @@ export default function SignUpScreen() {
         onSubmitEditing={() => void handleSubmit()}
       />
 
+      {/* Le consentement que les CGU (section 2) et la politique de confidentialité supposent, avec l'âge minimum de 18 ans. Sa version part avec le compte : voir src/lib/legal.ts. */}
+      <View style={styles.consent}>
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: consent }}
+          onPress={() => setConsent((value) => !value)}
+          style={styles.consentRow}
+        >
+          <View
+            style={[
+              styles.checkbox,
+              {
+                borderColor: consent ? colors.primary : fieldErrors.consent ? colors.danger : colors.textMuted,
+                backgroundColor: consent ? colors.primary : 'transparent',
+              },
+            ]}
+          >
+            {consent ? <MaterialCommunityIcons name="check" size={18} color={colors.primaryText} /> : null}
+          </View>
+          <Text style={[styles.consentLabel, { color: colors.text }]}>
+            J’ai 18 ans ou plus, et j’accepte les conditions d’utilisation et la politique de confidentialité.
+          </Text>
+        </Pressable>
+        {fieldErrors.consent && !consent ? (
+          <Text accessibilityLiveRegion="polite" style={[styles.consentError, { color: colors.danger }]}>
+            {fieldErrors.consent}
+          </Text>
+        ) : null}
+        <LegalLinks />
+      </View>
+
       {formError ? <Text style={[styles.message, { color: colors.danger }]}>{formError}</Text> : null}
       {notice ? <Text style={[styles.message, { color: colors.primary }]}>{notice}</Text> : null}
 
@@ -190,5 +226,34 @@ const styles = StyleSheet.create({
   message: {
     fontFamily: font.medium,
     fontSize: 16,
+  },
+  consent: {
+    gap: spacing.xs,
+  },
+  consentRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    minHeight: 44,
+    paddingVertical: spacing.xs,
+  },
+  checkbox: {
+    width: 26,
+    height: 26,
+    marginTop: 1,
+    borderRadius: radius.sm - 4,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  consentLabel: {
+    flex: 1,
+    fontFamily: font.regular,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  consentError: {
+    fontFamily: font.medium,
+    fontSize: 15,
   },
 });

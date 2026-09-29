@@ -97,7 +97,7 @@ export function DeleteAccountSection() {
                   </Link>
                 </Fragment>
               ))}
-              . Excluez ces membres avant de supprimer votre compte.
+              . Passez la main à un autre membre, ou retirez les autres membres, avant de supprimer votre compte.
             </Text>
           ) : confirming ? (
             // Ce qui part et ce qui reste sont nommés tous les deux : les opérations d'un groupe partagé ne sont pas qu'à soi, et les garder à son nom est une donnée personnelle qu'on doit annoncer.

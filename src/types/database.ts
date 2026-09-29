@@ -51,6 +51,21 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_deletions: {
+        Row: {
+          deleted_at: string
+          user_id: string
+        }
+        Insert: {
+          deleted_at?: string
+          user_id: string
+        }
+        Update: {
+          deleted_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       account_memberships: {
         Row: {
           created_at: string
@@ -454,6 +469,32 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "invitation_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_events: {
+        Row: {
+          event: string
+          occurred_on: string
+          user_id: string
+        }
+        Insert: {
+          event: string
+          occurred_on?: string
+          user_id: string
+        }
+        Update: {
+          event?: string
+          occurred_on?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_events_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -1018,6 +1059,7 @@ export type Database = {
         }[]
       }
       delete_own_account: { Args: never; Returns: undefined }
+      export_my_data: { Args: never; Returns: Json }
       filtered_category_totals: {
         Args: {
           p_category_id?: string
@@ -1129,6 +1171,7 @@ export type Database = {
         Args: { invitation_code: string }
         Returns: string
       }
+      log_product_event: { Args: { p_event: string }; Returns: undefined }
       next_recurrence: {
         Args: {
           p_anchor_day: number
@@ -1155,6 +1198,7 @@ export type Database = {
           tx_count: number
         }[]
       }
+      purge_expired_data: { Args: never; Returns: undefined }
       record_debt_payment: {
         Args: {
           p_amount: number

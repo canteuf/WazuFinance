@@ -4,6 +4,8 @@ import { createContext, useEffect, useMemo, useRef, useState, type ReactNode } f
 import { deleteOwnAccount } from '@/data/account';
 import { CurrentPasswordError } from '@/lib/auth-errors';
 import { clockSkewMs as measureClockSkew } from '@/lib/clock';
+import { TERMS_VERSION } from '@/lib/legal';
+import { clearExportedFiles } from '@/lib/save-file';
 import { supabase } from '@/lib/supabase';
 
 export type AuthState = {
@@ -31,6 +33,8 @@ export type AuthState = {
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   /** Lève `CurrentPasswordError` si le mot de passe est faux ; le refus de la base (groupe partagé encore peuplé) remonte en `P0001`. */
   deleteAccount: (currentPassword: string) => Promise<void>;
+  /** Enregistre l'acceptation des CGU et de la politique en vigueur (`TERMS_VERSION`) sur le compte. La session suivante la porte, et l'écran d'acceptation se ferme de lui-même. */
+  acceptTerms: () => Promise<void>;
 };
 
 export const AuthContext = createContext<AuthState | null>(null);
@@ -58,6 +62,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Seul un jeton qui vient d'être émis dit l'heure du serveur : celui relu du stockage au démarrage (INITIAL_SESSION) date de sa dernière émission.
       if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && nextSession) {
         setClockSkewMs(measureClockSkew(nextSession.access_token, Date.now()));
+      }
+      // Toute fin de session — volontaire, verrou, suppression du compte, jeton expiré — efface les relevés et l'export des données restés dans le cache.
+      if (event === 'SIGNED_OUT') {
+        void clearExportedFiles();
       }
       if (recovering.current) {
         return;
@@ -111,13 +119,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
-          // Lu par le trigger handle_new_user() pour renseigner users.display_name.
-          options: { data: { display_name: displayName.trim() } },
+          // display_name est lu par le trigger handle_new_user() pour renseigner users.display_name. terms_version : la case « j'accepte » de l'écran d'inscription, dans la même requête que le compte.
+          options: { data: { display_name: displayName.trim(), terms_version: TERMS_VERSION } },
         });
         if (error) {
           throw error;
         }
         return { needsEmailConfirmation: data.session === null };
+      },
+      async acceptTerms() {
+        // Fusionnée dans user_metadata : display_name et le reste sont conservés. L'événement USER_UPDATED qui suit porte la nouvelle session.
+        const { error } = await supabase.auth.updateUser({ data: { terms_version: TERMS_VERSION } });
+        if (error) {
+          throw error;
+        }
       },
       async signOut(options) {
         const { error } = await supabase.auth.signOut(options?.local ? { scope: 'local' } : undefined);

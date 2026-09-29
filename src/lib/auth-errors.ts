@@ -18,6 +18,8 @@ const MESSAGES: Record<string, string> = {
   same_password: 'Le nouveau mot de passe doit être différent de l’actuel.',
   // Supabase renvoie ce même code pour un code faux et pour un code expiré.
   otp_expired: 'Code invalide ou expiré. Demandez-en un nouveau.',
+  // Panne côté serveur, par exemple l'envoi d'un e-mail refusé par le serveur SMTP : l'utilisateur n'y peut rien, sauf réessayer.
+  unexpected_failure: 'Le service n’a pas pu répondre. Réessayez dans quelques minutes.',
 };
 
 /**
@@ -41,6 +43,10 @@ export function authErrorMessage(error: unknown): string {
     // auth-js range toute requête sans réponse (réseau coupé, limite de temps de fetch-with-timeout.ts) dans une AuthRetryableFetchError de statut 0, sans code.
     if (error.name === 'AuthRetryableFetchError' && error.status === 0) {
       return 'Pas de connexion. Vérifiez votre réseau.';
+    }
+    // Toute autre panne du serveur : même message, plutôt qu'un code HTTP que l'utilisateur ne peut pas interpréter.
+    if (error.status !== undefined && error.status >= 500) {
+      return MESSAGES.unexpected_failure;
     }
     // Pas de code exploitable : on retombe sur une formulation générique plutôt que d'afficher un message anglais à l'utilisateur.
     return `Échec de l'authentification (${error.code ?? error.status ?? 'inconnu'}).`;

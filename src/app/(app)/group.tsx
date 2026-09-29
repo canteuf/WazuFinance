@@ -61,6 +61,7 @@ export default function GroupScreen() {
     generate,
     regenerate,
     isGenerating,
+    logShared,
   } = useGroupInvitation(isViewer ? '' : id, userId);
   const { removeGroupMember, isRemoving, setRole, handOver, isChangingRole } = useGroupMutations();
   const [copied, setCopied] = useState(false);
@@ -163,7 +164,7 @@ export default function GroupScreen() {
       return;
     }
     try {
-      await Share.share({
+      const result = await Share.share({
         message: invitationMessage(
           group?.name ?? 'notre budget',
           invitation.code,
@@ -172,6 +173,10 @@ export default function GroupScreen() {
           invitation.role === 'viewer'
         ),
       });
+      // Android répond toujours `sharedAction`, même quand la feuille est fermée sans rien envoyer : la mesure compte donc les partages ouverts, pas les envois.
+      if (result.action === Share.sharedAction) {
+        logShared();
+      }
     } catch {
       // Feuille de partage indisponible (certains navigateurs) : la copie du code reste juste en dessous.
     }

@@ -116,6 +116,8 @@ Dans les **Paramètres**, on peut :
 - choisir le thème clair, sombre, ou celui du téléphone ;
 - régler le jour de début du mois budgétaire ;
 - verrouiller l'application par un code à 4 chiffres, et l'ouvrir avec son empreinte ou son visage ;
+- télécharger toutes ses données en un seul fichier ;
+- relire les conditions d'utilisation et la politique de confidentialité ;
 - se déconnecter, ou supprimer définitivement son compte.
 
 Un mot de passe oublié se réinitialise avec un code reçu par e-mail. L'application suit aussi la taille de texte choisie dans les réglages du téléphone.
@@ -127,6 +129,9 @@ Un mot de passe oublié se réinitialise avec un code reçu par e-mail. L'applic
 - **La session est rangée dans le coffre-fort du téléphone**, et l'application peut se verrouiller par un code.
 - **Presque rien ne reste sur le téléphone après une déconnexion.** Les données gardées pour le mode hors ligne sont effacées ; seules les saisies pas encore envoyées sont conservées, pour partir à la prochaine connexion du même compte, et l'application prévient avant de se déconnecter s'il en reste.
 - **Les données sont sauvegardées chaque nuit**, et ces sauvegardes sont chiffrées.
+- **Les durées de conservation sont appliquées, pas seulement annoncées** : le journal d'activité, les codes d'invitation expirés et les données techniques sont effacés automatiquement à leur échéance.
+
+Le détail est dans la [politique de confidentialité](https://canteuf.github.io/WazuFinance/legal/confidentialite.html) et les [conditions d'utilisation](https://canteuf.github.io/WazuFinance/legal/cgu.html). Pour supprimer son compte, y compris sans l'application : [procédure de suppression](https://canteuf.github.io/WazuFinance/legal/suppression.html).
 
 ## Ce qui n'est pas prévu pour l'instant
 

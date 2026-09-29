@@ -1,4 +1,4 @@
-import { cacheDirectory, deleteAsync, writeAsStringAsync } from 'expo-file-system/legacy';
+import { cacheDirectory, deleteAsync, readDirectoryAsync, writeAsStringAsync } from 'expo-file-system/legacy';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
@@ -12,8 +12,17 @@ const A4 = { width: 595, height: 842 };
  *
  * API `expo-file-system/legacy` et non la nouvelle API `File`/`Paths`, délibérément : expo-sharing refuse tout fichier hors des dossiers de l'expérience en cours et rejette avec « Not allowed to read file under given URL ». Sous Expo Go, `Paths.cache` ne désigne pas ce dossier-là, alors que `cacheDirectory` si. Ne pas « moderniser » ces appels sans les avoir retestés sur un appareil, dans Expo Go comme en build natif.
  *
- * Le cache suffit : le système le vide quand il manque de place, et le fichier n'a plus d'usage une fois partagé.
+ * Le cache suffit : le système le vide quand il manque de place, et le fichier n'a plus d'usage une fois partagé. Il n'est pas supprimé juste après le partage : sur Android, `shareAsync` rend la main avant que l'application choisie (WhatsApp, Gmail) ait lu le fichier. `clearExportedFiles()` les efface à la déconnexion.
  */
+
+/** Tous les exports commencent ainsi (exportFileName(), le journal, l'export des données) : c'est ce qui permet de les effacer sans toucher au reste du cache. */
+const EXPORT_PREFIX = 'wazu-';
+
+/** Type de fichier pour la feuille de partage d'iOS ; Android ne lit que le type MIME. */
+const UTI_BY_MIME: Record<string, string> = {
+  'text/csv': 'public.comma-separated-values-text',
+  'application/json': 'public.json',
+};
 
 function cacheUri(name: string): string {
   if (!cacheDirectory) {
@@ -22,10 +31,15 @@ function cacheUri(name: string): string {
   return cacheDirectory + name;
 }
 
-export async function saveTextFile(name: string, content: string, mimeType: string): Promise<void> {
+export async function saveTextFile(
+  name: string,
+  content: string,
+  mimeType: 'text/csv' | 'application/json',
+  dialogTitle = 'Exporter les opérations'
+): Promise<void> {
   const uri = cacheUri(name);
   await writeAsStringAsync(uri, content);
-  await share(uri, mimeType, 'public.comma-separated-values-text');
+  await share(uri, mimeType, UTI_BY_MIME[mimeType], dialogTitle);
 }
 
 /**
@@ -48,12 +62,34 @@ export async function saveHtmlAsPdf(name: string, html: string): Promise<void> {
   await deleteAsync(target, { idempotent: true });
   await writeAsStringAsync(target, base64, { encoding: 'base64' });
 
-  await share(target, 'application/pdf', 'com.adobe.pdf');
+  await share(target, 'application/pdf', 'com.adobe.pdf', 'Exporter les opérations');
 }
 
-async function share(uri: string, mimeType: string, UTI: string): Promise<void> {
+/**
+ * Efface les exports restés dans le cache, et les PDF intermédiaires d'expo-print. Appelée à la déconnexion : un relevé d'opérations ou l'export complet des données ne doit pas survivre au compte qui l'a produit sur ce téléphone.
+ *
+ * Ne lève jamais : la déconnexion ne doit pas échouer pour un fichier introuvable. Sous Expo Go, le dossier `Print/` échappe aux droits d'expo-file-system (voir `saveHtmlAsPdf`) ; il est vidé dans un APK, où ce n'est pas le cas.
+ */
+export async function clearExportedFiles(): Promise<void> {
+  if (!cacheDirectory) {
+    return;
+  }
+  try {
+    const names = await readDirectoryAsync(cacheDirectory);
+    await Promise.all(
+      names
+        .filter((name) => name.startsWith(EXPORT_PREFIX))
+        .map((name) => deleteAsync(cacheDirectory + name, { idempotent: true }))
+    );
+    await deleteAsync(`${cacheDirectory}Print`, { idempotent: true });
+  } catch {
+    // Voir ci-dessus.
+  }
+}
+
+async function share(uri: string, mimeType: string, UTI: string | undefined, dialogTitle: string): Promise<void> {
   if (!(await Sharing.isAvailableAsync())) {
     throw new Error('Le partage de fichiers n’est pas disponible sur cet appareil.');
   }
-  await Sharing.shareAsync(uri, { mimeType, UTI, dialogTitle: 'Exporter les opérations' });
+  await Sharing.shareAsync(uri, { mimeType, UTI, dialogTitle });
 }

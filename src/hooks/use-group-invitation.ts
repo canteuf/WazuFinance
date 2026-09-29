@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { logProductEvent } from '@/data/account';
 import {
   createInvitation,
   getActiveInvitation,
@@ -47,5 +48,7 @@ export function useGroupInvitation(groupId: string, createdBy: string | undefine
     generate,
     regenerate,
     isGenerating: generate.isPending || regenerate.isPending,
+    /** Mesure d'usage : la feuille de partage de l'invitation a été ouverte. */
+    logShared: () => void logProductEvent('invite_shared'),
   };
 }
