@@ -96,7 +96,7 @@ src/providers/             AuthProvider (session state + signIn/signUp/signOut)
 supabase/migrations/       schema, RLS policies, seed — apply in numeric order
 ```
 
-**Password reset uses an emailed code, not a link** (`(auth)/forgot-password.tsx`): `resetPasswordForEmail()`, then `verifyOtp({ type: 'recovery' })` and `updateUser()`. The project's « Reset password » email template must show `{{ .Token }}` — `supabase/templates/recovery.html`, wired in `config.toml` for the local stack, to be pasted in the dashboard for the hosted one. The verified code opens a session at once; `AuthProvider` holds it back (`recovering`) until the new password is saved, otherwise the guard would unmount the screen mid-flow.
+**Password reset uses an emailed code, not a link** (`(auth)/forgot-password.tsx`): `resetPasswordForEmail()`, then `verifyOtp({ type: 'recovery' })` and `updateUser()`. The project's « Reset password » email template must show `{{ .Token }}` — `supabase/templates/recovery.html`, wired in `config.toml` for the local stack, to be pasted in the dashboard for the hosted one. Its logo is `docs/email/logo.png` (96 px, served by GitHub Pages): an e-mail can neither attach a file nor show a base64 image, which Gmail blocks, so any image in a template must be a public `https://` URL. The verified code opens a session at once; `AuthProvider` holds it back (`recovering`) until the new password is saved, otherwise the guard would unmount the screen mid-flow.
 
 **Navigation never redirects manually after auth.** `signIn`/`signUp` only call Supabase; `onAuthStateChange` updates the provider, and the `Stack.Protected` guards in the root layout swap route groups. Adding a `router.replace()` after login fights the guard.
 
