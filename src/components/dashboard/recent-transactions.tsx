@@ -5,6 +5,7 @@ import { TransactionRow } from '@/components/transaction/transaction-row';
 import { Card } from '@/components/ui/card';
 import { FadeInRow } from '@/components/ui/fade-in-row';
 import type { TransactionWithCategory } from '@/data/transactions';
+import { useCanWrite } from '@/hooks/use-can-write';
 import { font, spacing, useColors } from '@/theme/tokens';
 
 export function RecentTransactions({
@@ -13,12 +14,15 @@ export function RecentTransactions({
   transactions: TransactionWithCategory[];
 }) {
   const colors = useColors();
+  const canWrite = useCanWrite();
 
   if (transactions.length === 0) {
     return (
       // « sur cette période » et non « pour l'instant » : la liste est bornée à la période affichée en tête d'écran, et un compte qui contient des opérations plus anciennes n'est pas vide.
       <Text style={[styles.empty, { color: colors.textMuted }]}>
-        Aucune opération sur cette période. Touchez + pour en ajouter une.
+        {canWrite
+          ? 'Aucune opération sur cette période. Touchez « Ajouter » pour en noter une.'
+          : 'Aucune opération sur cette période.'}
       </Text>
     );
   }
