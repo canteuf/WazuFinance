@@ -21,7 +21,7 @@ export function DateField({ value, label, onChange, maximumDate, minimumDate }: 
         accessibilityRole="button"
         accessibilityLabel={`Date : ${label}`}
         onPress={() => setOpen(true)}
-        style={[styles.row, { backgroundColor: colors.surfaceMuted, borderColor: colors.border }]}
+        style={[styles.row, { backgroundColor: colors.surfaceMuted, borderColor: colors.inputBorder }]}
       >
         <MaterialCommunityIcons name="calendar-month-outline" size={20} color={colors.primary} />
         <Text style={[styles.label, { color: colors.text }]}>{label}</Text>

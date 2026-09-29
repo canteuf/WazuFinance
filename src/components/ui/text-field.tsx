@@ -40,7 +40,8 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
       <View>
         <TextInput
           ref={ref}
-          accessibilityLabel={label}
+          // L'erreur fait partie du nom du champ : TalkBack la relit quand on revient dessus pour corriger.
+          accessibilityLabel={errorText ? `${label}, erreur : ${errorText}` : label}
           placeholderTextColor={colors.textMuted}
           // Un mot de passe affiché n'est plus un champ masqué pour le clavier : sans ces deux réglages, la barre de suggestions s'ouvrirait dessus et pourrait retenir ce qui y est saisi.
           autoCorrect={isPassword ? false : undefined}
@@ -52,7 +53,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
             isPassword ? styles.inputWithToggle : null,
             {
               backgroundColor: colors.surface,
-              borderColor: errorText ? colors.danger : colors.border,
+              borderColor: errorText ? colors.danger : colors.inputBorder,
               color: colors.text,
             },
             style,
@@ -74,7 +75,12 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
           </Pressable>
         ) : null}
       </View>
-      {errorText ? <Text style={[styles.error, { color: colors.danger }]}>{errorText}</Text> : null}
+      {/* Annoncée dès qu'elle apparaît : sans cela, une personne qui utilise TalkBack touchait « Créer mon compte » et n'entendait rien. */}
+      {errorText ? (
+        <Text accessibilityLiveRegion="polite" style={[styles.error, { color: colors.danger }]}>
+          {errorText}
+        </Text>
+      ) : null}
     </View>
   );
 });

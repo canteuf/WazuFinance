@@ -41,6 +41,8 @@ export type Colors = {
   /** Surface secondaire : fonds de segments, pastilles neutres. */
   surfaceMuted: string;
   border: string;
+  /** Contour d'un champ de saisie : au moins 3:1 sur le champ, la page et les zones grisées (WCAG 1.4.11). `border`, lui, sépare des cartes et des rangées, et reste discret. */
+  inputBorder: string;
   text: string;
   textMuted: string;
   primary: string;
@@ -61,6 +63,8 @@ const palette: Record<'light' | 'dark', Colors> = {
     surface: '#FFFFFF',
     surfaceMuted: '#E3E9E7',
     border: '#DDE5E2',
+    // 3,9:1 sur blanc, 3,4:1 sur `background`, 3,1:1 sur `surfaceMuted`. `border` (#DDE5E2) ne tenait que 1,3:1 : on devinait les champs.
+    inputBorder: '#76857F',
     text: '#12201C',
     textMuted: '#5E6E69',
     // #0EA47A d'origine ne tenait que 3,2:1 sous un texte blanc. Celui-ci tient 5,5:1 sous le blanc et 4,9:1 posé comme texte sur `background` (liens, « Réinitialiser ») : AA dans les deux emplois.
@@ -77,6 +81,8 @@ const palette: Record<'light' | 'dark', Colors> = {
     surface: '#151B23',
     surfaceMuted: '#1C242E',
     border: '#212A34',
+    // 3,5:1 sur `surface`, 3,9:1 sur `background`, 3,2:1 sur `surfaceMuted`.
+    inputBorder: '#66727E',
     text: '#EEF2F6',
     textMuted: '#8894A2',
     primary: '#3DDC97',

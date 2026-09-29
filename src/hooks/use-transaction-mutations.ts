@@ -9,7 +9,7 @@ import {
   type UpdateTransactionInput,
 } from '@/data/transactions';
 import { isTransportError } from '@/lib/data-errors';
-import { writeLastCategory, writeLastWallet } from '@/lib/last-used';
+import { writeLastCategory, writeLastType, writeLastWallet } from '@/lib/last-used';
 import { transportRetryDelay, VersionChain } from '@/lib/offline-queue';
 import { mutationKeys, queryKeys } from '@/lib/query-keys';
 import type { Tables } from '@/types/database';
@@ -56,14 +56,15 @@ export function registerTransactionMutationDefaults(queryClient: QueryClient): v
   queryClient.setMutationDefaults(mutationKeys.createTransaction(), {
     ...common,
     mutationFn: (input: CreateTransactionInput) => create(input),
-    onSuccess: async (_data: unknown, input: CreateTransactionInput) => {
-      // La préférence n'est mémorisée qu'une fois la ligne acceptée par la base : une saisie refusée ne doit pas changer le défaut.
-      await writeLastCategory(input.groupId, input.categoryId);
-      if (input.walletId) {
-        await writeLastWallet(input.groupId, input.walletId);
-      }
-      void invalidate();
+    // Les préférences sont retenues dès la saisie, même mise en file sans réseau : attendre la réponse de la base laissait, un matin hors ligne, la présélection de la veille à chaque nouvelle vente. Une saisie refusée ensuite ne change qu'un défaut, que l'utilisateur corrige d'un toucher.
+    onMutate: async (input: CreateTransactionInput) => {
+      await Promise.all([
+        writeLastType(input.groupId, input.type),
+        writeLastCategory(input.groupId, input.categoryId),
+        input.walletId ? writeLastWallet(input.groupId, input.walletId) : Promise.resolve(),
+      ]);
     },
+    onSuccess: () => void invalidate(),
   });
 
   queryClient.setMutationDefaults(mutationKeys.updateTransaction(), {

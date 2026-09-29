@@ -13,7 +13,7 @@ import { useCanWrite } from '@/hooks/use-can-write';
 import { useSavingsGoals } from '@/hooks/use-savings-goals';
 import { useSavingsOverview } from '@/hooks/use-savings-overview';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { formatMoney } from '@/lib/money';
+import { formatMoney, spokenAmount } from '@/lib/money';
 import { savingsProgress } from '@/lib/savings-progress';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 
@@ -115,19 +115,23 @@ export default function SavingsGoalsScreen() {
       {overview && items.length > 0 ? (
         <View style={[styles.summary, { backgroundColor: colors.surfaceMuted }]}>
           <View style={styles.summaryMain}>
-            <Text style={[styles.eyebrow, { color: colors.textMuted }]}>Total provisionné</Text>
+            <Text style={[styles.eyebrow, { color: colors.textMuted }]}>Total mis de côté</Text>
             <Text
               style={[styles.total, { color: colors.primary }]}
               adjustsFontSizeToFit
               numberOfLines={1}
+              accessibilityLabel={spokenAmount(overview.totalSaved)}
             >
               {formatMoney(overview.totalSaved)}
             </Text>
           </View>
           {overview.monthlyEffort > 0 ? (
             <View style={styles.summarySide}>
-              <Text style={[styles.sideLabel, { color: colors.textMuted }]}>Effort mensuel</Text>
-              <Text style={[styles.sideValue, { color: colors.text }]}>
+              <Text style={[styles.sideLabel, { color: colors.textMuted }]}>À mettre de côté</Text>
+              <Text
+                style={[styles.sideValue, { color: colors.text }]}
+                accessibilityLabel={`${spokenAmount(overview.monthlyEffort)} par mois`}
+              >
                 +{formatMoney(overview.monthlyEffort)}/mois
               </Text>
             </View>

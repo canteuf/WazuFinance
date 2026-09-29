@@ -66,7 +66,7 @@ export default function GroupCreateScreen() {
           autoFocus
           style={[
             styles.name,
-            { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text },
+            { backgroundColor: colors.surface, borderColor: colors.inputBorder, color: colors.text },
           ]}
         />
 

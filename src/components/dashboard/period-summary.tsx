@@ -11,6 +11,7 @@ import {
   formatDelta,
   formatMoney,
   formatSignedBare,
+  spokenAmount,
   withCurrency,
 } from '@/lib/money';
 import { dailyAllowance } from '@/lib/period-progress';
@@ -60,7 +61,12 @@ export function PeriodSummary() {
     <View style={styles.container}>
       <View style={styles.balanceBlock}>
         <Text style={[styles.label, { color: colors.textMuted }]}>Solde {label}</Text>
-        <View style={styles.balanceRow}>
+        {/* Un seul arrêt pour TalkBack : chiffre et symbole séparés, il lisait le nombre puis épelait « F C F A ». */}
+        <View
+          style={styles.balanceRow}
+          accessible
+          accessibilityLabel={spokenAmount(summary.balance)}
+        >
           {/* Un solde négatif en cours de période est ordinaire, pas une alerte : il reste en couleur de texte. Seul son signe l'annonce. */}
           <Text
             maxFontSizeMultiplier={MAX_FONT_SCALE}
@@ -92,7 +98,11 @@ export function PeriodSummary() {
 
             return (
               // Pastille plutôt que ligne de texte : l'écart est une information autonome, pas la suite de la phrase du solde. Le fond la détache du chiffre sans lui disputer sa taille.
-              <View style={[styles.delta, { backgroundColor: colors.surfaceMuted }]}>
+              <View
+                style={[styles.delta, { backgroundColor: colors.surfaceMuted }]}
+                accessible
+                accessibilityLabel={`${up ? 'En hausse' : 'En baisse'} de ${spokenAmount(Math.abs(delta))} par rapport à la période précédente`}
+              >
                 <MaterialCommunityIcons
                   name={up ? 'arrow-up' : 'arrow-down'}
                   size={13}
@@ -121,7 +131,12 @@ export function PeriodSummary() {
               ? 'Période close'
               : `${Math.round(progress.ratio * 100)} % de la période`}
           </Text>
-          <Text style={[styles.paceLabel, { color: colors.textMuted }]}>
+          <Text
+            style={[styles.paceLabel, { color: colors.textMuted }]}
+            accessibilityLabel={
+              progress.remainingDays > 1 ? `Reste ${progress.remainingDays} jours` : undefined
+            }
+          >
             {progress.remainingDays === 0
               ? 'Terminée'
               : progress.remainingDays === 1
@@ -131,7 +146,10 @@ export function PeriodSummary() {
         </View>
         <ProgressBar ratio={progress.ratio} tone="accent" />
         {allowance !== null ? (
-          <Text style={[styles.paceAllowance, { color: colors.textMuted }]}>
+          <Text
+            style={[styles.paceAllowance, { color: colors.textMuted }]}
+            accessibilityLabel={`${spokenAmount(allowance)} par jour jusqu’à la fin`}
+          >
             {/* Le solde réparti sur les jours qui restent. Absent quand le solde est négatif ou la période close : dans ces deux cas la division ne dit plus rien d'utile. */}
             <Text style={{ color: colors.text }}>{formatMoney(allowance)}</Text> par jour
             jusqu’à la fin
@@ -152,7 +170,10 @@ export function PeriodSummary() {
             </View>
           </View>
           {/* Entrées en positif, sorties en neutre : même convention que la liste des opérations, où seul un revenu se colore. */}
-          <Text style={[styles.statValue, { color: colors.positive }]}>
+          <Text
+            style={[styles.statValue, { color: colors.positive }]}
+            accessibilityLabel={spokenAmount(summary.income)}
+          >
             {formatSignedBare(summary.income, 'income')}
           </Text>
         </Card>
@@ -168,7 +189,10 @@ export function PeriodSummary() {
               />
             </View>
           </View>
-          <Text style={[styles.statValue, { color: colors.text }]}>
+          <Text
+            style={[styles.statValue, { color: colors.text }]}
+            accessibilityLabel={spokenAmount(summary.expense)}
+          >
             {formatSignedBare(summary.expense, 'expense')}
           </Text>
           {/* Compté par Postgres, pas par la liste : le tableau de bord n'affiche que les dernières opérations, et compter ce qu'il a sous la main annoncerait « 5 » pour une période qui en contient trente. */}

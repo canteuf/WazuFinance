@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TermsGate } from '@/components/legal/terms-gate';
+import { OnboardingGate } from '@/components/onboarding/onboarding-gate';
 import { OfflineBanner, useOfflineBannerVisible } from '@/components/ui/offline-banner';
 import { useBudgetsRealtime } from '@/hooks/use-budgets-realtime';
 import { useDailyOpenEvent } from '@/hooks/use-daily-open-event';
@@ -154,6 +155,8 @@ function AppStack() {
         </StackFrameProvider>
       </SafeAreaInsetsContext.Provider>
       <TermsGate />
+      {/* Après les CGU, qu'il attend : un nouveau compte les a déjà acceptées à l'inscription. */}
+      <OnboardingGate />
     </View>
   );
 }

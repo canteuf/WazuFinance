@@ -1,9 +1,11 @@
 import {
+  amountDigits,
   formatAmount,
   formatBalance,
   formatDelta,
   formatMoney,
   formatSigned,
+  groupDigits,
   parseAmount,
   parseNonNegativeAmount,
   previewSum,
@@ -13,6 +15,36 @@ import {
 } from '@/lib/money';
 
 // Le séparateur de milliers de fr-FR est une espace fine insécable (U+202F), et le code de devise est précédé d'une espace insécable (U+00A0) : écrites en clair, les attentes seraient fausses alors que le code est juste.
+describe('groupDigits', () => {
+  it('groupe les milliers pendant la saisie', () => {
+    expect(groupDigits('150000')).toBe('150 000');
+    expect(groupDigits('1500000')).toBe('1 500 000');
+  });
+
+  it('laisse un petit montant tel quel', () => {
+    expect(groupDigits('')).toBe('');
+    expect(groupDigits('650')).toBe('650');
+  });
+
+  it('groupe comme formatAmount, pour que saisie et affichage se ressemblent', () => {
+    expect(groupDigits('12500')).toBe(formatAmount(12500));
+  });
+});
+
+describe('amountDigits', () => {
+  it('retire les espaces insérées par groupDigits', () => {
+    expect(amountDigits(groupDigits('1500000'))).toBe('1500000');
+  });
+
+  it('retire ce qu’un collage apporte', () => {
+    expect(amountDigits('12 500 FCFA')).toBe('12500');
+  });
+
+  it('rend une saisie que parseAmount accepte', () => {
+    expect(parseAmount(amountDigits('150 000'))).toBe(150000);
+  });
+});
+
 describe('parseAmount', () => {
   it('accepte un entier', () => {
     expect(parseAmount('650')).toBe(650);
@@ -68,13 +100,13 @@ describe('formatAmount', () => {
 
 describe('formatMoney', () => {
   it('ajoute le code de la devise après une espace insécable', () => {
-    expect(formatMoney(1500)).toBe('1 500 XAF');
+    expect(formatMoney(1500)).toBe('1 500 FCFA');
   });
 });
 
 describe('withCurrency', () => {
   it('complète un montant déjà formaté, signe compris', () => {
-    expect(withCurrency(formatDelta(320))).toBe('+320 XAF');
+    expect(withCurrency(formatDelta(320))).toBe('+320 FCFA');
   });
 });
 
@@ -103,11 +135,11 @@ describe('toAmountInput', () => {
 
 describe('formatSigned', () => {
   it('préfixe une dépense d’un moins', () => {
-    expect(formatSigned(2490, 'expense')).toBe('−2 490 XAF');
+    expect(formatSigned(2490, 'expense')).toBe('−2 490 FCFA');
   });
 
   it('préfixe un revenu d’un plus', () => {
-    expect(formatSigned(150000, 'income')).toBe('+150 000 XAF');
+    expect(formatSigned(150000, 'income')).toBe('+150 000 FCFA');
   });
 });
 

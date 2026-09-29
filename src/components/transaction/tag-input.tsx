@@ -54,7 +54,7 @@ export function TagInput({
       {full ? (
         <Text style={[styles.hint, { color: colors.textMuted }]}>Cinq étiquettes au plus.</Text>
       ) : (
-        <View style={[styles.input, { backgroundColor: colors.surfaceMuted, borderColor: colors.border }]}>
+        <View style={[styles.input, { backgroundColor: colors.surfaceMuted, borderColor: colors.inputBorder }]}>
           <MaterialCommunityIcons name="tag-outline" size={20} color={colors.textMuted} />
           <TextInput
             accessibilityLabel="Ajouter une étiquette"

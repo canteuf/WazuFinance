@@ -10,14 +10,14 @@ import {
 import { queryKeys } from '@/lib/query-keys';
 
 /**
- * Invitation active d'un groupe (au plus une à la fois, spec section 1) et ses mutations. Désactivé tant que groupId est vide.
+ * Invitation active d'un groupe pour un rôle, et ses mutations. Un code actif par rôle : la trésorière d'une tontine garde son code « lecteurs » posté sur WhatsApp pendant qu'elle invite son adjointe avec un code « membres ». Désactivé tant que groupId est vide.
  */
-export function useGroupInvitation(groupId: string, createdBy: string | undefined) {
+export function useGroupInvitation(groupId: string, createdBy: string | undefined, role: InvitationRole) {
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: queryKeys.groupInvitation(groupId),
-    queryFn: () => getActiveInvitation(groupId),
+    queryKey: queryKeys.groupInvitation(groupId, role),
+    queryFn: () => getActiveInvitation(groupId, role),
     enabled: groupId !== '',
     // group_invitations n'est pas dans la publication Realtime : sans ça, une régénération faite ailleurs ne se voit qu'après le staleTime.
     refetchOnMount: 'always',
@@ -32,7 +32,7 @@ export function useGroupInvitation(groupId: string, createdBy: string | undefine
     onSuccess: invalidate,
   });
 
-  // Régénérer révoque l'invitation active avant d'en créer une nouvelle : deux appels séparés. Si le second échoue après que le premier a réussi, le code révoqué resterait affiché comme actif sans onSettled — invalider ici même en cas d'échec partiel, contrairement à generate ci-dessus qui n'a pas cet état intermédiaire. Changer le rôle des invités passe aussi par là : un code porte son rôle, un autre rôle est un autre code.
+  // Régénérer révoque l'invitation active avant d'en créer une nouvelle : deux appels séparés. Si le second échoue après que le premier a réussi, le code révoqué resterait affiché comme actif sans onSettled — invalider ici même en cas d'échec partiel, contrairement à generate ci-dessus qui n'a pas cet état intermédiaire. Seul le code du rôle affiché est remplacé : celui de l'autre rôle, peut-être déjà posté sur WhatsApp, continue de servir.
   const regenerate = useMutation({
     mutationFn: async ({ activeInvitationId, role }: { activeInvitationId: string; role: InvitationRole }) => {
       await revokeInvitation(activeInvitationId);

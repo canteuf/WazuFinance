@@ -7,7 +7,7 @@ describe('buildActivityReportHtml', () => {
     const html = buildActivityReportHtml({
       ...base,
       lines: [
-        { when: '26 sept. 2026, 14:32', sentence: 'Awa a ajouté Tontine, 5 000 XAF du 26 sept.' },
+        { when: '26 sept. 2026, 14:32', sentence: 'Awa a ajouté Tontine, 5 000 FCFA du 26 sept.' },
         { when: '25 sept. 2026, 09:05', sentence: 'Bintou a rejoint le groupe' },
       ],
     });

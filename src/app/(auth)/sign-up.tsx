@@ -180,8 +180,17 @@ export default function SignUpScreen() {
         <LegalLinks />
       </View>
 
-      {formError ? <Text style={[styles.message, { color: colors.danger }]}>{formError}</Text> : null}
-      {notice ? <Text style={[styles.message, { color: colors.primary }]}>{notice}</Text> : null}
+      {/* Annoncés dès qu'ils apparaissent, comme sur l'écran du mot de passe oublié. */}
+      {formError ? (
+        <Text accessibilityLiveRegion="polite" style={[styles.message, { color: colors.danger }]}>
+          {formError}
+        </Text>
+      ) : null}
+      {notice ? (
+        <Text accessibilityLiveRegion="polite" style={[styles.message, { color: colors.primary }]}>
+          {notice}
+        </Text>
+      ) : null}
 
       <Button title="Créer mon compte" loading={submitting} onPress={() => void handleSubmit()} />
       <Button

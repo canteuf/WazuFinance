@@ -186,7 +186,7 @@ export type ActivityContext = {
   wallets?: readonly { id: string; name: string }[];
 };
 
-/** « 10 000 XAF » entre parenthèses, ou rien quand le montant manque. */
+/** « 10 000 FCFA » entre parenthèses, ou rien quand le montant manque. */
 function amountTail(values: JsonObject): string {
   const amount = readNumber(values, 'amount');
   return amount === null ? '' : ` (${formatMoney(amount)})`;

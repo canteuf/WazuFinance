@@ -16,7 +16,7 @@ import { useCanWrite } from '@/hooks/use-can-write';
 import { statusFor, type BudgetProgress } from '@/lib/budget-progress';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { formatPeriodLabel, periodBounds, todayIso } from '@/lib/dates';
-import { formatMoney } from '@/lib/money';
+import { formatMoney, spokenAmount } from '@/lib/money';
 import { periodProgress } from '@/lib/period-progress';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 
@@ -115,7 +115,7 @@ export default function BudgetsScreen() {
         <ActivityIndicator color={colors.primary} />
       ) : items.length === 0 ? (
         <View style={[styles.empty, { backgroundColor: colors.surface }, elevation.card]}>
-          <MaterialCommunityIcons name="wallet-outline" size={32} color={colors.primary} />
+          <MaterialCommunityIcons name="chart-donut-variant" size={32} color={colors.primary} />
           <Text style={[styles.emptyTitle, { color: colors.text }]}>Aucun budget pour l’instant</Text>
           <Text style={[styles.message, { color: colors.textMuted }]}>
             {canWrite
@@ -236,7 +236,7 @@ function SummaryCard({
         {remainingDays > 0 ? (
           <View style={[styles.daysPill, { backgroundColor: colors.surfaceMuted }]}>
             <Text style={[styles.daysLabel, { color: colors.text }]}>
-              {remainingDays === 1 ? 'Dernier jour' : `J-${remainingDays} avant clôture`}
+              {remainingDays === 1 ? 'Dernier jour' : `Encore ${remainingDays} jours`}
             </Text>
           </View>
         ) : null}
@@ -250,6 +250,7 @@ function SummaryCard({
               style={[styles.summaryAmount, { color: colors.text }]}
               adjustsFontSizeToFit
               numberOfLines={1}
+              accessibilityLabel={spokenAmount(spent)}
             >
               {formatMoney(spent)}
             </Text>
@@ -265,7 +266,12 @@ function SummaryCard({
         </View>
         <View style={styles.summarySide}>
           <Text style={[styles.summaryCaption, { color: colors.textMuted }]}>Plafond total</Text>
-          <Text style={[styles.summaryCeiling, { color: colors.text }]}>{formatMoney(ceiling)}</Text>
+          <Text
+            style={[styles.summaryCeiling, { color: colors.text }]}
+            accessibilityLabel={spokenAmount(ceiling)}
+          >
+            {formatMoney(ceiling)}
+          </Text>
         </View>
       </View>
 

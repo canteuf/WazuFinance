@@ -8,7 +8,14 @@ import { DateField } from '@/components/transaction/date-field';
 import { DeleteAction, PrimaryAction } from '@/components/ui/form-actions';
 import { IconChoiceGrid } from '@/components/ui/icon-choice-grid';
 import { formatMonthYear, todayIso } from '@/lib/dates';
-import { CURRENCY_SYMBOL, parseAmount, parseNonNegativeAmount, toAmountInput } from '@/lib/money';
+import {
+  amountDigits,
+  CURRENCY_SYMBOL,
+  groupDigits,
+  parseAmount,
+  parseNonNegativeAmount,
+  toAmountInput,
+} from '@/lib/money';
 import { GOAL_NAME_MAX_LENGTH } from '@/lib/validation';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 
@@ -98,7 +105,7 @@ export function SavingsGoalForm({
           maxLength={GOAL_NAME_MAX_LENGTH}
           style={[
             styles.input,
-            { backgroundColor: colors.surfaceMuted, borderColor: colors.border, color: colors.text },
+            { backgroundColor: colors.surfaceMuted, borderColor: colors.inputBorder, color: colors.text },
           ]}
         />
       </View>
@@ -117,7 +124,7 @@ export function SavingsGoalForm({
         <View style={styles.field}>
           <Text style={[styles.eyebrow, { color: colors.textMuted }]}>Déjà épargné (facultatif)</Text>
           <View
-            style={[styles.inline, { backgroundColor: colors.surfaceMuted, borderColor: colors.border }]}
+            style={[styles.inline, { backgroundColor: colors.surfaceMuted, borderColor: colors.inputBorder }]}
           >
             <TextInput
               accessibilityLabel="Montant déjà épargné"
@@ -125,8 +132,8 @@ export function SavingsGoalForm({
               inputMode="numeric"
               placeholder="0"
               placeholderTextColor={colors.textMuted}
-              value={initialAmountText}
-              onChangeText={setInitialAmountText}
+              value={groupDigits(initialAmountText)}
+              onChangeText={(text) => setInitialAmountText(amountDigits(text))}
               style={[styles.inlineInput, { color: colors.text }]}
             />
             <Text style={[styles.currency, { color: colors.textMuted }]}>{CURRENCY_SYMBOL}</Text>

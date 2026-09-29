@@ -95,7 +95,11 @@ export default function SignInScreen() {
         Mot de passe oublié ?
       </Link>
 
-      {formError ? <Text style={[styles.formError, { color: colors.danger }]}>{formError}</Text> : null}
+      {formError ? (
+        <Text accessibilityLiveRegion="polite" style={[styles.formError, { color: colors.danger }]}>
+          {formError}
+        </Text>
+      ) : null}
 
       <Button title="Se connecter" loading={submitting} onPress={() => void handleSubmit()} />
 
@@ -151,8 +155,11 @@ const styles = StyleSheet.create({
   },
   footer: {
     flexDirection: 'row',
+    // À forte échelle de police, « Créer un compte » passe sous la question au lieu de sortir de l'écran.
+    flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: spacing.xs,
+    alignItems: 'center',
+    columnGap: spacing.xs,
     marginTop: spacing.sm,
   },
   footerText: {
@@ -162,5 +169,8 @@ const styles = StyleSheet.create({
   footerLink: {
     fontFamily: font.bold,
     fontSize: 16,
+    // Zone tactile de 44 points au moins : le lien seul ne faisait qu'une ligne de texte.
+    paddingVertical: spacing.sm + 2,
+    minHeight: 44,
   },
 });

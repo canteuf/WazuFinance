@@ -21,7 +21,7 @@ import {
 function statusText(item: BudgetProgress): string {
   const scope = item.budget.period === 'weekly' ? ' cette semaine' : '';
   if (item.status === 'over') {
-    // À exactement 100 %, rien n'est dépassé : « Dépassé de 0 XAF » disait faux. Le statut reste `over` — le budget est épuisé, la prochaine dépense le dépassera —, seul le texte change.
+    // À exactement 100 %, rien n'est dépassé : « Dépassé de 0 FCFA » disait faux. Le statut reste `over` — le budget est épuisé, la prochaine dépense le dépassera —, seul le texte change.
     if (item.remaining === 0) {
       return `Plafond atteint${scope}`;
     }

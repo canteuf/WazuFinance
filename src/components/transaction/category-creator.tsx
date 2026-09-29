@@ -112,7 +112,7 @@ export function CategoryCreator({ type, onCreated }: CategoryCreatorProps) {
           styles.input,
           {
             backgroundColor: colors.surfaceMuted,
-            borderColor: nameError ? colors.danger : colors.border,
+            borderColor: nameError ? colors.danger : colors.inputBorder,
             color: colors.text,
           },
         ]}

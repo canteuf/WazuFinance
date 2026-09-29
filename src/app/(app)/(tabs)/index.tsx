@@ -12,6 +12,7 @@ import { BudgetsEntry } from "@/components/dashboard/budgets-entry";
 import { CommerceEntry } from "@/components/dashboard/commerce-entry";
 import { CategoryBreakdown } from "@/components/dashboard/category-breakdown";
 import { DebtsEntry } from "@/components/dashboard/debts-entry";
+import { DiscoverMore } from "@/components/dashboard/discover-more";
 import { DueRecurring } from "@/components/dashboard/due-recurring";
 import { WalletsEntry } from "@/components/dashboard/wallets-entry";
 import { PendingTransactions } from "@/components/dashboard/pending-transactions";
@@ -27,6 +28,7 @@ import {
 import { ViewerNotice } from "@/components/ui/viewer-notice";
 import { useActiveGroup } from "@/hooks/use-active-group";
 import { useCanWrite } from "@/hooks/use-can-write";
+import { useDashboardSections } from "@/hooks/use-dashboard-sections";
 import { useRecentTransactions } from "@/hooks/use-recent-transactions";
 import { dataErrorMessage } from "@/lib/data-errors";
 import { font, radius, spacing, useColors, useElevation } from "@/theme/tokens";
@@ -46,6 +48,11 @@ export default function DashboardScreen() {
     isLoading: transactionsLoading,
     error: transactionsError,
   } = useRecentTransactions();
+
+  const sections = useDashboardSections();
+  const hiddenSections = (['wallets', 'budgets', 'savings', 'debts'] as const).filter(
+    (section) => !sections[section]
+  );
 
   // Un chargement des adhésions en échec prime : sans groupe résolu, il n'y a rien de fiable à tirer des transactions (la requête est de toute façon désactivée tant qu'aucun groupe actif n'existe).
   const error = groupError ?? transactionsError;
@@ -121,8 +128,8 @@ export default function DashboardScreen() {
       {/* Juste sous le solde, que ces saisies ne comptent pas encore : c'est là que l'œil les cherche en revenant de la feuille, et la liste des dernières opérations est souvent sous la ligne de flottaison. Ne rend rien quand rien n'attend. */}
       <PendingTransactions />
 
-      {/* Où est l'argent, juste sous ce qui en est entré et sorti : les deux soldes se lisent ensemble. */}
-      <WalletsEntry />
+      {/* Où est l'argent, juste sous ce qui en est entré et sorti : les deux soldes se lisent ensemble. Masquée tant que seul « Principal » existe, comme les cartes plus bas tant qu'elles sont vides : voir useDashboardSections. */}
+      {sections.wallets ? <WalletsEntry /> : null}
 
       {/* Ne rend rien sans opération « Commerce » ou « Achat de stock » sur la période. Sous les portefeuilles : la caisse du commerce se lit avec l'argent qu'elle a fait entrer. */}
       <CommerceEntry />
@@ -130,11 +137,14 @@ export default function DashboardScreen() {
       {/* Ne rend rien tant qu'aucune dépense n'existe sur la période : la liste voisine annonce déjà l'absence d'opérations, et un second état vide ne ferait que répéter la même chose. */}
       <CategoryBreakdown />
 
-      <BudgetsEntry />
+      {sections.budgets ? <BudgetsEntry /> : null}
 
-      <SavingsEntry />
+      {sections.savings ? <SavingsEntry /> : null}
 
-      <DebtsEntry />
+      {sections.debts ? <DebtsEntry /> : null}
+
+      {/* Les fonctions pas encore utilisées, une ligne chacune, à la place de leurs cartes vides. */}
+      <DiscoverMore hidden={hiddenSections} />
 
       <View style={styles.sectionRow}>
         <Text
@@ -199,6 +209,9 @@ const styles = StyleSheet.create({
   sectionLink: {
     fontFamily: font.semibold,
     fontSize: 14,
+    // Zone tactile de 44 points : le texte seul n'en faisait qu'une vingtaine.
+    paddingVertical: 12,
+    paddingLeft: 12,
     // Garde sa largeur : c'est le seul accès à l'historique, il ne doit jamais céder de place au libellé qui le précède.
     flexShrink: 0,
   },

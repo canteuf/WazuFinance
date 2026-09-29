@@ -26,7 +26,7 @@ import { useTransactionTags } from '@/hooks/use-transaction-tags';
 import { useWalletChoice } from '@/hooks/use-wallet-choice';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { formatOccurredOn, todayIso } from '@/lib/dates';
-import { readLastCategory } from '@/lib/last-used';
+import { readLastCategory, readLastType } from '@/lib/last-used';
 import { formatMoney, parseAmount, spokenAmount, toAmountInput } from '@/lib/money';
 import { anchorFor, describeRecurrence } from '@/lib/recurrence';
 import { NOTE_MAX_LENGTH } from '@/lib/validation';
@@ -117,14 +117,20 @@ export function TransactionForm({
   // La valeur de l'opération en modification, sinon le dernier portefeuille utilisé dans ce groupe.
   const wallet = useWalletChoice(groupId, initialValues ? initialValues.walletId : undefined);
 
-  // Présélection de la dernière catégorie, uniquement en création.
+  // Présélection du dernier type et de la dernière catégorie, uniquement en création. Les deux ensemble : la catégorie retenue n'est valable que dans la liste de son type.
   useEffect(() => {
     if (initialValues) {
       return;
     }
     let active = true;
-    readLastCategory(groupId).then((lastId) => {
-      if (active && lastId) {
+    Promise.all([readLastType(groupId), readLastCategory(groupId)]).then(([lastType, lastId]) => {
+      if (!active) {
+        return;
+      }
+      if (lastType) {
+        setType(lastType);
+      }
+      if (lastId) {
         setCategorySelection(lastId);
       }
     });
@@ -315,7 +321,7 @@ export function TransactionForm({
               Commerçant ou note (facultatif)
             </Text>
             <View
-              style={[styles.note, { backgroundColor: colors.surfaceMuted, borderColor: colors.border }]}
+              style={[styles.note, { backgroundColor: colors.surfaceMuted, borderColor: colors.inputBorder }]}
             >
               <MaterialCommunityIcons name="storefront-outline" size={20} color={colors.textMuted} />
               <TextInput

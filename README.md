@@ -4,7 +4,7 @@
 
 Chaque personne dispose d'un compte personnel, visible d'elle seule. Elle peut aussi tenir un budget commun avec d'autres : en couple, en famille ou en colocation. Chacun y note ses dépenses, et tout le monde voit les mêmes chiffres, mis à jour en direct.
 
-Les montants sont en francs CFA (XAF), sans centimes.
+Les montants sont en francs CFA (FCFA), sans centimes : l’app vaut pour le XAF d’Afrique centrale comme pour le XOF d’Afrique de l’Ouest, de même valeur.
 
 ## Aperçu
 

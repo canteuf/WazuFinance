@@ -59,11 +59,12 @@ export function BudgetsEntry() {
     <Card>
       <View style={styles.cardHead}>
         <View style={styles.cardTitle}>
-          <MaterialCommunityIcons name="wallet-outline" size={18} color={colors.primary} />
+          {/* L'icône de l'onglet Budgets, pas le portefeuille : la carte Portefeuilles juste à côté porte déjà celui-là, et les deux notions se confondaient. */}
+          <MaterialCommunityIcons name="chart-donut-variant" size={18} color={colors.primary} />
           <Text style={[styles.heading, { color: colors.text }]}>Budgets</Text>
         </View>
         <Link href="/budgets" asChild>
-          <Pressable accessibilityRole="button" accessibilityLabel={`Budgets. ${detail}`}>
+          <Pressable accessibilityRole="button" accessibilityLabel={`Budgets. ${detail}`} hitSlop={12}>
             <Text style={[styles.link, { color: colors.primary }]}>Tout voir</Text>
           </Pressable>
         </Link>

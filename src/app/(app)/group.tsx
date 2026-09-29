@@ -55,6 +55,8 @@ export default function GroupScreen() {
   } = useGroupMembers(id);
   // Un lecteur ne lit pas les codes (policy group_invitations_select_writer) : il pourrait sinon quitter le groupe et revenir avec un code « membre ». La requête n'est pas lancée pour lui.
   const isViewer = members.find((member) => member.userId === userId)?.role === 'viewer';
+  // Rôle des invités, lecteur par défaut : c'est le choix sans risque. Un code « membre » oublié sur un groupe WhatsApp de vingt personnes leur donnait à toutes le droit de modifier la caisse.
+  const [inviteRole, setInviteRole] = useState<InvitationRole>('viewer');
   const {
     invitation,
     isLoading: invitationLoading,
@@ -62,13 +64,10 @@ export default function GroupScreen() {
     regenerate,
     isGenerating,
     logShared,
-  } = useGroupInvitation(isViewer ? '' : id, userId);
+  } = useGroupInvitation(isViewer ? '' : id, userId, inviteRole);
   const { removeGroupMember, isRemoving, setRole, handOver, isChangingRole } = useGroupMutations();
   const [copied, setCopied] = useState(false);
   const [actionError, setActionError] = useState<string>();
-  // Rôle des prochains invités, tant qu'aucun code n'existe ; ensuite, c'est celui du code affiché.
-  const [draftRole, setDraftRole] = useState<InvitationRole>('member');
-  const inviteRole = invitation?.role ?? draftRole;
 
   const me = members.find((member) => member.userId === userId);
   const isOwner = me?.role === 'owner';
@@ -118,26 +117,32 @@ export default function GroupScreen() {
     );
   }
 
+  // Changer de rôle affiche le code de ce rôle, sans toucher à celui de l'autre : chacun a le sien.
   function handleInviteRole(role: InvitationRole) {
-    if (role === inviteRole) {
-      return;
-    }
-    setDraftRole(role);
-    // Un code porte son rôle : en changer, c'est en tirer un autre, et l'ancien cesse de servir.
-    if (invitation) {
-      setActionError(undefined);
-      regenerate.mutate(
-        { activeInvitationId: invitation.id, role },
-        { onError: (error) => setActionError(dataErrorMessage(error)) }
-      );
-    }
+    setActionError(undefined);
+    setInviteRole(role);
   }
 
+  // Confirmé d'abord : dans une liste de vingt noms, un toucher de travers retirait quelqu'un, et révoquait au passage les codes d'invitation actifs.
   function handleExclude(targetUserId: string) {
-    setActionError(undefined);
-    removeGroupMember.mutate(
-      { groupId: id, userId: targetUserId },
-      { onError: (error) => setActionError(dataErrorMessage(error)) }
+    const target = members.find((member) => member.userId === targetUserId);
+    Alert.alert(
+      `Retirer ${target?.displayName ?? 'ce membre'} du groupe ?`,
+      'Ses opérations restent dans le groupe, à son nom. Les codes d’invitation actifs sont désactivés : générez-en un nouveau pour inviter d’autres personnes.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Retirer',
+          style: 'destructive',
+          onPress: () => {
+            setActionError(undefined);
+            removeGroupMember.mutate(
+              { groupId: id, userId: targetUserId },
+              { onError: (error) => setActionError(dataErrorMessage(error)) }
+            );
+          },
+        },
+      ]
     );
   }
 
@@ -327,10 +332,10 @@ export default function GroupScreen() {
                 reçoivent, pendant 7 jours.
               </Text>
 
-              {/* Le rôle des invités, choisi avant de partager : une tontine invite ses membres en lecteurs, et la trésorière reste seule à tenir la caisse. */}
-              {isOwner ? (
+              {/* Le rôle des invités, choisi avant de partager : une tontine invite ses membres en lecteurs, et la trésorière reste seule à tenir la caisse. Lecteurs en premier, comme le choix par défaut. Un membre voit aussi le choix : il lit les deux codes et peut partager l'un ou l'autre ; seul le propriétaire en crée. */}
+              {!isViewer ? (
                 <View style={styles.roleChoice} accessibilityRole="radiogroup">
-                  {(['member', 'viewer'] as const).map((role) => {
+                  {(['viewer', 'member'] as const).map((role) => {
                     const selected = inviteRole === role;
                     return (
                       <Pressable

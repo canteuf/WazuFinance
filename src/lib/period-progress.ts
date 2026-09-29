@@ -43,7 +43,7 @@ export function periodProgress(today: string, from: string, to: string): PeriodP
 /**
  * Montant disponible par jour restant.
  *
- * `null` quand il n'y a plus de jour à couvrir — la période est close — ou quand il ne reste rien à dépenser : afficher « 0 XAF par jour » sur un budget dépassé ajouterait un chiffre là où le dépassement est déjà dit ailleurs, et diviser par zéro n'a pas de sens.
+ * `null` quand il n'y a plus de jour à couvrir — la période est close — ou quand il ne reste rien à dépenser : afficher « 0 FCFA par jour » sur un budget dépassé ajouterait un chiffre là où le dépassement est déjà dit ailleurs, et diviser par zéro n'a pas de sens.
  *
  * Une seule division, sur des totaux que Postgres a déjà sommés exactement : la règle du projet interdit d'additionner des montants en JavaScript, pas de diviser un total par un nombre de jours.
  */

@@ -5,6 +5,7 @@ import { deleteOwnAccount } from '@/data/account';
 import { CurrentPasswordError } from '@/lib/auth-errors';
 import { clockSkewMs as measureClockSkew } from '@/lib/clock';
 import { TERMS_VERSION } from '@/lib/legal';
+import type { Usage } from '@/lib/onboarding';
 import { clearExportedFiles } from '@/lib/save-file';
 import { supabase } from '@/lib/supabase';
 
@@ -35,6 +36,8 @@ export type AuthState = {
   deleteAccount: (currentPassword: string) => Promise<void>;
   /** Enregistre l'acceptation des CGU et de la politique en vigueur (`TERMS_VERSION`) sur le compte. La session suivante la porte, et l'écran d'acceptation se ferme de lui-même. */
   acceptTerms: () => Promise<void>;
+  /** Clôt l'accueil d'un nouveau compte (`onboarding_pending` à faux), avec l'usage déclaré s'il y en a un. */
+  completeOnboarding: (usage: Usage | null) => Promise<void>;
 };
 
 export const AuthContext = createContext<AuthState | null>(null);
@@ -120,7 +123,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: email.trim(),
           password,
           // display_name est lu par le trigger handle_new_user() pour renseigner users.display_name. terms_version : la case « j'accepte » de l'écran d'inscription, dans la même requête que le compte.
-          options: { data: { display_name: displayName.trim(), terms_version: TERMS_VERSION } },
+          // onboarding_pending : seul un compte créé par cette version passe par l'accueil (voir src/lib/onboarding.ts).
+          options: {
+            data: { display_name: displayName.trim(), terms_version: TERMS_VERSION, onboarding_pending: true },
+          },
         });
         if (error) {
           throw error;
@@ -130,6 +136,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async acceptTerms() {
         // Fusionnée dans user_metadata : display_name et le reste sont conservés. L'événement USER_UPDATED qui suit porte la nouvelle session.
         const { error } = await supabase.auth.updateUser({ data: { terms_version: TERMS_VERSION } });
+        if (error) {
+          throw error;
+        }
+      },
+      async completeOnboarding(usage) {
+        const { error } = await supabase.auth.updateUser({
+          data: { onboarding_pending: false, ...(usage ? { usage } : {}) },
+        });
         if (error) {
           throw error;
         }

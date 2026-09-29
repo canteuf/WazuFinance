@@ -1,16 +1,23 @@
 import type { TransactionType } from '@/types/database';
 
 /**
- * Montants en francs CFA (XAF).
+ * Montants en francs CFA (code ISO XAF pour l'Afrique centrale, XOF pour l'Afrique de l'Ouest).
  *
  * Le franc CFA n'a pas de sous-unité (ISO 4217 : exposant 0) : l'app ne saisit et n'affiche que des montants entiers. La base garde numeric(12,2), sans migration — elle y stocke des entiers, et `amount > 0` reste la contrainte qui compte. Le signe affiché vient du type de la transaction, jamais de la saisie.
  */
 
-/** Code ISO 4217 de la devise, écrit après chaque montant : « 1 500 XAF ». */
-export const CURRENCY_SYMBOL = 'XAF';
+/**
+ * Unité écrite après chaque montant : « 1 500 FCFA ».
+ *
+ * « FCFA » et non le code ISO « XAF » : c'est ce qu'on lit sur les étiquettes de prix et dans les apps mobile money, et il vaut pour les deux zones. XAF ne désigne que l'Afrique centrale ; un utilisateur ivoirien y lisait une autre monnaie que la sienne (XOF), de même valeur.
+ */
+export const CURRENCY_SYMBOL = 'FCFA';
 
-/** Espace insécable entre le montant et le code : sans elle, « 1 500 » et « XAF » pourraient se retrouver sur deux lignes. */
+/** Espace insécable entre le montant et le code : sans elle, « 1 500 » et « FCFA » pourraient se retrouver sur deux lignes. */
 const NBSP = ' ';
+
+/** Espace fine insécable (U+202F), celle que Intl place entre les milliers en français : un montant tapé s'affiche comme un montant formaté. */
+const THIN_NBSP = ' ';
 
 const MAX_AMOUNT = 9_999_999_999;
 
@@ -30,7 +37,7 @@ export function parseAmount(input: string): number | null {
 }
 
 /**
- * Comme parseAmount, mais accepte zéro — un objectif d'épargne commence parfois à 0 XAF, contrairement à une transaction ou un plafond de budget.
+ * Comme parseAmount, mais accepte zéro — un objectif d'épargne commence parfois à 0 FCFA, contrairement à une transaction ou un plafond de budget.
  */
 export function parseNonNegativeAmount(input: string): number | null {
   const normalised = input.trim();
@@ -56,22 +63,39 @@ export function formatAmount(value: number): string {
   return formatter.format(value);
 }
 
-/** Ajoute le code de la devise à un montant déjà formaté, signé ou non : « +320 XAF », « 1 391 XAF ». */
+/** Ajoute le code de la devise à un montant déjà formaté, signé ou non : « +320 FCFA », « 1 391 FCFA ». */
 export function withCurrency(formatted: string): string {
   return `${formatted}${NBSP}${CURRENCY_SYMBOL}`;
 }
 
-/** « 1 500 XAF ». */
+/** « 1 500 FCFA ». */
 export function formatMoney(value: number): string {
   return withCurrency(formatAmount(value));
 }
 
 /**
- * « 1 500 francs CFA », pour un libellé d'accessibilité : un lecteur d'écran épelle « XAF » lettre à lettre. Au singulier sous deux, comme le français l'accorde.
+ * « 1 500 francs CFA », pour un libellé d'accessibilité : un lecteur d'écran épelle « FCFA » lettre à lettre. Au singulier sous deux, comme le français l'accorde.
  */
 export function spokenAmount(value: number): string {
   const unit = Math.abs(Math.round(value)) < 2 ? 'franc CFA' : 'francs CFA';
   return `${formatAmount(value)} ${unit}`;
+}
+
+/**
+ * Espace fine insécable entre les milliers d'un montant en cours de saisie : « 150 000 ».
+ *
+ * La saisie se fait sur des chiffres nus, pour que parseAmount les lise tels quels ; seul l'affichage les groupe. Sans groupes, « 150000 » et « 1500000 » se confondaient d'un coup d'œil, et un zéro de trop passait inaperçu. Le zéro de tête éventuel est gardé : c'est ce que l'utilisateur a tapé.
+ */
+export function groupDigits(digits: string): string {
+  if (!/^\d+$/.test(digits)) {
+    return digits;
+  }
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, THIN_NBSP);
+}
+
+/** Les chiffres seuls d'un champ de montant : retire les espaces que groupDigits a insérés, et tout ce qu'un collage aurait apporté. */
+export function amountDigits(text: string): string {
+  return text.replace(/\D/g, '');
 }
 
 /** Texte d'un champ de saisie pour un montant existant : « 1500 », sans séparateur de milliers, que parseAmount refuserait. */
@@ -86,13 +110,13 @@ export function toAmountInput(value: number): string {
  */
 const MINUS = '−';
 
-/** « −2 490 XAF » pour une dépense, « +150 000 XAF » pour un revenu. */
+/** « −2 490 FCFA » pour une dépense, « +150 000 FCFA » pour un revenu. */
 export function formatSigned(value: number, type: TransactionType): string {
   const sign = type === 'expense' ? MINUS : '+';
   return `${sign}${formatMoney(value)}`;
 }
 
-/** Même chose sans code de devise, le « XAF » étant porté à côté. */
+/** Même chose sans code de devise, le « FCFA » étant porté à côté. */
 export function formatSignedBare(value: number, type: TransactionType): string {
   const sign = type === 'expense' ? MINUS : '+';
   return `${sign}${formatAmount(value)}`;

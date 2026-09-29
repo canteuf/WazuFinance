@@ -68,7 +68,9 @@ export const queryKeys = {
   groupMembers: (groupId: string) => ['groupMembers', groupId] as const,
   // Sous la clé des membres du groupe : un départ ou un retour, que useMembershipsRealtime() voit déjà, change aussi cette liste.
   formerMembers: (groupId: string) => ['groupMembers', groupId, 'former'] as const,
-  groupInvitation: (groupId: string) => ['groupInvitation', groupId] as const,
+  // Un code actif par rôle : la clé porte le rôle, et `groupInvitation(groupId)` sans rôle, préfixe des deux, sert aux invalidations (exclusion, rétrogradation).
+  groupInvitation: (groupId: string, role?: 'member' | 'viewer') =>
+    role ? (['groupInvitation', groupId, role] as const) : (['groupInvitation', groupId] as const),
   // Clés plates, sans groupe, comme savingsGoals : le profil et les blocages de suppression appartiennent à l'utilisateur, et usePersistedQueryCache() est la seule frontière qui compte.
   profile: () => ['profile'] as const,
   deletionBlockers: () => ['deletionBlockers'] as const,

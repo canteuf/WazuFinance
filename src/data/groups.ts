@@ -231,11 +231,15 @@ function toInvitation(row: {
 /**
  * Invitation active d'un groupe : ni révoquée, ni expirée. Au plus une à la fois. Un code sert à plusieurs personnes jusqu'à son échéance (migration group_roles) : qu'il ait déjà servi ne le retire pas.
  */
-export async function getActiveInvitation(groupId: string): Promise<GroupInvitation | null> {
+export async function getActiveInvitation(
+  groupId: string,
+  role: InvitationRole
+): Promise<GroupInvitation | null> {
   const { data, error } = await supabase
     .from('group_invitations')
     .select('id, code, expires_at, role')
     .eq('group_id', groupId)
+    .eq('role', role)
     .is('revoked_at', null)
     .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false })

@@ -117,7 +117,7 @@ export function FilterBar({
 
   return (
     <View style={styles.bar}>
-      <View style={[styles.search, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View style={[styles.search, { backgroundColor: colors.surface, borderColor: colors.inputBorder }]}>
         <MaterialCommunityIcons name="magnify" size={20} color={colors.textMuted} />
         <TextInput
           accessibilityLabel="Rechercher une opération"
