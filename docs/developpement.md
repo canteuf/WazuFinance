@@ -120,12 +120,12 @@ Les règles détaillées et les pièges déjà rencontrés sont dans [CLAUDE.md]
 
 ## Sauvegardes (GitHub Actions)
 
-Le plan gratuit de Supabase n'offre pas de sauvegarde téléchargeable et met un projet en pause après 7 jours d'inactivité. Deux workflows y répondent :
+Le plan gratuit de Supabase n'offre pas de sauvegarde téléchargeable et met un projet en pause après 7 jours d'inactivité. Deux workflows y répondent, dans le dépôt **privé** `canteuf/WazuFinance-ops` :
 
-- [db-backup.yml](../.github/workflows/db-backup.yml), chaque nuit à 02:00 UTC : export complet (rôles, schéma, données), chiffré avec `gpg`, conservé 30 jours comme artefact. La procédure de restauration est en tête du fichier.
-- [db-keepalive.yml](../.github/workflows/db-keepalive.yml), tous les deux jours : une vraie requête SQL.
+- `db-backup.yml`, chaque nuit à 02:00 UTC : export complet (rôles, schéma, données), chiffré pour une clé publique GPG, conservé 30 jours comme artefact ;
+- `db-keepalive.yml`, tous les deux jours : une vraie requête SQL.
 
-Secrets du dépôt : `SUPABASE_DB_URL`, la chaîne **Session pooler** (dashboard → Connect), encodée en pourcentage, et `BACKUP_PASSPHRASE`, à conserver aussi hors de GitHub : sans elle, les sauvegardes sont illisibles.
+Ils ne sont pas dans ce dépôt parce qu'il est public : n'importe quel compte GitHub peut y télécharger les artefacts d'un workflow. La création de la clé, les secrets et la restauration sont décrits dans le README du dépôt privé.
 
 ## Maintenance des dépendances
 

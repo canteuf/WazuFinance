@@ -51,7 +51,7 @@ jobs:
 
       - uses: supabase/setup-cli@v1
         with:
-          # Même version que la CLI du projet (npx supabase --version), comme db-backup.yml.
+          # Même version que la CLI du projet (npx supabase --version), comme db-backup.yml dans canteuf/WazuFinance-ops.
           version: 2.117.0
 
       # Toutes les migrations sont appliquées dans l'ordre sur une base vide : une migration qui ne passe que sur une base déjà migrée échoue ici, avant `db push`. Les services que les tests n'utilisent pas ne sont pas démarrés ; Auth reste, parce que ses propres migrations complètent le schéma auth que handle_new_user() et les tests utilisent.
