@@ -8,7 +8,12 @@ import { TextField } from '@/components/ui/text-field';
 import { useAuth } from '@/hooks/use-auth';
 import { authErrorMessage } from '@/lib/auth-errors';
 import { goBackOr } from '@/lib/navigation';
-import { validateDisplayName, validateEmail, validatePassword } from '@/lib/validation';
+import {
+  DISPLAY_NAME_MAX_LENGTH,
+  validateDisplayName,
+  validateEmail,
+  validatePassword,
+} from '@/lib/validation';
 import { font, radius, spacing, useColors } from '@/theme/tokens';
 
 type FieldErrors = {
@@ -92,6 +97,7 @@ export default function SignUpScreen() {
         returnKeyType="next"
         onSubmitEditing={() => emailRef.current?.focus()}
         placeholder="Camille"
+        maxLength={DISPLAY_NAME_MAX_LENGTH}
       />
 
       <TextField

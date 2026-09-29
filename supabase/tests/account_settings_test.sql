@@ -243,6 +243,10 @@ insert into public.group_invitations (id, group_id, code, created_by, expires_at
 values ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000c2',
         'ORPHAN', '00000000-0000-0000-0000-0000000000e3', now() + interval '7 days');
 
+-- C'est Carol qui part : une suppression faite par quelqu'un d'autre serait une exclusion, qui révoque les codes (revoke_invitations_on_member_change()).
+select set_config('request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-0000000000e3","role":"authenticated"}', true);
+
 delete from public.account_memberships
  where group_id = '00000000-0000-0000-0000-0000000000c2'
    and user_id = '00000000-0000-0000-0000-0000000000e3';

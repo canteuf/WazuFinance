@@ -26,8 +26,13 @@ export function isGuessablePin(pin: string): boolean {
   return steps.every((step) => step === 1) || steps.every((step) => step === -1);
 }
 
+/**
+ * Vrai au retour d'un passage en arrière-plan d'au moins `LOCK_AFTER_MS`.
+ *
+ * Une horloge qui a reculé pendant l'absence (`now` avant `backgroundAt`) verrouille aussi : sinon, reculer l'heure du téléphone d'une heure suffisait à rouvrir l'app sans code. Le temps réellement passé dehors est alors inconnu, et le doute va au verrou.
+ */
 export function shouldLockOnReturn(backgroundAt: number | null, now: number): boolean {
-  return backgroundAt !== null && now - backgroundAt >= LOCK_AFTER_MS;
+  return backgroundAt !== null && (now < backgroundAt || now - backgroundAt >= LOCK_AFTER_MS);
 }
 
 /**

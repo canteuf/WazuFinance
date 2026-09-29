@@ -15,7 +15,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-profile';
 import { parseAvatarId, type AvatarId } from '@/lib/avatars';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { validateDisplayName } from '@/lib/validation';
+import { DISPLAY_NAME_MAX_LENGTH, validateDisplayName } from '@/lib/validation';
 import { font, spacing, useColors } from '@/theme/tokens';
 
 /** Durée d'affichage de « Enregistré », comme « Copié » à l'écran 7. */
@@ -136,6 +136,7 @@ export function ProfileSection() {
             autoComplete="name"
             textContentType="name"
             autoFocus
+            maxLength={DISPLAY_NAME_MAX_LENGTH}
           />
           <View style={styles.actions}>
             <Button

@@ -41,6 +41,10 @@ export function useGroupMutations() {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.groupMembers(variables.groupId),
       });
+      // Exclure révoque les codes actifs du groupe (trigger revoke_invitations_on_exclusion) : l'écran doit proposer d'en générer un nouveau.
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.groupInvitation(variables.groupId),
+      });
     },
   });
 
@@ -48,6 +52,8 @@ export function useGroupMutations() {
   function invalidateGroup(groupId: string) {
     invalidateMemberships();
     void queryClient.invalidateQueries({ queryKey: queryKeys.groupMembers(groupId) });
+    // Rendre lecteur révoque les codes « membre » actifs, que la personne a vus.
+    void queryClient.invalidateQueries({ queryKey: queryKeys.groupInvitation(groupId) });
   }
 
   const setRole = useMutation({

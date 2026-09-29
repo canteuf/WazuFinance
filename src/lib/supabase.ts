@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { AppState, Platform } from 'react-native';
 
 import { env } from '@/lib/env';
+import { createFetchWithTimeout } from '@/lib/fetch-with-timeout';
 import { secureSessionStorage } from '@/lib/secure-session-storage';
 import type { Database } from '@/types/database';
 
@@ -16,6 +17,8 @@ export const supabase = createClient<Database>(env.supabaseUrl, env.supabaseAnon
     // Pas de flux de callback OAuth dans l'URL sur mobile.
     detectSessionInUrl: false,
   },
+  // Limite de temps et pannes passagères de la passerelle : voir fetch-with-timeout.ts.
+  global: { fetch: createFetchWithTimeout() },
 });
 
 // Rafraîchit le token tant que l'app est au premier plan, et arrête le timer en arrière-plan. À n'enregistrer qu'une fois, d'où sa place au niveau module.

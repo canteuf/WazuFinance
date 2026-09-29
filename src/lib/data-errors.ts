@@ -4,6 +4,8 @@
  * On mappe d'abord les codes SQLSTATE, qui ne changent pas entre versions de Postgres et de PostgREST — même règle que src/lib/auth-errors.ts. Une panne de transport (connexion perdue) ne porte jamais de SQLSTATE : le client PostgREST installé l'attrape et renvoie un objet littéral avec `code: ""` et un `message` du type `"TypeError: Network request failed"` (React Native) ou `"TypeError: Failed to fetch"` (navigateur). Pour ce seul cas on retombe sur le message, faute d'alternative : le code reste prioritaire dès qu'il est renseigné.
  */
 
+import { TIMEOUT_MESSAGE, UNAVAILABLE_MESSAGE } from '@/lib/fetch-with-timeout';
+
 const MESSAGES: Record<string, string> = {
   '42501': "Vous n'avez pas accès à ce budget.",
   '23503': "Cette catégorie n'existe plus.",
@@ -20,7 +22,8 @@ const MESSAGES: Record<string, string> = {
 
 const GENERIC = 'Une erreur inattendue est survenue.';
 
-const NETWORK_MESSAGE_PATTERNS = ['Network request failed', 'Failed to fetch'];
+// Les deux derniers viennent de fetch-with-timeout.ts : une requête restée sans réponse, et une passerelle momentanément indisponible (502, 503…).
+const NETWORK_MESSAGE_PATTERNS = ['Network request failed', 'Failed to fetch', TIMEOUT_MESSAGE, UNAVAILABLE_MESSAGE];
 
 function hasCode(error: unknown): error is { code: string } {
   return (

@@ -29,6 +29,7 @@ import { formatOccurredOn, todayIso } from '@/lib/dates';
 import { readLastCategory } from '@/lib/last-used';
 import { formatMoney, parseAmount, spokenAmount, toAmountInput } from '@/lib/money';
 import { anchorFor, describeRecurrence } from '@/lib/recurrence';
+import { NOTE_MAX_LENGTH } from '@/lib/validation';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 import type { RecurrenceFrequency, TransactionType } from '@/types/database';
 
@@ -323,6 +324,7 @@ export function TransactionForm({
                 placeholderTextColor={colors.textMuted}
                 value={note}
                 onChangeText={setNote}
+                maxLength={NOTE_MAX_LENGTH}
                 style={[styles.noteInput, { color: colors.text }]}
               />
             </View>

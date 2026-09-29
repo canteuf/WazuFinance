@@ -18,7 +18,7 @@ export function useGroupInvitation(groupId: string, createdBy: string | undefine
     queryKey: queryKeys.groupInvitation(groupId),
     queryFn: () => getActiveInvitation(groupId),
     enabled: groupId !== '',
-    // Pas de temps réel sur account_memberships (voir CLAUDE.md) : sans ça, une régénération faite ailleurs ne se voit qu'après le staleTime.
+    // group_invitations n'est pas dans la publication Realtime : sans ça, une régénération faite ailleurs ne se voit qu'après le staleTime.
     refetchOnMount: 'always',
   });
 

@@ -9,6 +9,7 @@ import { useActiveGroup } from '@/hooks/use-active-group';
 import { useGroupMutations } from '@/hooks/use-group-mutations';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { goBackOr } from '@/lib/navigation';
+import { GROUP_NAME_MAX_LENGTH } from '@/lib/validation';
 import { font, radius, spacing, useColors } from '@/theme/tokens';
 
 /** Créer un groupe partagé (spec section 1, écran 7). formSheet, un seul champ. */
@@ -61,6 +62,7 @@ export default function GroupCreateScreen() {
           placeholderTextColor={colors.textMuted}
           value={name}
           onChangeText={setName}
+          maxLength={GROUP_NAME_MAX_LENGTH}
           autoFocus
           style={[
             styles.name,

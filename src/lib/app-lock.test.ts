@@ -43,6 +43,11 @@ describe('shouldLockOnReturn', () => {
   it('ne verrouille pas sans passage en arrière-plan', () => {
     expect(shouldLockOnReturn(null, 10 * LOCK_AFTER_MS)).toBe(false);
   });
+
+  it('verrouille quand l’horloge a reculé pendant l’absence', () => {
+    expect(shouldLockOnReturn(10 * LOCK_AFTER_MS, 10 * LOCK_AFTER_MS - 60 * 60_000)).toBe(true);
+    expect(shouldLockOnReturn(10 * LOCK_AFTER_MS, 10 * LOCK_AFTER_MS - 1)).toBe(true);
+  });
 });
 
 describe('lockoutDelayMs', () => {

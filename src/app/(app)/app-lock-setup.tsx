@@ -31,8 +31,11 @@ export default function AppLockSetupScreen() {
   const router = useRouter();
   const toast = useToast();
   const { mode: rawMode } = useLocalSearchParams<{ mode?: string }>();
-  const mode: Mode = rawMode === 'change' || rawMode === 'disable' ? rawMode : 'create';
-  const { checkPin, enable, changePin, disable, biometricsAvailable } = useAppLock();
+  const { settings, checkPin, enable, changePin, disable, biometricsAvailable } = useAppLock();
+  // Le mode suit l'état réel, pas le paramètre : `wazufinance://app-lock-setup` sans paramètre ouvrait la création alors qu'un code existait, et remplaçait ce code sans demander l'actuel. Figé à l'ouverture : après `enable()`, `settings` n'est plus null, et la création ne doit pas se changer en changement sous les doigts. L'écran ne s'affiche jamais pendant la lecture du réglage (`settings === undefined`), que couvre le voile d'AppLockProvider.
+  const [mode] = useState<Mode>(() =>
+    settings ? (rawMode === 'disable' ? 'disable' : 'change') : 'create'
+  );
 
   const [step, setStep] = useState<Step>(mode === 'create' ? 'new' : 'current');
   const [pin, setPin] = useState('');

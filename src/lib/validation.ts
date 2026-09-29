@@ -9,6 +9,14 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const MIN_PASSWORD_LENGTH = 8;
 
+/** Longueurs saisissables dans l'app. La base en impose de plus larges (migration 20260929000100) : elle n'arrête que les appels directs à l'API, jamais une saisie faite ici. */
+export const DISPLAY_NAME_MAX_LENGTH = 40;
+export const GROUP_NAME_MAX_LENGTH = 40;
+/** Un versement d'épargne prend le nom de l'objectif comme note d'opération : il doit tenir dans `NOTE_MAX_LENGTH`. */
+export const GOAL_NAME_MAX_LENGTH = 60;
+/** Comme la note d'une dette, d'un transfert ou d'une récurrence : une opération répétée passe sa note à la récurrence, limitée à 120 en base. */
+export const NOTE_MAX_LENGTH = 120;
+
 export function validateEmail(email: string): string | undefined {
   const value = email.trim();
   if (!value) {
@@ -51,6 +59,9 @@ export function validateDisplayName(displayName: string): string | undefined {
   }
   if (value.length < 2) {
     return 'Au moins 2 caractères.';
+  }
+  if ([...value].length > DISPLAY_NAME_MAX_LENGTH) {
+    return `${DISPLAY_NAME_MAX_LENGTH} caractères au plus.`;
   }
   return undefined;
 }

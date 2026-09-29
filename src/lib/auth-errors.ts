@@ -38,6 +38,10 @@ export function authErrorMessage(error: unknown): string {
     if (known) {
       return known;
     }
+    // auth-js range toute requête sans réponse (réseau coupé, limite de temps de fetch-with-timeout.ts) dans une AuthRetryableFetchError de statut 0, sans code.
+    if (error.name === 'AuthRetryableFetchError' && error.status === 0) {
+      return 'Pas de connexion. Vérifiez votre réseau.';
+    }
     // Pas de code exploitable : on retombe sur une formulation générique plutôt que d'afficher un message anglais à l'utilisateur.
     return `Échec de l'authentification (${error.code ?? error.status ?? 'inconnu'}).`;
   }

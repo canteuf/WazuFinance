@@ -53,13 +53,15 @@ export default function GroupScreen() {
     error: membersError,
     isLoadingError,
   } = useGroupMembers(id);
+  // Un lecteur ne lit pas les codes (policy group_invitations_select_writer) : il pourrait sinon quitter le groupe et revenir avec un code « membre ». La requête n'est pas lancée pour lui.
+  const isViewer = members.find((member) => member.userId === userId)?.role === 'viewer';
   const {
     invitation,
     isLoading: invitationLoading,
     generate,
     regenerate,
     isGenerating,
-  } = useGroupInvitation(id, userId);
+  } = useGroupInvitation(isViewer ? '' : id, userId);
   const { removeGroupMember, isRemoving, setRole, handOver, isChangingRole } = useGroupMutations();
   const [copied, setCopied] = useState(false);
   const [actionError, setActionError] = useState<string>();
@@ -443,7 +445,9 @@ export default function GroupScreen() {
                 />
               ) : (
                 <Text style={[styles.caption, { color: colors.textMuted }]}>
-                  Aucune invitation active. Le propriétaire du groupe peut en générer une.
+                  {isViewer
+                    ? 'Pour inviter quelqu’un, demandez un code au propriétaire du groupe.'
+                    : 'Aucune invitation active. Le propriétaire du groupe peut en générer une.'}
                 </Text>
               )}
             </Card>

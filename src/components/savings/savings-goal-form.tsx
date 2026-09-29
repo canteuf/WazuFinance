@@ -9,6 +9,7 @@ import { DeleteAction, PrimaryAction } from '@/components/ui/form-actions';
 import { IconChoiceGrid } from '@/components/ui/icon-choice-grid';
 import { formatMonthYear, todayIso } from '@/lib/dates';
 import { CURRENCY_SYMBOL, parseAmount, parseNonNegativeAmount, toAmountInput } from '@/lib/money';
+import { GOAL_NAME_MAX_LENGTH } from '@/lib/validation';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 
 export type SavingsGoalFormValues = {
@@ -94,6 +95,7 @@ export function SavingsGoalForm({
           placeholderTextColor={colors.textMuted}
           value={name}
           onChangeText={setName}
+          maxLength={GOAL_NAME_MAX_LENGTH}
           style={[
             styles.input,
             { backgroundColor: colors.surfaceMuted, borderColor: colors.border, color: colors.text },
