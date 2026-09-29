@@ -20,7 +20,7 @@ import { SheetScrollView } from '@/components/ui/sheet-scroll-view';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useAuth } from '@/hooks/use-auth';
 import { useIsOnline } from '@/hooks/use-offline-status';
-import { useRecurringMutations } from '@/hooks/use-recurring-mutations';
+import { useRejectedWrites } from '@/hooks/use-rejected-writes';
 import { useSheetMaxHeight } from '@/hooks/use-sheet-max-height';
 import { useTransaction } from '@/hooks/use-transaction';
 import { useToast } from '@/hooks/use-toast';
@@ -38,7 +38,11 @@ export default function TransactionScreen() {
   const colors = useColors();
   const router = useRouter();
   const sheetMaxHeight = useSheetMaxHeight();
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  // `draft` : une saisie refusée à l'envoi, reprise depuis « À corriger » (voir RejectedWrites).
+  const { id, draft: draftId } = useLocalSearchParams<{ id?: string; draft?: string }>();
+  const rejected = useRejectedWrites();
+  const draft =
+    typeof draftId === 'string' ? rejected.items.find((item) => item.id === draftId)?.draft : undefined;
   const { session } = useAuth();
   const {
     activeGroupId,
@@ -56,10 +60,11 @@ export default function TransactionScreen() {
   } = useTransactionMutations();
   const online = useIsOnline();
   const toast = useToast();
-  const recurringMutations = useRecurringMutations();
   const [errorText, setErrorText] = useState<string>();
   // Tiré une fois pour toute la vie de la feuille : un second « Enregistrer » après un échec réseau renvoie la même saisie, que la base reconnaît au lieu de la créer deux fois (voir `create` dans src/data/transactions.ts).
   const [newId] = useState(randomUUID);
+  // Même principe pour le modèle récurrent de « Répéter ».
+  const [recurrenceId] = useState(randomUUID);
 
   const existing = useTransaction(id);
   // Version de la ligne sur laquelle le formulaire s'est ouvert : il lit ses valeurs au montage, et une relecture arrivée ensuite (Realtime, retour du réseau) ne les change pas. La modification n'est écrite que si la ligne en est toujours là (voir `update` dans src/data/transactions.ts).
@@ -78,8 +83,8 @@ export default function TransactionScreen() {
 
   const userId = session?.user.id;
 
-  // Tous les hooks ci-dessus s'exécutent à chaque rendu ; les retours conditionnels qui suivent n'en court-circuitent aucun.
-  if (groupLoading) {
+  // Tous les hooks ci-dessus s'exécutent à chaque rendu ; les retours conditionnels qui suivent n'en court-circuitent aucun. Une reprise attend la lecture de « À corriger » : le formulaire lit ses valeurs au montage, et s'ouvrirait vide.
+  if (groupLoading || (typeof draftId === 'string' && !rejected.isLoaded)) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator color={colors.primary} />
@@ -163,40 +168,38 @@ export default function TransactionScreen() {
     } else {
       const { repeat, ...entry } = values;
       const saved = `${what} enregistré${values.type === 'expense' ? 'e' : ''}`;
-      createTransaction.mutate(
-        { ...entry, id: newId, groupId: activeGroupId as string, userId: userId as string },
-        {
-          onSuccess: () => {
-            if (!repeat) {
-              succeed(saved);
-              return;
+      // L'opération saisie est la première occurrence ; la récurrence propose la suivante. Elle part dans les variables de la saisie, et la même écriture la crée (registerTransactionMutationDefaults) : attachée à cet écran, elle se perdait quand la feuille se fermait sur un réseau instable. Si elle seule est refusée, un nouvel « Enregistrer » renvoie la même saisie (mêmes ids, sans doublon) et la retente.
+      const anchorDay = repeat ? anchorFor(repeat, entry.occurredOn) : null;
+      const recurrence =
+        repeat && anchorDay !== null
+          ? {
+              id: recurrenceId,
+              groupId: activeGroupId as string,
+              userId: userId as string,
+              categoryId: entry.categoryId,
+              type: entry.type,
+              amount: entry.amount,
+              note: entry.note,
+              frequency: repeat,
+              anchorDay,
+              nextDueOn: nextDueAfter(repeat, anchorDay, entry.occurredOn),
+              // Le portefeuille de la première occurrence : les échéances suivantes le reprendront.
+              walletId: entry.walletId,
             }
-            // L'opération saisie est la première occurrence ; la récurrence propose la suivante. Si sa création échoue, la feuille reste ouverte sur l'erreur : un nouvel « Enregistrer » renvoie la même saisie (même id, sans doublon) puis retente la récurrence.
-            const anchorDay = anchorFor(repeat, entry.occurredOn);
-            recurringMutations.create.mutate(
-              {
-                groupId: activeGroupId as string,
-                userId: userId as string,
-                categoryId: entry.categoryId,
-                type: entry.type,
-                amount: entry.amount,
-                note: entry.note,
-                frequency: repeat,
-                anchorDay,
-                nextDueOn: nextDueAfter(repeat, anchorDay, entry.occurredOn),
-                // Le portefeuille de la première occurrence : les échéances suivantes le reprendront.
-                walletId: entry.walletId,
-              },
-              {
-                onSuccess: () =>
-                  succeed(`${saved} · ${describeRecurrence(repeat, anchorDay).toLowerCase()}`),
-                onError: (error) =>
-                  setErrorText(
-                    `Opération enregistrée, mais la répétition n’a pas pu être créée : ${dataErrorMessage(error)}`
-                  ),
-              }
-            );
-          },
+          : undefined;
+      // La reprise est une saisie neuve, sous son propre id : la ligne d'« À corriger » s'en va dès maintenant. Si elle est refusée à son tour, elle y reviendra.
+      if (typeof draftId === 'string') {
+        rejected.dismiss(draftId);
+      }
+      createTransaction.mutate(
+        { ...entry, id: newId, groupId: activeGroupId as string, userId: userId as string, recurrence },
+        {
+          onSuccess: () =>
+            succeed(
+              repeat && anchorDay !== null
+                ? `${saved} · ${describeRecurrence(repeat, anchorDay).toLowerCase()}`
+                : saved
+            ),
           onError,
         }
       );
@@ -223,7 +226,18 @@ export default function TransactionScreen() {
         walletId: existing.data.wallet_id,
         tags: existing.data.tags ?? [],
       }
-    : undefined;
+    : draft
+      ? {
+          type: draft.type,
+          amount: draft.amount,
+          categoryId: draft.categoryId,
+          occurredOn: draft.occurredOn,
+          note: draft.note,
+          repeat: null,
+          walletId: draft.walletId,
+          tags: draft.tags,
+        }
+      : undefined;
 
   return (
     // sheetAllowedDetents: 'fitToContents' calcule la hauteur de la feuille à partir de celle du contenu ; flex: 1 empêcherait cette mesure (la vue s'étirerait pour remplir un espace disponible qui n'existe pas encore). maxHeight borne la feuille à une fraction de l'écran : le ScrollView ci-dessous devient alors le seul à défiler, clavier ouvert compris, au lieu que fitToContents mesure un contenu plus haut que l'écran.

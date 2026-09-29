@@ -6,6 +6,9 @@
 
 import { TIMEOUT_MESSAGE, UNAVAILABLE_MESSAGE } from '@/lib/fetch-with-timeout';
 
+/** Code d'une opération enregistrée dont la récurrence a été refusée : elle n'est pas perdue, et ne doit pas se lire comme telle. */
+export const RECURRENCE_FAILED = 'RECURRENCE_FAILED';
+
 const MESSAGES: Record<string, string> = {
   '42501': "Vous n'avez pas accès à ce budget.",
   '23503': "Cette catégorie n'existe plus.",
@@ -18,6 +21,8 @@ const MESSAGES: Record<string, string> = {
   // Pas un SQLSTATE non plus : `update()` (src/data/transactions.ts) le lève quand la ligne a changé depuis que le formulaire l'a lue.
   TRANSACTION_CONFLICT:
     'Cette opération a été modifiée par un autre membre entre-temps. Rouvrez-la pour voir sa version actuelle, puis refaites votre modification.',
+  // Levé par l'écriture d'une opération « Répéter » (use-transaction-mutations) quand l'opération est passée mais que son modèle récurrent a été refusé.
+  [RECURRENCE_FAILED]: 'L’opération est enregistrée, mais sa répétition n’a pas pu être créée.',
 };
 
 const GENERIC = 'Une erreur inattendue est survenue.';

@@ -6,12 +6,16 @@ import {
   QueryClient,
   QueryClientProvider,
 } from '@tanstack/react-query';
+import { randomUUID } from 'expo-crypto';
 import { useState, type ReactNode } from 'react';
 import { Alert, AppState, Platform, type AppStateStatus } from 'react-native';
 
 import { PERSISTED_CACHE_MAX_AGE } from '@/hooks/use-persisted-query-cache';
 import { registerTransactionMutationDefaults } from '@/hooks/use-transaction-mutations';
-import { dataErrorMessage } from '@/lib/data-errors';
+import { dataErrorMessage, RECURRENCE_FAILED } from '@/lib/data-errors';
+import { describeRejected } from '@/lib/rejected-writes';
+import { addRejected } from '@/lib/rejected-writes-store';
+import { supabase } from '@/lib/supabase';
 
 /**
  * Sans ce pont, TanStack Query s'appuie sur son détecteur de focus par défaut (l'événement web `visibilitychange`), qui n'existe pas sur natif : après une longue mise en arrière-plan, un dashboard resté monté ne revalide jamais au retour au premier plan, même avec un staleTime dépassé. Configuration React Native documentée par TanStack Query.
@@ -44,10 +48,37 @@ function createMutationCache(): MutationCache {
   const queued = new WeakSet<object>();
 
   const cache = new MutationCache({
-    onError: (error, _variables, _context, mutation) => {
-      if (queued.has(mutation)) {
-        Alert.alert('Une opération n’a pas pu être envoyée', dataErrorMessage(error));
+    onError: (error, variables, _context, mutation) => {
+      if (!queued.has(mutation)) {
+        return;
       }
+      const reason = dataErrorMessage(error);
+      // L'opération est passée, seule sa répétition a été refusée : rien à refaire, donc rien à garder dans « À corriger ».
+      if ((error as { code?: unknown }).code === RECURRENCE_FAILED) {
+        Alert.alert('Répétition non créée', reason);
+        return;
+      }
+      const entry = describeRejected(
+        mutation.options.mutationKey,
+        variables,
+        reason,
+        randomUUID(),
+        new Date().toISOString()
+      );
+      if (!entry) {
+        Alert.alert('Une opération n’a pas pu être envoyée', reason);
+        return;
+      }
+      // La saisie est gardée, avec de quoi la refaire : elle ne disparaît plus sur une simple alerte. La file appartient au compte connecté (un cache par compte).
+      void supabase.auth.getSession().then(({ data }) => {
+        if (data.session) {
+          void addRejected(data.session.user.id, entry);
+        }
+      });
+      Alert.alert(
+        'Une opération n’a pas pu être envoyée',
+        `${entry.summary} : ${reason}\n\nElle est gardée dans « À corriger », sur la Synthèse.`
+      );
     },
   });
 

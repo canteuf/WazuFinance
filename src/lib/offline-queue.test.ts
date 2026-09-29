@@ -1,9 +1,11 @@
 import {
   keepQueueAcrossVersions,
+  mergeSavedRow,
   patchIsApplied,
   PERSISTED_HISTORY_PAGES,
   prepareForDisk,
   queueOnly,
+  rescueExpiredQueue,
   transportRetryDelay,
   VersionChain,
   type PersistedCache,
@@ -134,6 +136,72 @@ describe('keepQueueAcrossVersions', () => {
     expect(restored.buster).toBe('1.1.0#2');
     expect(restored.clientState.mutations).toEqual([paused]);
     expect(restored.clientState.queries).toEqual([]);
+  });
+});
+
+describe('mergeSavedRow', () => {
+  const food = { id: 'c1', name: 'Alimentation', icon: 'food' };
+  const row = { id: 't1', amount: 1500, category_id: 'c1', category: food, updated_at: 'v1' };
+  const other = { id: 't2', amount: 900, category_id: 'c1', category: food, updated_at: 'v1' };
+
+  it('reporte la nouvelle version dans une liste', () => {
+    const saved = { id: 't1', amount: 2000, category_id: 'c1', updated_at: 'v2' };
+    const next = mergeSavedRow([row, other], saved, null) as (typeof row)[];
+    expect(next[0]).toEqual({ ...row, amount: 2000, updated_at: 'v2' });
+    // L'autre ligne est la même, à l'identique.
+    expect(next[1]).toBe(other);
+  });
+
+  it('reporte la nouvelle version dans les pages d’un historique', () => {
+    const saved = { id: 't2', amount: 950, category_id: 'c1', updated_at: 'v2' };
+    const history = { pages: [[row], [other]], pageParams: [null, 'cursor'] };
+    const next = mergeSavedRow(history, saved, null) as typeof history;
+    expect(next.pages[0][0]).toBe(row);
+    expect(next.pages[1][0]).toMatchObject({ amount: 950, updated_at: 'v2', category: food });
+  });
+
+  it('prend la catégorie fournie quand elle a changé', () => {
+    const transport = { id: 'c2', name: 'Transport', icon: 'bus' };
+    const saved = { id: 't1', amount: 1500, category_id: 'c2', updated_at: 'v2' };
+    const next = mergeSavedRow([row], saved, transport) as (typeof row)[];
+    expect(next[0].category).toBe(transport);
+  });
+
+  it('met à jour la fiche d’une opération', () => {
+    const saved = { id: 't1', amount: 3000, category_id: 'c1', updated_at: 'v3' };
+    expect(mergeSavedRow(row, saved, null)).toMatchObject({ amount: 3000, updated_at: 'v3' });
+  });
+
+  it('rend telle quelle une donnée qui ne contient pas la ligne', () => {
+    const totals = { income: 10, expense: 5 };
+    const list = [other];
+    const saved = { id: 't1', amount: 1, category_id: 'c1', updated_at: 'v2' };
+    expect(mergeSavedRow(totals, saved, null)).toBe(totals);
+    expect(mergeSavedRow(list, saved, null)).toBe(list);
+  });
+});
+
+describe('rescueExpiredQueue', () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  const MAX_AGE = 30 * DAY;
+
+  it('rend tel quel un cache encore frais', () => {
+    const fresh = { ...cache({ mutations: [paused], queries: [summary] }), timestamp: 10 * DAY };
+    expect(rescueExpiredQueue(fresh, 20 * DAY, MAX_AGE)).toBe(fresh);
+  });
+
+  it('garde les saisies d’un cache « périmé » par une horloge qui a sauté, et remet son heure à maintenant', () => {
+    // Écrit à une heure fausse, dans le passé ; relu une fois l'heure remise juste.
+    const stale = { ...cache({ mutations: [paused, done], queries: [summary] }), timestamp: 0 };
+    const rescued = rescueExpiredQueue(stale, 200 * DAY, MAX_AGE);
+    expect(rescued.timestamp).toBe(200 * DAY);
+    expect(rescued.clientState.mutations).toEqual([paused]);
+    expect(rescued.clientState.queries).toEqual([]);
+  });
+
+  it('laisse la bibliothèque jeter un cache périmé sans saisie en file', () => {
+    const stale = { ...cache({ mutations: [done], queries: [summary] }), timestamp: 0 };
+    expect(rescueExpiredQueue(stale, 200 * DAY, MAX_AGE)).toBe(stale);
   });
 });
 

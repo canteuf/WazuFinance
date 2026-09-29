@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, SectionList, StyleSheet, Text, View } fro
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PendingTransactions } from '@/components/dashboard/pending-transactions';
+import { RejectedWrites } from '@/components/dashboard/rejected-writes';
 import {
   activeFilterCount,
   DEFAULT_FILTERS,
@@ -379,6 +380,7 @@ export default function HistoryScreen() {
                 </View>
               ) : null}
               {/* Hors des filtres et des totaux par jour, comme sur le tableau de bord : ces saisies n'existent pas encore en base, et ne rejoignent le livre qu'à leur envoi. */}
+              <RejectedWrites />
               <PendingTransactions />
               {/* L'entrée permanente vers les opérations récurrentes : le bloc « À confirmer » de la Synthèse n'apparaît qu'à l'échéance. Absente tant qu'il n'y en a aucune, pour ne pas encombrer l'en-tête. */}
               {recurringCount > 0 && canWrite ? (

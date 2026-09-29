@@ -1,6 +1,7 @@
 import { useMutation, type QueryClient } from '@tanstack/react-query';
 
 import { recordDebtPayment, type RecordDebtPaymentInput } from '@/data/debts';
+import { createRecurring } from '@/data/recurring';
 import {
   create,
   remove,
@@ -8,9 +9,9 @@ import {
   type CreateTransactionInput,
   type UpdateTransactionInput,
 } from '@/data/transactions';
-import { isTransportError } from '@/lib/data-errors';
+import { isTransportError, RECURRENCE_FAILED } from '@/lib/data-errors';
 import { writeLastCategory, writeLastType, writeLastWallet } from '@/lib/last-used';
-import { transportRetryDelay, VersionChain } from '@/lib/offline-queue';
+import { mergeSavedRow, transportRetryDelay, VersionChain } from '@/lib/offline-queue';
 import { mutationKeys, queryKeys } from '@/lib/query-keys';
 import type { Tables } from '@/types/database';
 
@@ -27,6 +28,29 @@ export type UpdateVariables = {
  * Versions que les modifications de cette session ont elles-mêmes produites (voir `VersionChain`). En mémoire seulement : après un redémarrage, la file relue du disque est rejouée dans l'ordre pendant la même session, et la chaîne se reconstruit au fil des envois ; une modification déjà passée avant le redémarrage est reconnue par `update` à ses valeurs.
  */
 const ownVersions = new VersionChain();
+
+/** La catégorie `id` telle que la grille l'a lue, dans la forme que les listes joignent à une opération ; `null` si aucune liste de catégories en cache ne la connaît. */
+function findCachedCategory(
+  queryClient: QueryClient,
+  id: string | null
+): { id: string; name: string; icon: string } | null {
+  if (id === null) {
+    return null;
+  }
+  for (const [, data] of queryClient.getQueriesData<unknown>({ queryKey: ['categories'] })) {
+    if (!Array.isArray(data)) {
+      continue;
+    }
+    const found = data.find(
+      (item): item is { id: string; name: string; icon: string } =>
+        typeof item === 'object' && item !== null && (item as { id?: unknown }).id === id
+    );
+    if (found) {
+      return { id: found.id, name: found.name, icon: found.icon };
+    }
+  }
+  return null;
+}
 
 /**
  * Fonctions et effets des trois écritures, enregistrés une fois sur le QueryClient à sa création (query-provider) plutôt que passés à `useMutation`.
@@ -55,7 +79,21 @@ export function registerTransactionMutationDefaults(queryClient: QueryClient): v
 
   queryClient.setMutationDefaults(mutationKeys.createTransaction(), {
     ...common,
-    mutationFn: (input: CreateTransactionInput) => create(input),
+    // L'opération, puis sa récurrence s'il y en a une : dans la même fonction, pour qu'un renvoi après une panne de réseau reprenne les deux. Chacune porte un id tiré par l'app, donc un renvoi ne double ni l'une ni l'autre. Un refus de la récurrence seule ne doit pas se lire comme une opération perdue : il est levé sous RECURRENCE_FAILED, que data-errors traduit.
+    mutationFn: async (input: CreateTransactionInput) => {
+      const row = await create(input);
+      if (input.recurrence) {
+        try {
+          await createRecurring(input.recurrence);
+        } catch (error) {
+          if (isTransportError(error)) {
+            throw error;
+          }
+          throw Object.assign(new Error('Répétition refusée'), { code: RECURRENCE_FAILED, cause: error });
+        }
+      }
+      return row;
+    },
     // Les préférences sont retenues dès la saisie, même mise en file sans réseau : attendre la réponse de la base laissait, un matin hors ligne, la présélection de la veille à chaque nouvelle vente. Une saisie refusée ensuite ne change qu'un défaut, que l'utilisateur corrige d'un toucher.
     onMutate: async (input: CreateTransactionInput) => {
       await Promise.all([
@@ -64,7 +102,12 @@ export function registerTransactionMutationDefaults(queryClient: QueryClient): v
         input.walletId ? writeLastWallet(input.groupId, input.walletId) : Promise.resolve(),
       ]);
     },
-    onSuccess: () => void invalidate(),
+    onSuccess: (_data: unknown, input: CreateTransactionInput) => {
+      void invalidate();
+      if (input.recurrence) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.recurringAll() });
+      }
+    },
   });
 
   queryClient.setMutationDefaults(mutationKeys.updateTransaction(), {
@@ -77,7 +120,14 @@ export function registerTransactionMutationDefaults(queryClient: QueryClient): v
       }
       return saved;
     },
-    onSuccess: () => void invalidate(),
+    // La ligne enregistrée est reportée tout de suite dans les listes et la fiche (mergeSavedRow), puis le cache est invalidé comme avant. Si le réseau tombe avant le rechargement, le cache — et le disque — restent sur la bonne version, et la correction suivante ne bute pas sur un faux conflit.
+    onSuccess: (saved: Tables<'transactions'>) => {
+      const category = findCachedCategory(queryClient, saved.category_id);
+      queryClient.setQueriesData<unknown>({ queryKey: queryKeys.transactions() }, (data: unknown) =>
+        mergeSavedRow(data, saved, category)
+      );
+      void invalidate();
+    },
   });
 
   queryClient.setMutationDefaults(mutationKeys.deleteTransaction(), {

@@ -18,6 +18,7 @@ import { WalletsEntry } from "@/components/dashboard/wallets-entry";
 import { PendingTransactions } from "@/components/dashboard/pending-transactions";
 import { PeriodSummary } from "@/components/dashboard/period-summary";
 import { RecentTransactions } from "@/components/dashboard/recent-transactions";
+import { RejectedWrites } from "@/components/dashboard/rejected-writes";
 import { SavingsEntry } from "@/components/dashboard/savings-entry";
 import { AccountButton } from "@/components/ui/account-button";
 import { Screen } from "@/components/ui/screen";
@@ -126,6 +127,9 @@ export default function DashboardScreen() {
       <DueRecurring />
 
       {/* Juste sous le solde, que ces saisies ne comptent pas encore : c'est là que l'œil les cherche en revenant de la feuille, et la liste des dernières opérations est souvent sous la ligne de flottaison. Ne rend rien quand rien n'attend. */}
+      {/* Les saisies refusées à l'envoi, avant celles qui attendent encore : elles demandent une action, les autres seulement du réseau. Ne rend rien quand rien n'est refusé. */}
+      <RejectedWrites />
+
       <PendingTransactions />
 
       {/* Où est l'argent, juste sous ce qui en est entré et sorti : les deux soldes se lisent ensemble. Masquée tant que seul « Principal » existe, comme les cartes plus bas tant qu'elles sont vides : voir useDashboardSections. */}

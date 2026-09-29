@@ -150,6 +150,62 @@ export function keepQueueAcrossVersions<T extends PersistedCache>(cache: T, bust
   };
 }
 
+type RowWithId = { id: string; category_id?: string | null; category?: unknown };
+
+function isRow(value: unknown, id: string): value is RowWithId {
+  return typeof value === 'object' && value !== null && (value as { id?: unknown }).id === id;
+}
+
+/**
+ * Une donnée en cache — une liste, les pages d'un historique, ou la fiche d'une opération — où la ligne `saved.id` prend les valeurs que la base vient d'enregistrer.
+ *
+ * Après une modification, le cache n'était qu'invalidé : si le réseau tombait avant le rechargement et qu'Android tuait l'app, la liste relue du disque montrait l'ancienne version. Le formulaire rouvert partait de celle-ci, et la correction suivante était refusée comme « modifiée par un autre membre ». Reporter la ligne tout de suite garde le cache, et le disque, sur la bonne version.
+ *
+ * `category` est la catégorie jointe par les listes : gardée si elle n'a pas changé, sinon remplacée par celle que l'appelant a trouvée (ou `null` s'il n'en connaît pas, le rechargement la rétablira). Toute autre forme de donnée (un total, une `Map`) est rendue telle quel.
+ */
+export function mergeSavedRow(data: unknown, saved: RowWithId, category: unknown): unknown {
+  const merge = (row: RowWithId): RowWithId => ({
+    ...row,
+    ...saved,
+    category: row.category_id === saved.category_id ? row.category : category,
+  });
+  const inList = (rows: unknown[]): unknown[] =>
+    rows.some((row) => isRow(row, saved.id))
+      ? rows.map((row) => (isRow(row, saved.id) ? merge(row) : row))
+      : rows;
+
+  if (Array.isArray(data)) {
+    const next = inList(data);
+    return next === data ? data : next;
+  }
+  if (isInfiniteData(data)) {
+    const pages = data.pages.map((page) => (Array.isArray(page) ? inList(page) : page));
+    return pages.every((page, index) => page === data.pages[index]) ? data : { ...data, pages };
+  }
+  if (isRow(data, saved.id) && 'updated_at' in data) {
+    return merge(data);
+  }
+  return data;
+}
+
+/**
+ * Le cache relu, quand son âge le ferait jeter tout entier.
+ *
+ * La bibliothèque efface un cache plus vieux que `maxAge` — saisies en file comprises. Or cet âge se mesure à l'horloge du téléphone : une batterie retirée ramène l'heure en arrière, les saisies sont datées de ce passé, puis le réseau remet l'heure juste et le cache paraît avoir des mois. Les données lues, elles, peuvent partir : elles se rechargent. Les saisies en file ne sont nulle part ailleurs ; elles sont gardées, avec un horodatage remis à maintenant pour que la bibliothèque ne les jette pas.
+ *
+ * Un cache encore frais, ou sans saisie en file, est rendu tel quel : la bibliothèque décide alors comme d'habitude.
+ */
+export function rescueExpiredQueue<T extends PersistedCache>(cache: T, now: number, maxAge: number): T {
+  if (now - cache.timestamp <= maxAge) {
+    return cache;
+  }
+  const mutations = cache.clientState.mutations.filter((mutation) => mutation.state.status === 'pending');
+  if (mutations.length === 0) {
+    return cache;
+  }
+  return { ...cache, timestamp: now, clientState: { ...cache.clientState, mutations, queries: [] } };
+}
+
 /**
  * Ce qui reste d'un cache quand son utilisateur se déconnecte : ses seules saisies en file, sans aucune donnée lue.
  *

@@ -24,6 +24,8 @@ export async function listForGroup(groupId: string): Promise<RecurringWithCatego
 }
 
 export type CreateRecurringInput = {
+  /** Tiré par l'app, comme pour une opération : un renvoi après une réponse perdue retrouve le modèle au lieu d'en créer un second. */
+  id: string;
   groupId: string;
   userId: string;
   categoryId: string;
@@ -39,19 +41,24 @@ export type CreateRecurringInput = {
 };
 
 export async function createRecurring(input: CreateRecurringInput): Promise<void> {
-  const { error } = await supabase.from('recurring_transactions').insert({
-    group_id: input.groupId,
-    // La policy recurring_transactions_insert_member exige user_id = auth.uid() : vérifié en base.
-    user_id: input.userId,
-    category_id: input.categoryId,
-    type: input.type,
-    amount: input.amount,
-    note: input.note,
-    frequency: input.frequency,
-    anchor_day: input.anchorDay,
-    next_due_on: input.nextDueOn,
-    wallet_id: input.walletId,
-  });
+  const { error } = await supabase.from('recurring_transactions').upsert(
+    {
+      id: input.id,
+      group_id: input.groupId,
+      // La policy recurring_transactions_insert_member exige user_id = auth.uid() : vérifié en base.
+      user_id: input.userId,
+      category_id: input.categoryId,
+      type: input.type,
+      amount: input.amount,
+      note: input.note,
+      frequency: input.frequency,
+      anchor_day: input.anchorDay,
+      next_due_on: input.nextDueOn,
+      wallet_id: input.walletId,
+    },
+    // `on conflict (id) do nothing` : même principe que la création d'une opération (src/data/transactions.ts).
+    { onConflict: 'id', ignoreDuplicates: true }
+  );
 
   if (error) {
     throw error;

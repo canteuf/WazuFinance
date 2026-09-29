@@ -4,16 +4,19 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   persistQueryClientRestore,
   persistQueryClientSubscribe,
+  removeOldestQuery,
   type PersistedClient,
   type Persister,
   type PersistQueryClientOptions,
+  type PersistRetryer,
 } from '@tanstack/react-query-persist-client';
 import Constants from 'expo-constants';
 import { useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/hooks/use-auth';
 import { deserializeCache, serializeCache } from '@/lib/cache-serialization';
-import { keepQueueAcrossVersions, prepareForDisk, queueOnly } from '@/lib/offline-queue';
+import { reportError } from '@/lib/monitoring';
+import { keepQueueAcrossVersions, prepareForDisk, queueOnly, rescueExpiredQueue } from '@/lib/offline-queue';
 import { mutationKeys } from '@/lib/query-keys';
 
 const STORAGE_PREFIX = 'query-cache:';
@@ -67,6 +70,19 @@ async function discardOtherCaches(keep: string | null): Promise<void> {
 }
 
 /**
+ * Écriture sur le disque refusée (stockage plein, limite d'AsyncStorage) : on retire la donnée lue la plus ancienne et on réessaie, jusqu'à ce que ça passe. Les saisies en file ne sont jamais retirées : `removeOldestQuery` ne touche qu'aux requêtes.
+ *
+ * Sans cette stratégie, la bibliothèque avalait l'échec en silence : la saisie n'existait plus qu'en mémoire, et un arrêt de l'app par Android la faisait disparaître. Quand il n'y a plus rien à retirer, l'échec est signalé à Sentry.
+ */
+const retryWrite: PersistRetryer = (props) => {
+  const smaller = removeOldestQuery(props);
+  if (!smaller) {
+    reportError(props.error, 'query-cache-write');
+  }
+  return smaller;
+};
+
+/**
  * Le persister de la bibliothèque, entouré de deux transformations (`offline-queue.ts`) : à l'écriture, les saisies en cours d'envoi passent sur le disque comme des pauses et les historiques n'y gardent que leurs premières pages ; à la relecture, un cache écrit par une autre version de l'app garde ses saisies en file et perd seulement ses données lues.
  */
 function createPersister(userId: string, buster: string): Persister {
@@ -75,12 +91,22 @@ function createPersister(userId: string, buster: string): Persister {
     key: storageKey(userId),
     serialize: serializeCache,
     deserialize: deserializeCache,
+    retry: retryWrite,
   });
   return {
     persistClient: (client) => base.persistClient(prepareForDisk(client)),
     restoreClient: async () => {
-      const client = await base.restoreClient();
-      return client ? keepQueueAcrossVersions(client, buster) : client;
+      let client: PersistedClient | undefined;
+      try {
+        client = await base.restoreClient();
+      } catch (error) {
+        // Cache illisible : la bibliothèque va l'effacer, saisies en file comprises. Rien à sauver d'un contenu qu'on ne sait pas lire, mais on veut savoir que ça arrive.
+        reportError(error, 'query-cache-read');
+        throw error;
+      }
+      return client
+        ? keepQueueAcrossVersions(rescueExpiredQueue(client, Date.now(), PERSISTED_CACHE_MAX_AGE), buster)
+        : client;
     },
     removeClient: () => base.removeClient(),
   };

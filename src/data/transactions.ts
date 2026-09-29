@@ -1,3 +1,4 @@
+import type { CreateRecurringInput } from '@/data/recurring';
 import { patchIsApplied } from '@/lib/offline-queue';
 import { containsPattern } from '@/lib/search';
 import { supabase } from '@/lib/supabase';
@@ -71,9 +72,13 @@ export type CreateTransactionInput = {
    * Étiquettes, déjà normalisées par `normalizeTags`. Absent d'une saisie mise en file par une version de l'app antérieure aux étiquettes : la création laisse alors la valeur par défaut (aucune), la modification ne touche pas à celles de la ligne.
    */
   tags?: string[];
+  /**
+   * « Répéter » : le modèle récurrent dont cette opération est la première occurrence. Il part avec la saisie, dans ses variables gardées sur le disque, pour être créé par la même écriture (registerTransactionMutationDefaults) : attaché à l'écran, il se perdait quand la feuille se fermait sur un réseau instable.
+   */
+  recurrence?: CreateRecurringInput;
 };
 
-export type UpdateTransactionInput = Omit<CreateTransactionInput, 'id' | 'groupId' | 'userId'>;
+export type UpdateTransactionInput = Omit<CreateTransactionInput, 'id' | 'groupId' | 'userId' | 'recurrence'>;
 
 /**
  * Crée une opération, sans doublon si la même saisie est envoyée deux fois.
