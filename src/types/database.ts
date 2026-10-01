@@ -939,6 +939,15 @@ export type Database = {
           total: number
         }[]
       }
+      category_usage: {
+        Args: { p_group_id: string }
+        Returns: {
+          budgets: number
+          category_id: string
+          recurring: number
+          transactions: number
+        }[]
+      }
       claim_request: { Args: { p_id: string }; Returns: boolean }
       commerce_category: { Args: { p_group_id: string }; Returns: string }
       commerce_summary: {
@@ -1057,6 +1066,10 @@ export type Database = {
           owed_to_us: number
           we_owe: number
         }[]
+      }
+      delete_category: {
+        Args: { p_id: string; p_replacement_id?: string }
+        Returns: undefined
       }
       delete_own_account: { Args: never; Returns: undefined }
       export_my_data: { Args: never; Returns: Json }
