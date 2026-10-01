@@ -6,8 +6,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { InvitationCodeInput } from '@/components/group/invitation-code-input';
 import { Button } from '@/components/ui/button';
 import { CONTENT_GUTTER, contentColumn } from '@/components/ui/screen';
+import { SheetScrollView } from '@/components/ui/sheet-scroll-view';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useGroupMutations } from '@/hooks/use-group-mutations';
+import { useSheetMaxHeight } from '@/hooks/use-sheet-max-height';
 import { dataErrorMessage } from '@/lib/data-errors';
 import {
   INVITATION_CODE_LENGTH,
@@ -25,6 +27,7 @@ import { font, spacing, useColors } from '@/theme/tokens';
 export default function GroupJoinScreen() {
   const colors = useColors();
   const router = useRouter();
+  const sheetMaxHeight = useSheetMaxHeight();
   // Présent quand l'écran s'ouvre depuis un lien d'invitation (usePendingInvite) : le code est déjà là, il ne reste qu'à confirmer.
   const { code: linkedCode } = useLocalSearchParams<{ code?: string }>();
   const { setActiveGroupId } = useActiveGroup();
@@ -54,7 +57,7 @@ export default function GroupJoinScreen() {
   }
 
   return (
-    <View style={[styles.sheet, { backgroundColor: colors.background }]}>
+    <View style={[styles.sheet, { backgroundColor: colors.background, maxHeight: sheetMaxHeight }]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Rejoindre un groupe</Text>
         <Pressable
@@ -68,7 +71,13 @@ export default function GroupJoinScreen() {
         </Pressable>
       </View>
 
-      <View style={styles.form}>
+      {/* Sans défilement, le champ ouvert d'office passait sous le clavier : la feuille, ajustée à son contenu, est posée au bas de l'écran, là où le clavier s'ouvre. */}
+      <SheetScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.form}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         <Text style={[styles.hint, { color: colors.textMuted }]}>
           Saisissez ou collez le code à 8 caractères reçu du propriétaire du groupe.
         </Text>
@@ -92,7 +101,7 @@ export default function GroupJoinScreen() {
         {errorText ? <Text style={[styles.error, { color: colors.danger }]}>{errorText}</Text> : null}
 
         <Button title="Rejoindre" loading={isJoining} onPress={handleSubmit} />
-      </View>
+      </SheetScrollView>
     </View>
   );
 }
@@ -119,6 +128,9 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: spacing.xs,
+  },
+  scroll: {
+    alignSelf: 'stretch',
   },
   form: {
     ...contentColumn,

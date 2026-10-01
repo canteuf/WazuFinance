@@ -5,8 +5,10 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { CONTENT_GUTTER, contentColumn } from '@/components/ui/screen';
+import { SheetScrollView } from '@/components/ui/sheet-scroll-view';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useGroupMutations } from '@/hooks/use-group-mutations';
+import { useSheetMaxHeight } from '@/hooks/use-sheet-max-height';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { goBackOr } from '@/lib/navigation';
 import { GROUP_NAME_MAX_LENGTH } from '@/lib/validation';
@@ -16,6 +18,7 @@ import { font, radius, spacing, useColors } from '@/theme/tokens';
 export default function GroupCreateScreen() {
   const colors = useColors();
   const router = useRouter();
+  const sheetMaxHeight = useSheetMaxHeight();
   const { setActiveGroupId } = useActiveGroup();
   const { createGroup, isCreating } = useGroupMutations();
   const [name, setName] = useState('');
@@ -41,7 +44,7 @@ export default function GroupCreateScreen() {
   }
 
   return (
-    <View style={[styles.sheet, { backgroundColor: colors.background }]}>
+    <View style={[styles.sheet, { backgroundColor: colors.background, maxHeight: sheetMaxHeight }]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Créer un groupe partagé</Text>
         <Pressable
@@ -55,7 +58,13 @@ export default function GroupCreateScreen() {
         </Pressable>
       </View>
 
-      <View style={styles.form}>
+      {/* Sans défilement, le champ ouvert d'office passait sous le clavier : la feuille, ajustée à son contenu, est posée au bas de l'écran, là où le clavier s'ouvre. */}
+      <SheetScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.form}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         <TextInput
           accessibilityLabel="Nom du groupe"
           placeholder="Coloc, Famille…"
@@ -76,7 +85,7 @@ export default function GroupCreateScreen() {
         {errorText ? <Text style={[styles.error, { color: colors.danger }]}>{errorText}</Text> : null}
 
         <Button title="Créer" loading={isCreating} onPress={handleSubmit} />
-      </View>
+      </SheetScrollView>
     </View>
   );
 }
@@ -103,6 +112,9 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: spacing.xs,
+  },
+  scroll: {
+    alignSelf: 'stretch',
   },
   form: {
     ...contentColumn,

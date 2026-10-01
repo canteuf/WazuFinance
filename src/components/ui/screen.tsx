@@ -1,13 +1,8 @@
 import type { ReactNode } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  View,
-  type ViewStyle,
-} from 'react-native';
+import { StyleSheet, View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { SheetScrollView } from '@/components/ui/sheet-scroll-view';
 
 import { spacing, useColors } from '@/theme/tokens';
 
@@ -34,7 +29,9 @@ export const contentColumn = {
 } as const satisfies ViewStyle;
 
 /**
- * Conteneur d'écran : zones sûres, fond thématisé et remontée du contenu quand le clavier iOS s'ouvre — indispensable sur les formulaires d'auth.
+ * Conteneur d'écran : zones sûres, fond thématisé et champ en cours de saisie gardé au-dessus du clavier — indispensable sur les formulaires d'auth et les paramètres.
+ *
+ * Le défilement est un `SheetScrollView`, comme dans les feuilles, et non un `KeyboardAvoidingView` : celui-ci n'était actif que sur iOS, et sur Android, bord à bord, rien ne remontait — le mot de passe de l'inscription, ceux des paramètres et la confirmation de suppression du compte s'ouvraient sous le clavier.
  *
  * `floatingAction` (le bouton + du dashboard) est rendu hors du ScrollView et épinglé en bas à droite : le contenu défile sous lui, mais lui ne défile jamais. Un bouton placé dans le flux du ScrollView descendrait avec une liste qui s'allonge et finirait hors de portée sans faire défiler — ce que la saisie en 3 tapotements ne permet pas.
  *
@@ -81,12 +78,9 @@ export function Screen({
         },
       ]}
     >
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <View style={styles.flex}>
         {header}
-        <ScrollView
+        <SheetScrollView
           contentContainerStyle={[
             styles.content,
             align === 'center' ? styles.contentCentered : null,
@@ -97,7 +91,7 @@ export function Screen({
           keyboardDismissMode="on-drag"
         >
           <View style={styles.inner}>{children}</View>
-        </ScrollView>
+        </SheetScrollView>
         {floatingAction ? (
           <View
             style={[
@@ -111,7 +105,7 @@ export function Screen({
             {floatingAction}
           </View>
         ) : null}
-      </KeyboardAvoidingView>
+      </View>
     </View>
   );
 }
