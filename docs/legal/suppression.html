@@ -23,30 +23,45 @@
     </ul>
   </div>
 
-  <h2>1. Depuis l'application</h2>
-  <ol>
-    <li>Ouvrez Wazu Finance et touchez votre avatar, en haut de l'écran, pour ouvrir les <strong>Paramètres</strong>.</li>
-    <li>Descendez jusqu'à la <strong>Zone de danger</strong> et touchez <strong>« Supprimer mon compte »</strong>.</li>
-    <li>Saisissez votre mot de passe pour confirmer.</li>
-  </ol>
-  <p>Si vous êtes propriétaire d'un budget partagé qui a d'autres membres, l'application vous demande d'abord de passer la main à l'un d'eux, depuis l'écran de gestion du groupe : sans cela, le budget resterait sans personne pour le gérer.</p>
+  <div class="sections-bar"><span>3 sections</span><button type="button" id="toggle-all">Tout déplier</button></div>
 
-  <h2>2. Sans l'application</h2>
-  <p>Si vous n'avez plus l'application ou ne pouvez plus vous connecter, écrivez à <a href="mailto:wazufinance@gmail.com">wazufinance@gmail.com</a> <strong>depuis l'adresse e-mail de votre compte</strong>, avec pour objet « Suppression de compte ». C'est ce qui nous permet de vérifier que la demande vient bien de vous. Nous supprimons le compte dans un délai de 30 jours au plus et vous le confirmons par e-mail.</p>
+  <details class="sec" id="s1" open>
+    <summary><span class="num">1</span><h2>Depuis l'application</h2><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="body">
+      <ol>
+        <li>Ouvrez Wazu Finance et touchez votre avatar, en haut de l'écran, pour ouvrir les <strong>Paramètres</strong>.</li>
+        <li>Descendez jusqu'à la <strong>Zone de danger</strong> et touchez <strong>« Supprimer mon compte »</strong>.</li>
+        <li>Saisissez votre mot de passe pour confirmer.</li>
+      </ol>
+      <p>Si vous êtes propriétaire d'un budget partagé qui a d'autres membres, l'application vous demande d'abord de passer la main à l'un d'eux, depuis l'écran de gestion du groupe : sans cela, le budget resterait sans personne pour le gérer.</p>
+    </div>
+  </details>
 
-  <h2>3. Ce qui est supprimé, ce qui reste</h2>
-  <ul>
-    <li><strong>Supprimés immédiatement</strong> : votre compte (adresse e-mail, mot de passe, nom affiché, avatar), votre compte personnel et tout ce qu'il contient, vos objectifs d'épargne, les budgets partagés dont vous étiez le seul membre, et vos mesures d'usage.</li>
-    <li><strong>Conservés dans les budgets partagés qui continuent sans vous</strong> : les opérations, dettes, transferts et opérations récurrentes que vous y avez saisis, parce qu'ils font partie des comptes de ces budgets. Ils ne sont plus rattachés à votre compte et portent seulement le nom que vous aviez, suivi de « ancien membre ». Le journal d'activité de ces budgets est effacé au bout de 24 mois.</li>
-    <li><strong>Sauvegardes</strong> : vos données peuvent subsister jusqu'à 30 jours dans les sauvegardes chiffrées de la base, puis elles sont effacées automatiquement. Si une sauvegarde devait être restaurée, votre compte serait supprimé de nouveau.</li>
-    <li><strong>Rapports de plantage</strong> : ils ne contiennent que l'identifiant technique du compte, jamais votre e-mail ni vos saisies, et sont effacés au bout de 90 jours au plus.</li>
-  </ul>
-  <p>Tout le détail est dans la <a href="confidentialite.html">politique de confidentialité</a>.</p>
+  <details class="sec" id="s2">
+    <summary><span class="num">2</span><h2>Sans l'application</h2><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="body">
+      <p>Si vous n'avez plus l'application ou ne pouvez plus vous connecter, écrivez à <a href="mailto:wazufinance@gmail.com">wazufinance@gmail.com</a> <strong>depuis l'adresse e-mail de votre compte</strong>, avec pour objet « Suppression de compte ». C'est ce qui nous permet de vérifier que la demande vient bien de vous. Nous supprimons le compte dans un délai de 30 jours au plus et vous le confirmons par e-mail.</p>
+    </div>
+  </details>
+
+  <details class="sec" id="s3">
+    <summary><span class="num">3</span><h2>Ce qui est supprimé, ce qui reste</h2><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="body">
+      <ul>
+        <li><strong>Supprimés immédiatement</strong> : votre compte (adresse e-mail, mot de passe, nom affiché, avatar), votre compte personnel et tout ce qu'il contient, vos objectifs d'épargne, les budgets partagés dont vous étiez le seul membre, et vos mesures d'usage.</li>
+        <li><strong>Conservés dans les budgets partagés qui continuent sans vous</strong> : les opérations, dettes, transferts et opérations récurrentes que vous y avez saisis, parce qu'ils font partie des comptes de ces budgets. Ils ne sont plus rattachés à votre compte et portent seulement le nom que vous aviez, suivi de « ancien membre ». Le journal d'activité de ces budgets est effacé au bout de 24 mois.</li>
+        <li><strong>Sauvegardes</strong> : vos données peuvent subsister jusqu'à 30 jours dans les sauvegardes chiffrées de la base, puis elles sont effacées automatiquement. Si une sauvegarde devait être restaurée, votre compte serait supprimé de nouveau.</li>
+        <li><strong>Rapports de plantage</strong> : ils ne contiennent que l'identifiant technique du compte, jamais votre e-mail ni vos saisies, et sont effacés au bout de 90 jours au plus.</li>
+      </ul>
+      <p>Tout le détail est dans la <a href="confidentialite.html">politique de confidentialité</a>.</p>
+    </div>
+  </details>
 
   <footer>
     Voir aussi les <a href="cgu.html">conditions d'utilisation</a>.<br>
     Wazu Finance · TEUFACK Doury Cantor · <a href="mailto:wazufinance@gmail.com">wazufinance@gmail.com</a>
   </footer>
 </main>
+<script src="legal.js"></script>
 </body>
 </html>
