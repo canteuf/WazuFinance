@@ -1,10 +1,12 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { Link } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { SettingsSection } from '@/components/settings/settings-section';
 import { Button } from '@/components/ui/button';
 import { useActiveGroup } from '@/hooks/use-active-group';
+import { useCanWrite } from '@/hooks/use-can-write';
 import { useGroupMutations } from '@/hooks/use-group-mutations';
 import { useThemePreference } from '@/hooks/use-theme-preference';
 import { dataErrorMessage } from '@/lib/data-errors';
@@ -27,11 +29,19 @@ const THEMES: { value: ThemePreference; label: string; icon: IconName }[] = [
 
 export function PreferencesSection() {
   const colors = useColors();
+  const canWrite = useCanWrite();
   return (
     <SettingsSection title="Préférences d’usage">
       <ThemeBlock />
       <View style={[styles.separator, { backgroundColor: colors.border }]} />
       <CycleBlock />
+      {/* Un lecteur ne peut rien changer aux catégories : pas d'entrée vers un écran qu'il ne ferait que regarder. */}
+      {canWrite ? (
+        <>
+          <View style={[styles.separator, { backgroundColor: colors.border }]} />
+          <CategoriesBlock />
+        </>
+      ) : null}
     </SettingsSection>
   );
 }
@@ -201,6 +211,37 @@ function CycleBlock() {
           />
         </View>
       ) : null}
+    </View>
+  );
+}
+
+/**
+ * Accès à la gestion des catégories du groupe actif. Ici, à côté du cycle, parce que les catégories appartiennent au groupe comme lui ; la saisie ne propose que d'en créer.
+ */
+function CategoriesBlock() {
+  const colors = useColors();
+  const { activeGroup } = useActiveGroup();
+
+  return (
+    <View style={styles.block}>
+      <View style={styles.cycleHead}>
+        <BlockTitle icon="shape-outline" title="Catégories" />
+        <Link href="/categories" asChild>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Gérer les catégories"
+            // Aplati : <Link asChild> transmet le style par un Slot, qui lève une erreur de rendu en développement s'il reçoit un tableau.
+            style={StyleSheet.flatten([styles.pill, { backgroundColor: colors.surfaceMuted }])}
+          >
+            <Text style={[styles.pillLabel, { color: colors.text }]}>Gérer</Text>
+            <MaterialCommunityIcons name="chevron-right" size={16} color={colors.text} />
+          </Pressable>
+        </Link>
+      </View>
+      <Text style={[styles.hint, { color: colors.textMuted }]}>
+        Renommer, changer l’icône ou supprimer les catégories créées
+        {activeGroup && !activeGroup.isPersonal ? ` dans « ${activeGroup.name} »` : ''}.
+      </Text>
     </View>
   );
 }

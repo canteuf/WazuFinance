@@ -14,6 +14,8 @@ export const queryKeys = {
   categoriesAll: () => ['categories'] as const,
   categories: (groupId: string) => ['categories', groupId] as const,
   transactions: () => ['transactions'] as const,
+  // Sous ['transactions'] : le compte d'opérations en vient, comme periodSummary. Le compte de budgets n'y est pas relié ; l'écran recharge donc à chaque ouverture (refetchOnMount: 'always'), comme groupOverviews.
+  categoryUsage: (groupId: string) => ['transactions', 'categoryUsage', groupId] as const,
   // Hors de ['transactions'] à dessein, contrairement à periodSummary et categoryBreakdown : un budget n'est pas dérivé des transactions. L'y nicher ferait recharger les plafonds à chaque saisie de dépense.
   budgetsAll: () => ['budgets'] as const,
   // La racine sert aux invalidations, la clé par groupe aux lectures — invalider la racine touche tous les groupes en cache, ce qui est voulu, parce que la mutation peut avoir été déclenchée sous un autre groupe que celui actif quand la réponse arrive.

@@ -106,6 +106,16 @@ function AppStack() {
             <Stack.Screen name="recurring-list" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="debts" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="wallets" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="categories" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen
+              name="category"
+              options={{
+                presentation: 'formSheet',
+                sheetAllowedDetents: 'fitToContents',
+                sheetGrabberVisible: true,
+                sheetCornerRadius: 24,
+              }}
+            />
             <Stack.Screen
               name="wallet"
               options={{

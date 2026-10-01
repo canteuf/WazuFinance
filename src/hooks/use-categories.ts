@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { listForGroup, type Category } from '@/data/categories';
+import { getCategoryUsage, listForGroup, type Category, type CategoryUsage } from '@/data/categories';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { queryKeys } from '@/lib/query-keys';
 import type { TransactionType } from '@/types/database';
@@ -36,4 +36,24 @@ export function useCategories(type: TransactionType | null): {
       void refetch();
     },
   };
+}
+
+/**
+ * Opérations, budgets et modèles récurrents que porte chaque catégorie propre au groupe actif. Relu à chaque ouverture de l'écran : un budget créé ne l'invalide pas (voir queryKeys.categoryUsage).
+ */
+export function useCategoryUsage(): {
+  usage: Map<string, CategoryUsage> | undefined;
+  isLoading: boolean;
+  error: unknown;
+} {
+  const { activeGroupId } = useActiveGroup();
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: queryKeys.categoryUsage(activeGroupId ?? ''),
+    queryFn: () => getCategoryUsage(activeGroupId as string),
+    enabled: activeGroupId !== null,
+    refetchOnMount: 'always',
+  });
+
+  return { usage: data, isLoading, error };
 }
