@@ -74,9 +74,9 @@ type PanelId = 'period' | 'category' | 'wallet' | 'tag' | null;
 /**
  * Recherche, puis les pastilles de filtre, d'après la maquette : période, dépenses, revenus, catégorie.
  *
- * Elles tiennent sur une rangée, comme dans la maquette, sans défilement horizontal (il coupait la dernière en deux au bord de l'écran, ce qui se lisait comme un défaut) ni retour à la ligne : la période et les deux types gardent leur largeur, et la pastille de catégorie prend la place qui reste, quitte à tronquer son libellé. Elle passait à la ligne dès qu'une catégorie au nom un peu long (« Abonnements », « Tontine reçue ») était choisie, et toute la liste sautait d'une rangée. Le libellé complet reste lisible dans le panneau, où la catégorie choisie est surlignée.
+ * Deux rangées fixes, chacune de bord à bord et à parts égales : la période et les deux types en haut, les pastilles à panneau (catégorie, portefeuille, étiquette) en bas. Aucun défilement horizontal (il coupait la dernière pastille au bord de l'écran, ce qui se lisait comme un défaut), et aucune pastille ne change de rangée selon ce qu'on choisit : la pastille de catégorie passait à la ligne dès qu'un nom un peu long (« Abonnements », « Tontine reçue ») était choisi, et toute la liste sautait d'une rangée. Un libellé trop long se tronque ; il reste lisible en entier dans le panneau, où le choix est surligné. Au-delà de `stackAtFontScale`, les pastilles reprennent leur largeur naturelle et passent à la ligne : une police agrandie ne doit pas tronquer « Dépenses ».
  *
- * Quand le portefeuille ou l'étiquette s'ajoutent, les pastilles à panneau forment une seconde rangée fixe, à parts égales : sa présence dépend des données du groupe, jamais du choix qu'on vient de faire. Au-delà de `stackAtFontScale`, les rangées passent à la ligne comme avant : une police agrandie ne doit pas tronquer « Dépenses ».
+ * Le portefeuille filtre sur « tous » à l'ouverture, pas sur « Principal » : l'historique ouvert depuis « Tout voir » doit montrer au moins ce que la Synthèse compte, et une personne qui paie surtout par mobile money ne doit pas croire, faute d'avoir touché la pastille, n'avoir rien dépensé.
  *
  * La période, les catégories, le portefeuille et l'étiquette ont trop de valeurs pour tenir dans la rangée ; leur pastille déplie un panneau dessous plutôt qu'une modale, qui masquerait la liste que le choix est en train de filtrer. Le portefeuille n'apparaît que s'il y en a plusieurs, l'étiquette que si le groupe en a déjà utilisé : une pastille sans choix derrière n'apprend rien.
  *
@@ -110,8 +110,6 @@ export function FilterBar({
   const wallet = wallets.find((item) => item.id === effectiveWalletId);
   const showWallet = wallets.length > 1;
   const showTag = tags.length > 0 || state.tag !== null;
-  // La catégorie partage la rangée des pastilles fixes quand elle est la seule à panneau ; sinon les trois forment la seconde rangée.
-  const menusOwnRow = showWallet || showTag;
   const { fontScale } = useWindowDimensions();
   const wrap = fontScale >= stackAtFontScale;
 
@@ -168,69 +166,59 @@ export function FilterBar({
           selected
           expanded={panel === 'period'}
           onPress={() => setPanel(panel === 'period' ? null : 'period')}
+          style={wrap ? undefined : styles.chipEqual}
         />
         <Chip
           label="Dépenses"
           group="Type"
           selected={state.type === 'expense'}
           onPress={() => toggleType('expense')}
+          style={wrap ? undefined : styles.chipEqual}
         />
         <Chip
           label="Revenus"
           group="Type"
           selected={state.type === 'income'}
           onPress={() => toggleType('income')}
+          style={wrap ? undefined : styles.chipEqual}
         />
-        {menusOwnRow ? null : (
-          <Chip
-            label={categoryLabel}
-            trailingIcon={panel === 'category' ? 'chevron-up' : 'chevron-down'}
-            group="Catégorie"
-            selected={chosen.length > 0}
-            expanded={panel === 'category'}
-            onPress={() => setPanel(panel === 'category' ? null : 'category')}
-            style={wrap ? undefined : styles.chipFill}
-          />
-        )}
       </View>
 
-      {menusOwnRow ? (
-        <View style={[styles.row, wrap ? styles.rowWrap : null]}>
+      <View style={[styles.row, wrap ? styles.rowWrap : null]}>
+        <Chip
+          label={categoryLabel}
+          trailingIcon={panel === 'category' ? 'chevron-up' : 'chevron-down'}
+          group="Catégorie"
+          selected={chosen.length > 0}
+          expanded={panel === 'category'}
+          onPress={() => setPanel(panel === 'category' ? null : 'category')}
+          style={wrap ? undefined : styles.chipEqual}
+        />
+        {showWallet ? (
           <Chip
-            label={categoryLabel}
-            trailingIcon={panel === 'category' ? 'chevron-up' : 'chevron-down'}
-            group="Catégorie"
-            selected={chosen.length > 0}
-            expanded={panel === 'category'}
-            onPress={() => setPanel(panel === 'category' ? null : 'category')}
+            label={wallet?.name ?? 'Portefeuille'}
+            icon="wallet-outline"
+            trailingIcon={panel === 'wallet' ? 'chevron-up' : 'chevron-down'}
+            group="Portefeuille"
+            selected={wallet !== undefined}
+            expanded={panel === 'wallet'}
+            onPress={() => setPanel(panel === 'wallet' ? null : 'wallet')}
             style={wrap ? undefined : styles.chipEqual}
           />
-          {showWallet ? (
-            <Chip
-              label={wallet?.name ?? 'Portefeuille'}
-              icon="wallet-outline"
-              trailingIcon={panel === 'wallet' ? 'chevron-up' : 'chevron-down'}
-              group="Portefeuille"
-              selected={wallet !== undefined}
-              expanded={panel === 'wallet'}
-              onPress={() => setPanel(panel === 'wallet' ? null : 'wallet')}
-              style={wrap ? undefined : styles.chipEqual}
-            />
-          ) : null}
-          {showTag ? (
-            <Chip
-              label={state.tag ?? 'Étiquette'}
-              icon="tag-outline"
-              trailingIcon={panel === 'tag' ? 'chevron-up' : 'chevron-down'}
-              group="Étiquette"
-              selected={state.tag !== null}
-              expanded={panel === 'tag'}
-              onPress={() => setPanel(panel === 'tag' ? null : 'tag')}
-              style={wrap ? undefined : styles.chipEqual}
-            />
-          ) : null}
-        </View>
-      ) : null}
+        ) : null}
+        {showTag ? (
+          <Chip
+            label={state.tag ?? 'Étiquette'}
+            icon="tag-outline"
+            trailingIcon={panel === 'tag' ? 'chevron-up' : 'chevron-down'}
+            group="Étiquette"
+            selected={state.tag !== null}
+            expanded={panel === 'tag'}
+            onPress={() => setPanel(panel === 'tag' ? null : 'tag')}
+            style={wrap ? undefined : styles.chipEqual}
+          />
+        ) : null}
+      </View>
 
       {panel === 'period' ? (
         <Panel title="Période">
@@ -372,7 +360,7 @@ function Chip({
   expanded?: boolean;
   /** Dans un panneau : la pastille occupe une colonne entière de la grille, au lieu de s'ajuster à son libellé. */
   block?: boolean;
-  /** Part de la rangée que prend la pastille (`chipFill`, `chipEqual`). */
+  /** Part de la rangée que prend la pastille (`chipEqual`). */
   style?: StyleProp<ViewStyle>;
 }) {
   const colors = useColors();
@@ -463,13 +451,10 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md - 2,
   },
-  // La place qui reste après les pastilles fixes, ni plus (largeur naturelle quand le libellé est court) ni moins : le libellé se tronque au lieu de renvoyer la pastille à la ligne.
-  chipFill: {
-    flexShrink: 1,
-  },
-  // Seconde rangée : parts égales, pour qu'un libellé long ne serre pas ses voisines.
+  // Parts égales dans sa rangée, contenu centré : un libellé long se tronque au lieu de serrer ses voisines ou de passer à la ligne.
   chipEqual: {
     flex: 1,
+    justifyContent: 'center',
   },
   chipBlock: {
     // Deux colonnes exactement : à 48 % chacune, une troisième ne tient jamais sur la ligne, et la dernière rangée garde la largeur d'une colonne au lieu de s'étirer sur toute la largeur.
