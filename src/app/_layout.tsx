@@ -10,6 +10,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { useAuth } from '@/hooks/use-auth';
 import { usePersistedQueryCache } from '@/hooks/use-persisted-query-cache';
@@ -29,15 +30,18 @@ function RootLayout() {
   const scheme = useColorScheme();
 
   return (
-    <QueryProvider>
-      <AuthProvider>
-        <ThemeProvider value={scheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <ThemeTransitionProvider>
-            <RootNavigator />
-          </ThemeTransitionProvider>
-        </ThemeProvider>
-      </AuthProvider>
-    </QueryProvider>
+    // Tout en haut : `SheetScrollView` (écrans et feuilles) lit le clavier dans le contexte de ce fournisseur, et les feuilles s'ouvrent au-dessus de la pile, pas au-dessus de lui.
+    <KeyboardProvider>
+      <QueryProvider>
+        <AuthProvider>
+          <ThemeProvider value={scheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <ThemeTransitionProvider>
+              <RootNavigator />
+            </ThemeTransitionProvider>
+          </ThemeProvider>
+        </AuthProvider>
+      </QueryProvider>
+    </KeyboardProvider>
   );
 }
 

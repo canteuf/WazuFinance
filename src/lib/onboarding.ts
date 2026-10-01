@@ -1,3 +1,5 @@
+import type { WalletKind } from '@/types/database';
+
 /**
  * Accueil d'un nouveau compte : l'usage qu'il déclare et l'état de l'accueil, rangés dans `user_metadata` comme l'acceptation des CGU (voir legal.ts).
  *
@@ -31,5 +33,16 @@ export function declaredUsage(metadata: unknown): Usage | null {
     : null;
 }
 
-/** Portefeuilles mobile money proposés à l'accueil, décochés : rien n'est créé sans que la personne l'ait choisi. */
-export const SUGGESTED_WALLETS = ['Orange Money', 'MTN MoMo', 'Wave'] as const;
+/**
+ * Portefeuilles proposés à l'accueil, décochés : rien n'est créé sans que la personne l'ait choisi.
+ *
+ * Les opérateurs du Cameroun (Orange Money, MTN MoMo) et du Gabon (Airtel Money, Moov Money), plus Wave et la carte bancaire : l'app ne connaît pas le pays, alors elle les propose tous, chaque nom étant assez connu pour être ignoré d'un coup d'œil par qui ne l'utilise pas. Un nom sert aussi de clé à l'identifiant tiré pour sa création (voir OnboardingGate) : deux entrées ne portent jamais le même.
+ */
+export const SUGGESTED_WALLETS: readonly { name: string; kind: WalletKind; icon: string }[] = [
+  { name: 'Orange Money', kind: 'mobile_money', icon: 'cellphone' },
+  { name: 'MTN MoMo', kind: 'mobile_money', icon: 'cellphone' },
+  { name: 'Airtel Money', kind: 'mobile_money', icon: 'cellphone' },
+  { name: 'Moov Money', kind: 'mobile_money', icon: 'cellphone' },
+  { name: 'Wave', kind: 'mobile_money', icon: 'cellphone' },
+  { name: 'Carte bancaire', kind: 'bank', icon: 'credit-card-outline' },
+];

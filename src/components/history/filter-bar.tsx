@@ -1,12 +1,21 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useState, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
 import { useCategories } from '@/hooks/use-categories';
 import { useTransactionTags } from '@/hooks/use-transaction-tags';
 import { useWallets } from '@/hooks/use-wallets';
 import type { PeriodPreset, PeriodPresetId } from '@/lib/dates';
-import { font, radius, spacing, useColors } from '@/theme/tokens';
+import { font, radius, spacing, stackAtFontScale, useColors } from '@/theme/tokens';
 import type { TransactionType } from '@/types/database';
 
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
@@ -65,7 +74,9 @@ type PanelId = 'period' | 'category' | 'wallet' | 'tag' | null;
 /**
  * Recherche, puis les pastilles de filtre, d'après la maquette : période, dépenses, revenus, catégorie.
  *
- * La maquette les tient sur une seule rangée ; à la largeur réelle d'un téléphone elles n'y tiennent pas, et le défilement horizontal coupait la dernière en deux au bord de l'écran. Elles passent donc à la ligne : deux rangées pleines valent mieux qu'une rangée tronquée.
+ * Elles tiennent sur une rangée, comme dans la maquette, sans défilement horizontal (il coupait la dernière en deux au bord de l'écran, ce qui se lisait comme un défaut) ni retour à la ligne : la période et les deux types gardent leur largeur, et la pastille de catégorie prend la place qui reste, quitte à tronquer son libellé. Elle passait à la ligne dès qu'une catégorie au nom un peu long (« Abonnements », « Tontine reçue ») était choisie, et toute la liste sautait d'une rangée. Le libellé complet reste lisible dans le panneau, où la catégorie choisie est surlignée.
+ *
+ * Quand le portefeuille ou l'étiquette s'ajoutent, les pastilles à panneau forment une seconde rangée fixe, à parts égales : sa présence dépend des données du groupe, jamais du choix qu'on vient de faire. Au-delà de `stackAtFontScale`, les rangées passent à la ligne comme avant : une police agrandie ne doit pas tronquer « Dépenses ».
  *
  * La période, les catégories, le portefeuille et l'étiquette ont trop de valeurs pour tenir dans la rangée ; leur pastille déplie un panneau dessous plutôt qu'une modale, qui masquerait la liste que le choix est en train de filtrer. Le portefeuille n'apparaît que s'il y en a plusieurs, l'étiquette que si le groupe en a déjà utilisé : une pastille sans choix derrière n'apprend rien.
  *
@@ -97,6 +108,12 @@ export function FilterBar({
   const categoryLabel =
     chosen.length === 0 ? 'Par catégorie' : chosen.length === 1 ? chosen[0].name : `${chosen.length} catégories`;
   const wallet = wallets.find((item) => item.id === effectiveWalletId);
+  const showWallet = wallets.length > 1;
+  const showTag = tags.length > 0 || state.tag !== null;
+  // La catégorie partage la rangée des pastilles fixes quand elle est la seule à panneau ; sinon les trois forment la seconde rangée.
+  const menusOwnRow = showWallet || showTag;
+  const { fontScale } = useWindowDimensions();
+  const wrap = fontScale >= stackAtFontScale;
 
   function toggleCategory(id: string) {
     const categoryIds = effectiveCategoryIds.includes(id)
@@ -142,8 +159,7 @@ export function FilterBar({
         ) : null}
       </View>
 
-      {/* Les quatre pastilles passent à la ligne plutôt que de défiler horizontalement : à la largeur d'un téléphone, la dernière (« Par catégorie ») était coupée au bord de l'écran, ce qui se lit comme un défaut d'affichage et non comme une invitation à faire défiler. */}
-      <View style={styles.row}>
+      <View style={[styles.row, wrap ? styles.rowWrap : null]}>
         <Chip
           label={preset.label}
           icon="calendar-month-outline"
@@ -165,37 +181,56 @@ export function FilterBar({
           selected={state.type === 'income'}
           onPress={() => toggleType('income')}
         />
-        <Chip
-          label={categoryLabel}
-          trailingIcon={panel === 'category' ? 'chevron-up' : 'chevron-down'}
-          group="Catégorie"
-          selected={chosen.length > 0}
-          expanded={panel === 'category'}
-          onPress={() => setPanel(panel === 'category' ? null : 'category')}
-        />
-        {wallets.length > 1 ? (
+        {menusOwnRow ? null : (
           <Chip
-            label={wallet?.name ?? 'Portefeuille'}
-            icon="wallet-outline"
-            trailingIcon={panel === 'wallet' ? 'chevron-up' : 'chevron-down'}
-            group="Portefeuille"
-            selected={wallet !== undefined}
-            expanded={panel === 'wallet'}
-            onPress={() => setPanel(panel === 'wallet' ? null : 'wallet')}
+            label={categoryLabel}
+            trailingIcon={panel === 'category' ? 'chevron-up' : 'chevron-down'}
+            group="Catégorie"
+            selected={chosen.length > 0}
+            expanded={panel === 'category'}
+            onPress={() => setPanel(panel === 'category' ? null : 'category')}
+            style={wrap ? undefined : styles.chipFill}
           />
-        ) : null}
-        {tags.length > 0 || state.tag !== null ? (
-          <Chip
-            label={state.tag ?? 'Étiquette'}
-            icon="tag-outline"
-            trailingIcon={panel === 'tag' ? 'chevron-up' : 'chevron-down'}
-            group="Étiquette"
-            selected={state.tag !== null}
-            expanded={panel === 'tag'}
-            onPress={() => setPanel(panel === 'tag' ? null : 'tag')}
-          />
-        ) : null}
+        )}
       </View>
+
+      {menusOwnRow ? (
+        <View style={[styles.row, wrap ? styles.rowWrap : null]}>
+          <Chip
+            label={categoryLabel}
+            trailingIcon={panel === 'category' ? 'chevron-up' : 'chevron-down'}
+            group="Catégorie"
+            selected={chosen.length > 0}
+            expanded={panel === 'category'}
+            onPress={() => setPanel(panel === 'category' ? null : 'category')}
+            style={wrap ? undefined : styles.chipEqual}
+          />
+          {showWallet ? (
+            <Chip
+              label={wallet?.name ?? 'Portefeuille'}
+              icon="wallet-outline"
+              trailingIcon={panel === 'wallet' ? 'chevron-up' : 'chevron-down'}
+              group="Portefeuille"
+              selected={wallet !== undefined}
+              expanded={panel === 'wallet'}
+              onPress={() => setPanel(panel === 'wallet' ? null : 'wallet')}
+              style={wrap ? undefined : styles.chipEqual}
+            />
+          ) : null}
+          {showTag ? (
+            <Chip
+              label={state.tag ?? 'Étiquette'}
+              icon="tag-outline"
+              trailingIcon={panel === 'tag' ? 'chevron-up' : 'chevron-down'}
+              group="Étiquette"
+              selected={state.tag !== null}
+              expanded={panel === 'tag'}
+              onPress={() => setPanel(panel === 'tag' ? null : 'tag')}
+              style={wrap ? undefined : styles.chipEqual}
+            />
+          ) : null}
+        </View>
+      ) : null}
 
       {panel === 'period' ? (
         <Panel title="Période">
@@ -324,6 +359,7 @@ function Chip({
   trailingIcon,
   expanded,
   block = false,
+  style,
 }: {
   label: string;
   /** Nom du filtre, repris dans l'énoncé vocal : « Type : Dépenses ». */
@@ -336,6 +372,8 @@ function Chip({
   expanded?: boolean;
   /** Dans un panneau : la pastille occupe une colonne entière de la grille, au lieu de s'ajuster à son libellé. */
   block?: boolean;
+  /** Part de la rangée que prend la pastille (`chipFill`, `chipEqual`). */
+  style?: StyleProp<ViewStyle>;
 }) {
   const colors = useColors();
   // Sélectionnée, la pastille prend la couleur du texte, pas l'accent : l'accent désigne ce sur quoi on agit, et une rangée de pastilles vertes le banaliserait.
@@ -351,6 +389,7 @@ function Chip({
       style={[
         styles.chip,
         block ? styles.chipBlock : null,
+        style,
         {
           backgroundColor: selected ? colors.text : colors.surface,
           borderColor: selected ? colors.text : colors.border,
@@ -391,8 +430,10 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: spacing.sm,
+  },
+  rowWrap: {
+    flexWrap: 'wrap',
   },
   panel: {
     gap: spacing.sm + 2,
@@ -421,6 +462,14 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth * 2,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md - 2,
+  },
+  // La place qui reste après les pastilles fixes, ni plus (largeur naturelle quand le libellé est court) ni moins : le libellé se tronque au lieu de renvoyer la pastille à la ligne.
+  chipFill: {
+    flexShrink: 1,
+  },
+  // Seconde rangée : parts égales, pour qu'un libellé long ne serre pas ses voisines.
+  chipEqual: {
+    flex: 1,
   },
   chipBlock: {
     // Deux colonnes exactement : à 48 % chacune, une troisième ne tient jamais sur la ligne, et la dernière rangée garde la largeur d'une colonne au lieu de s'étirer sur toute la largeur.

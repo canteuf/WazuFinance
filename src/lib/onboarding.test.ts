@@ -1,4 +1,4 @@
-import { declaredUsage, isOnboardingPending } from '@/lib/onboarding';
+import { declaredUsage, isOnboardingPending, SUGGESTED_WALLETS } from '@/lib/onboarding';
 
 describe('isOnboardingPending', () => {
   it('vrai pour un compte créé par cette version, accueil pas encore fait', () => {
@@ -30,5 +30,18 @@ describe('declaredUsage', () => {
     expect(declaredUsage({ usage: 'banque' })).toBeNull();
     expect(declaredUsage({})).toBeNull();
     expect(declaredUsage(undefined)).toBeNull();
+  });
+});
+
+describe('SUGGESTED_WALLETS', () => {
+  it('donne à chaque portefeuille un nom unique, qui sert de clé à son identifiant de création', () => {
+    const names = SUGGESTED_WALLETS.map((wallet) => wallet.name.toLowerCase());
+    expect(new Set(names).size).toBe(names.length);
+  });
+
+  it('propose les opérateurs du Cameroun et du Gabon, et la carte comme portefeuille bancaire', () => {
+    const names = SUGGESTED_WALLETS.map((wallet) => wallet.name);
+    expect(names).toEqual(expect.arrayContaining(['Orange Money', 'MTN MoMo', 'Airtel Money', 'Moov Money']));
+    expect(SUGGESTED_WALLETS.find((wallet) => wallet.name === 'Carte bancaire')?.kind).toBe('bank');
   });
 });
