@@ -1,4 +1,5 @@
 import {
+  isRetryingWrite,
   keepQueueAcrossVersions,
   mergeSavedRow,
   patchIsApplied,
@@ -23,6 +24,20 @@ const paused = { mutationKey: ['transactionWrites', 'create'], state: { status: 
 const inFlight = { mutationKey: ['transactionWrites', 'create'], state: { status: 'pending', isPaused: false } };
 const done = { mutationKey: ['transactionWrites', 'update'], state: { status: 'success', isPaused: false } };
 const summary = { queryKey: ['transactions', 'summary'], state: { data: { balance: 10 } } };
+
+describe('isRetryingWrite', () => {
+  it('vrai pour une écriture en attente de renvoi après une panne de transport', () => {
+    expect(isRetryingWrite({ status: 'pending', failureCount: 1 })).toBe(true);
+  });
+
+  it('faux pour un refus de la base, que query-core compte aussi comme un échec', () => {
+    expect(isRetryingWrite({ status: 'error', failureCount: 1 })).toBe(false);
+  });
+
+  it('faux pour une écriture en cours qui n’a pas encore échoué', () => {
+    expect(isRetryingWrite({ status: 'pending', failureCount: 0 })).toBe(false);
+  });
+});
 
 describe('transportRetryDelay', () => {
   it('double à chaque essai, sans dépasser une minute', () => {

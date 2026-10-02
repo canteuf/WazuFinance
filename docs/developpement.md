@@ -76,8 +76,14 @@ eas login                                       # une fois, compte expo.dev
 eas init                                        # une fois, crée le projectId dans app.json
 eas env:set --name EXPO_PUBLIC_SUPABASE_URL --value <url> --environment preview --visibility plaintext
 eas env:set --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <cle> --environment preview --visibility plaintext
+eas env:set --name EXPO_PUBLIC_SENTRY_DSN --value <dsn> --environment preview --visibility plaintext
+# les trois mêmes avec --environment production, avant le premier build du profil production
+eas env:list --environment production           # vérifier qu'elles y sont
 eas build -p android --profile preview          # ~10-20 min, QR code à la fin
+eas update --channel preview --environment preview --message "…"   # mise à jour JS des APK installés
 ```
+
+**`eas update` prend toujours `--environment`.** Sans lui, la mise à jour lit le `.env` local, où `EXPO_PUBLIC_SENTRY_DSN` est vide : les téléphones qui la reçoivent n'envoient plus aucun rapport de plantage. Le profil `production` lit l'environnement EAS `production`, distinct de `preview` : un build de production sans ces variables plante à l'ouverture.
 
 `eas-cli` s'installe globalement et **ne doit pas figurer dans les dépendances du projet** : EAS exécute `npm ci --include=dev` sur le serveur de build, où ces 344 paquets n'ont rien à faire. La version attendue est verrouillée par le champ `cli.version` de [eas.json](../eas.json), pas par une dépendance.
 

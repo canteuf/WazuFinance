@@ -12,6 +12,15 @@ export function transportRetryDelay(attempt: number): number {
 }
 
 /**
+ * Vrai quand une écriture a buté sur le réseau et attend d'être renvoyée : la feuille peut alors se fermer, la saisie est en file.
+ *
+ * `failureCount` seul ne suffit pas : query-core le passe aussi à 1 quand il abandonne une écriture sans la renvoyer (un refus de la base). La feuille se fermait alors sur « gardée sur le téléphone » alors que rien n'était gardé, et la saisie était perdue. Seule une écriture encore `pending` est en file.
+ */
+export function isRetryingWrite(state: { status: string; failureCount: number }): boolean {
+  return state.status === 'pending' && state.failureCount > 0;
+}
+
+/**
  * Versions que les modifications de cette session ont elles-mêmes remplacées, par opération.
  *
  * Deux modifications de la même opération faites hors ligne partent toutes deux de la version lue avant la première. Envoyées dans l'ordre, la seconde trouverait la ligne déjà changée — par soi — et serait refusée comme un conflit. Elle suit donc la chaîne des versions que l'app a produites, et ne bute que sur un changement venu d'ailleurs.

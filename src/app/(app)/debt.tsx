@@ -25,6 +25,7 @@ import { formatOccurredOn, isoToDate, todayIso } from '@/lib/dates';
 import { writeLastWallet } from '@/lib/last-used';
 import { formatMoney, parseAmount, toAmountInput } from '@/lib/money';
 import { goBackOr } from '@/lib/navigation';
+import { isRetryingWrite } from '@/lib/offline-queue';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 import type { DebtDirection } from '@/types/database';
 
@@ -298,7 +299,7 @@ function PaymentForm({ debtId, onDone }: { debtId: string; onDone: () => void })
   const online = useIsOnline();
 
   // Même règle que la saisie : un remboursement qui bute sur un réseau instable reste en file et partira seul ; la feuille n'a plus à l'attendre.
-  const retrying = pay.failureCount > 0;
+  const retrying = isRetryingWrite(pay);
   useEffect(() => {
     if (retrying) {
       toast.show('Réseau instable. Le remboursement est gardé sur le téléphone et partira dès que possible.', 'info');

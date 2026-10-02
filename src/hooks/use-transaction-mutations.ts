@@ -11,7 +11,7 @@ import {
 } from '@/data/transactions';
 import { isTransportError, RECURRENCE_FAILED } from '@/lib/data-errors';
 import { writeLastCategory, writeLastType, writeLastWallet } from '@/lib/last-used';
-import { mergeSavedRow, transportRetryDelay, VersionChain } from '@/lib/offline-queue';
+import { isRetryingWrite, mergeSavedRow, transportRetryDelay, VersionChain } from '@/lib/offline-queue';
 import { mutationKeys, queryKeys } from '@/lib/query-keys';
 import type { Tables } from '@/types/database';
 
@@ -169,8 +169,8 @@ export function useTransactionMutations() {
     isDeleting: deleteTransaction.isPending,
     /** Vrai dès qu'une écriture en cours a buté sur le réseau : elle est en file et sera renvoyée seule, la feuille n'a plus à l'attendre. */
     isRetrying:
-      createTransaction.failureCount > 0 ||
-      updateTransaction.failureCount > 0 ||
-      deleteTransaction.failureCount > 0,
+      isRetryingWrite(createTransaction) ||
+      isRetryingWrite(updateTransaction) ||
+      isRetryingWrite(deleteTransaction),
   };
 }

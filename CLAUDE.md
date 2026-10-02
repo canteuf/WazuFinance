@@ -25,8 +25,10 @@ npm run db:types                    # regenerate src/types/database.ts from the 
 
 eas build -p android --profile development   # development build: replaces Expo Go, rebuilt only when a native module changes
 eas build -p android --profile preview   # installable APK, built by EAS (global eas-cli)
-eas update --channel preview --message "…"   # ship JS-only changes to installed preview APKs
+eas update --channel preview --environment preview --message "…"   # ship JS-only changes to installed preview APKs
 ```
+
+**`eas update` always takes `--environment`** (`preview` or `production`, matching the channel). Without it the update inlines the local `.env`, whose `EXPO_PUBLIC_SENTRY_DSN` is empty, and every phone that receives it stops reporting crashes. The `production` profile reads the EAS `production` environment, separate from `preview`: it needs its own `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` and `EXPO_PUBLIC_SENTRY_DSN`, or the build throws at startup (`src/lib/env.ts`).
 
 The project is linked to Supabase ref `ozwltxywsqvgmefuqvfv`. Migration files must keep the CLI's `<14-digit timestamp>_name.sql` naming or `db push` skips them.
 

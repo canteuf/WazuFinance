@@ -239,6 +239,8 @@ SELECT is(
 -- ---------------------------------------------------------------------------
 
 -- Carol quitte Solo, dont elle est seule membre : autorisé par guard_owner_orphan(), qui ne bloque que si d'autres membres restent. L'invitation créée avant son départ reste valide.
+--
+-- Depuis 20261002000100_delete_empty_group.sql, ce départ supprime le groupe (delete_empty_group_test.sql le prouve). Le trigger est coupé ici pour reproduire un groupe resté sans membre avant cette migration : il peut en exister en base, et son code doit rester refusé.
 insert into public.group_invitations (id, group_id, code, created_by, expires_at)
 values ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000c2',
         'ORPHAN', '00000000-0000-0000-0000-0000000000e3', now() + interval '7 days');
@@ -247,9 +249,13 @@ values ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000
 select set_config('request.jwt.claims',
   '{"sub":"00000000-0000-0000-0000-0000000000e3","role":"authenticated"}', true);
 
+alter table public.account_memberships disable trigger account_memberships_delete_empty_group;
+
 delete from public.account_memberships
  where group_id = '00000000-0000-0000-0000-0000000000c2'
    and user_id = '00000000-0000-0000-0000-0000000000e3';
+
+alter table public.account_memberships enable trigger account_memberships_delete_empty_group;
 
 set local role authenticated;
 select set_config('request.jwt.claims',

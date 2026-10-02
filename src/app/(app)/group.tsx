@@ -146,6 +146,21 @@ export default function GroupScreen() {
     );
   }
 
+  // Confirmé d'abord, comme l'exclusion : un lecteur de tontine qui touchait le bouton par erreur devait redemander un code. Seul dans le groupe, le quitter le supprime (trigger delete_empty_group) : l'alerte le dit, puisque plus personne ne pourrait y revenir.
+  function confirmLeave() {
+    const name = group?.name ?? 'ce groupe';
+    Alert.alert(
+      hasOtherMembers ? `Quitter « ${name} » ?` : `Supprimer « ${name} » ?`,
+      hasOtherMembers
+        ? 'Vos opérations restent dans le groupe, à votre nom. Pour revenir, il vous faudra un nouveau code d’invitation.'
+        : 'Vous êtes seul dans ce groupe : en le quittant, vous le supprimez, avec toutes ses opérations, ses budgets et ses portefeuilles. C’est définitif.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { text: hasOtherMembers ? 'Quitter' : 'Supprimer', style: 'destructive', onPress: handleLeave },
+      ]
+    );
+  }
+
   function handleLeave() {
     if (!userId) {
       return;
@@ -472,7 +487,7 @@ export default function GroupScreen() {
               accessibilityRole="button"
               accessibilityState={{ disabled: (isOwner && hasOtherMembers) || isRemoving }}
               disabled={(isOwner && hasOtherMembers) || isRemoving}
-              onPress={handleLeave}
+              onPress={confirmLeave}
               style={({ pressed }) => [
                 styles.leaveButton,
                 {
@@ -487,7 +502,7 @@ export default function GroupScreen() {
                 <>
                   <MaterialCommunityIcons name="logout" size={18} color={colors.danger} />
                   <Text style={[styles.leaveLabel, { color: colors.danger }]}>
-                    Quitter le groupe
+                    {hasOtherMembers ? 'Quitter le groupe' : 'Quitter et supprimer le groupe'}
                   </Text>
                 </>
               )}
@@ -496,7 +511,9 @@ export default function GroupScreen() {
             <Text style={[styles.leaveHint, { color: colors.textMuted }]}>
               {isOwner && hasOtherMembers
                 ? 'En tant que propriétaire, confiez d’abord le groupe à un membre : touchez son nom, puis « Passer la main ».'
-                : 'Vos opérations restent dans le groupe après votre départ, à votre nom.'}
+                : hasOtherMembers
+                  ? 'Vos opérations restent dans le groupe après votre départ, à votre nom.'
+                  : 'Vous êtes seul dans ce groupe : le quitter le supprime, avec toutes ses opérations.'}
             </Text>
           </View>
         </>
