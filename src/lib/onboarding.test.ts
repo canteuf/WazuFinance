@@ -44,4 +44,8 @@ describe('SUGGESTED_WALLETS', () => {
     expect(names).toEqual(expect.arrayContaining(['Orange Money', 'MTN MoMo', 'Airtel Money', 'Moov Money']));
     expect(SUGGESTED_WALLETS.find((wallet) => wallet.name === 'Carte bancaire')?.kind).toBe('bank');
   });
+
+  it('termine par un portefeuille générique pour ce que la liste ne nomme pas', () => {
+    expect(SUGGESTED_WALLETS.at(-1)).toMatchObject({ name: 'Autre portefeuille', kind: 'other' });
+  });
 });
