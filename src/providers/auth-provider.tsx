@@ -5,6 +5,7 @@ import { deleteOwnAccount } from '@/data/account';
 import { CurrentPasswordError } from '@/lib/auth-errors';
 import { clockSkewMs as measureClockSkew } from '@/lib/clock';
 import { TERMS_VERSION } from '@/lib/legal';
+import { reportError } from '@/lib/monitoring';
 import type { Usage } from '@/lib/onboarding';
 import { clearExportedFiles } from '@/lib/save-file';
 import { supabase } from '@/lib/supabase';
@@ -105,6 +106,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    /**
+     * Ferme toutes les sessions du compte sauf celle de ce téléphone, après un nouveau mot de passe.
+     *
+     * Un mot de passe changé parce qu'il a fuité, ou repris par réinitialisation sur un compte qu'un tiers avait inscrit avec cette adresse, laissait la session de ce tiers ouverte : son jeton de rafraîchissement continuait de lire les comptes. Les autres appareils sont déconnectés à leur prochain rafraîchissement de jeton.
+     *
+     * Un échec ne fait pas échouer l'action : le mot de passe est déjà enregistré, et une erreur affichée laisserait croire le contraire.
+     */
+    async function signOutOtherSessions(): Promise<void> {
+      const { error } = await supabase.auth.signOut({ scope: 'others' });
+      if (error) {
+        reportError(error, 'sign-out-others');
+      }
+    }
+
     return {
       session,
       isLoading,
@@ -182,6 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await supabase.auth.signOut({ scope: 'local' });
             throw updateError;
           }
+          await signOutOtherSessions();
         } finally {
           recovering.current = false;
         }
@@ -195,6 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) {
           throw error;
         }
+        await signOutOtherSessions();
       },
       async deleteAccount(currentPassword) {
         await verifyPassword(currentPassword);
