@@ -1,7 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { LegalLinks } from '@/components/legal/legal-links';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,9 @@ import {
   validatePassword,
 } from '@/lib/validation';
 import { font, radius, spacing, useColors } from '@/theme/tokens';
+
+// Coins arrondis compris dans l'image : rien à découper ici.
+const LOGO = require('../../../assets/images/icon.png');
 
 type FieldErrors = {
   displayName?: string;
@@ -78,10 +81,8 @@ export default function SignUpScreen() {
   return (
     <Screen>
       <View style={styles.header}>
-        {/* Même monogramme qu'à la connexion : les deux écrans forment une seule porte d'entrée, et changer d'en-tête entre eux donnerait l'impression d'avoir changé d'application. */}
-        <View style={[styles.mark, { backgroundColor: colors.primary }]}>
-          <Text style={[styles.markLetter, { color: colors.primaryText }]}>W</Text>
-        </View>
+        {/* Même logo qu'à la connexion : les deux écrans forment une seule porte d'entrée, et changer d'en-tête entre eux donnerait l'impression d'avoir changé d'application. */}
+        <Image source={LOGO} style={styles.mark} accessibilityElementsHidden importantForAccessibility="no" />
         <Text style={[styles.title, { color: colors.text }]}>Créer un compte</Text>
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
           Votre compte personnel est privé. Vous pourrez ensuite partager un budget.
@@ -203,15 +204,7 @@ const styles = StyleSheet.create({
   mark: {
     width: 56,
     height: 56,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: spacing.sm,
-  },
-  markLetter: {
-    fontFamily: font.black,
-    fontSize: 26,
-    lineHeight: 32,
   },
   title: {
     fontFamily: font.black,

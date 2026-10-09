@@ -1,7 +1,7 @@
 import { AuthError } from '@supabase/supabase-js';
 import { Link, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
@@ -9,7 +9,10 @@ import { TextField } from '@/components/ui/text-field';
 import { useAuth } from '@/hooks/use-auth';
 import { authErrorMessage } from '@/lib/auth-errors';
 import { validateEmail, validatePassword } from '@/lib/validation';
-import { font, radius, spacing, useColors } from '@/theme/tokens';
+import { font, spacing, useColors } from '@/theme/tokens';
+
+// Coins arrondis compris dans l'image : rien à découper ici.
+const LOGO = require('../../../assets/images/icon.png');
 
 type FieldErrors = {
   email?: string;
@@ -59,10 +62,8 @@ export default function SignInScreen() {
   return (
     <Screen>
       <View style={styles.header}>
-        {/* Le monogramme tient lieu de logo : une marque dessinée n'existe pas encore, et un carré à l'accent du thème vaut mieux qu'un espace vide au-dessus du titre. */}
-        <View style={[styles.mark, { backgroundColor: colors.primary }]}>
-          <Text style={[styles.markLetter, { color: colors.primaryText }]}>W</Text>
-        </View>
+        {/* Le logo de l'app, le même fichier que l'icône (assets/images/icon.png) : l'écran d'accueil du téléphone et celui de la connexion montrent la même marque. Décoratif, le titre dit déjà le nom. */}
+        <Image source={LOGO} style={styles.mark} accessibilityElementsHidden importantForAccessibility="no" />
         <Text style={[styles.title, { color: colors.text }]}>Wazu Finance</Text>
         <Text style={[styles.subtitle, { color: colors.textMuted }]}>
           Connectez-vous pour retrouver vos budgets.
@@ -129,15 +130,7 @@ const styles = StyleSheet.create({
   mark: {
     width: 56,
     height: 56,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: spacing.sm,
-  },
-  markLetter: {
-    fontFamily: font.black,
-    fontSize: 26,
-    lineHeight: 32,
   },
   title: {
     fontFamily: font.black,
