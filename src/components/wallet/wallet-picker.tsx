@@ -7,7 +7,7 @@ import { spokenAmount } from '@/lib/money';
 import { font, radius, spacing, useColors } from '@/theme/tokens';
 
 /**
- * Choix du portefeuille, en pastilles qui passent à la ligne : quatre ou cinq portefeuilles tiennent sur deux lignes sans défilement caché. Chaque pastille dit le solde au lecteur d'écran, pour choisir celui qui a de quoi payer.
+ * Choix du portefeuille, en pastilles qui passent à la ligne : quatre ou cinq portefeuilles tiennent sur deux lignes sans défilement caché. Chaque ligne occupe toute la largeur : les pastilles s'élargissent (`flexGrow`) plutôt que de laisser un vide au bout de la ligne. Chaque pastille dit le solde au lecteur d'écran, pour choisir celui qui a de quoi payer.
  */
 export function WalletPicker({
   wallets,
@@ -71,6 +71,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md - 2,
     borderRadius: radius.pill,
     borderWidth: 1.5,
+    flexGrow: 1,
+    justifyContent: 'center',
     maxWidth: '100%',
   },
   label: {
