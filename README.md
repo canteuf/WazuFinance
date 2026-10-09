@@ -120,12 +120,13 @@ Dans les **Paramètres**, on peut :
 - relire les conditions d'utilisation et la politique de confidentialité ;
 - se déconnecter, ou supprimer définitivement son compte.
 
-Un mot de passe oublié se réinitialise avec un code reçu par e-mail. L'application suit aussi la taille de texte choisie dans les réglages du téléphone.
+À l'inscription, l'adresse e-mail se confirme avec un code reçu par e-mail ; un mot de passe oublié se réinitialise de la même façon. L'application suit aussi la taille de texte choisie dans les réglages du téléphone.
 
 ## Confidentialité et sécurité
 
 - **Ce qui est personnel reste personnel.** Une dépense de votre compte personnel n'est visible par personne d'autre. Dans un groupe partagé, seuls ses membres voient ses opérations, et votre adresse e-mail n'est jamais montrée aux autres membres.
 - **La protection est assurée par le serveur, pas seulement par l'application.** Même quelqu'un qui contournerait l'application ne pourrait pas lire les données d'un groupe dont il n'est pas membre, ni modifier celles d'un groupe où il n'est que lecteur.
+- **Personne ne peut créer un compte avec l'adresse d'un autre** : l'inscription n'aboutit qu'avec le code envoyé à cette adresse. Changer ou réinitialiser son mot de passe déconnecte aussi les autres appareils, au plus tard dans l'heure.
 - **La session est rangée dans le coffre-fort du téléphone**, et l'application peut se verrouiller par un code.
 - **Presque rien ne reste sur le téléphone après une déconnexion.** Les données gardées pour le mode hors ligne sont effacées ; seules les saisies pas encore envoyées sont conservées, pour partir à la prochaine connexion du même compte, et l'application prévient avant de se déconnecter s'il en reste.
 - **Les données sont sauvegardées chaque nuit**, et ces sauvegardes sont chiffrées.
