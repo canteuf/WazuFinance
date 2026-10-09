@@ -267,6 +267,8 @@ export default function TransactionScreen() {
         keyboardDismissMode="on-drag"
         // Sur Android, la feuille (BottomSheetBehavior) ne cède le geste qu’à un enfant dont le défilement imbriqué est activé, ce que le ScrollView de React Native ne fait pas par défaut : sans cette prop, la feuille captait tout glissement vers le bas pour se déplacer elle-même, et une fois le haut du formulaire masqué, on ne pouvait plus y remonter.
         nestedScrollEnabled
+        // Mode « layout » : le clavier fait grandir une vraie vue au bout du contenu. En mode « insets » (par défaut), la place ajoutée sous le contenu est un rembourrage natif posé sur le ScrollView, qui ne prenait pas dans cette feuille : avec plusieurs portefeuilles, la feuille atteint sa hauteur maximale, la note n'est visible qu'en défilant jusqu'au bout, et sans place en plus il n'y avait plus rien à faire défiler — la note restait sous le clavier (Pixel 7, APK 1.1.1).
+        mode="layout"
       >
         <TransactionForm
           groupId={activeGroupId}
