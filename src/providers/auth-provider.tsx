@@ -18,7 +18,7 @@ export type AuthState = {
   clockSkewMs: number | null;
   signIn: (email: string, password: string) => Promise<void>;
   /**
-   * Renvoie `needsEmailConfirmation` : quand la confirmation d'email est activée sur le projet Supabase, signUp ne crée pas de session et l'utilisateur doit d'abord cliquer le lien reçu.
+   * Renvoie `needsEmailConfirmation` : quand la confirmation d'email est activée sur le projet Supabase, signUp ne crée pas de session et l'utilisateur doit d'abord saisir le code reçu (`confirmSignUp`).
    */
   signUp: (
     email: string,
@@ -27,6 +27,10 @@ export type AuthState = {
   ) => Promise<{ needsEmailConfirmation: boolean }>;
   /** `local` : efface la session de ce téléphone seulement, sans appel réseau — pour le verrouillage de l'app, qui doit pouvoir déconnecter hors ligne. */
   signOut: (options?: { local?: boolean }) => Promise<void>;
+  /** Vérifie le code de confirmation d'inscription reçu par email ; le compte est confirmé et connecté à la fin. */
+  confirmSignUp: (email: string, code: string) => Promise<void>;
+  /** Renvoie le code de confirmation d'inscription. */
+  resendSignUpCode: (email: string) => Promise<void>;
   /** Envoie par email un code de réinitialisation du mot de passe. Réussit aussi pour une adresse inconnue : Supabase ne dit pas si un compte existe. */
   sendPasswordResetCode: (email: string) => Promise<void>;
   /** Vérifie le code reçu, puis enregistre le nouveau mot de passe ; l'utilisateur est connecté à la fin. */
@@ -147,6 +151,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           throw error;
         }
         return { needsEmailConfirmation: data.session === null };
+      },
+      async confirmSignUp(email, code) {
+        // Le code ouvre la session : la garde du layout racine bascule seule sur (app).
+        const { error } = await supabase.auth.verifyOtp({ email: email.trim(), token: code, type: 'signup' });
+        if (error) {
+          throw error;
+        }
+      },
+      async resendSignUpCode(email) {
+        const { error } = await supabase.auth.resend({ type: 'signup', email: email.trim() });
+        if (error) {
+          throw error;
+        }
       },
       async acceptTerms() {
         // Fusionnée dans user_metadata : display_name et le reste sont conservés. L'événement USER_UPDATED qui suit porte la nouvelle session.

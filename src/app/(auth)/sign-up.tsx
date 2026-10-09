@@ -42,7 +42,6 @@ export default function SignUpScreen() {
   const [consent, setConsent] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string>();
-  const [notice, setNotice] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit() {
@@ -55,7 +54,6 @@ export default function SignUpScreen() {
     };
     setFieldErrors(errors);
     setFormError(undefined);
-    setNotice(undefined);
 
     if (Object.values(errors).some(Boolean)) {
       return;
@@ -65,9 +63,8 @@ export default function SignUpScreen() {
     try {
       const { needsEmailConfirmation } = await signUp(email, password, displayName);
       if (needsEmailConfirmation) {
-        setNotice(
-          `Compte créé. Confirmez votre email (${email.trim()}) puis connectez-vous.`
-        );
+        // replace, pas push : revenir en arrière ne doit pas rouvrir un formulaire déjà envoyé.
+        router.replace({ pathname: '/confirm-email', params: { email: email.trim() } });
         return;
       }
       // Session immédiate : la garde du layout racine bascule seule sur (app).
@@ -180,15 +177,10 @@ export default function SignUpScreen() {
         <LegalLinks />
       </View>
 
-      {/* Annoncés dès qu'ils apparaissent, comme sur l'écran du mot de passe oublié. */}
+      {/* Annoncé dès qu'il apparaît, comme sur l'écran du mot de passe oublié. */}
       {formError ? (
         <Text accessibilityLiveRegion="polite" style={[styles.message, { color: colors.danger }]}>
           {formError}
-        </Text>
-      ) : null}
-      {notice ? (
-        <Text accessibilityLiveRegion="polite" style={[styles.message, { color: colors.primary }]}>
-          {notice}
         </Text>
       ) : null}
 

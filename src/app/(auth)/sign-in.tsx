@@ -1,4 +1,5 @@
-import { Link } from 'expo-router';
+import { AuthError } from '@supabase/supabase-js';
+import { Link, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -17,6 +18,7 @@ type FieldErrors = {
 
 export default function SignInScreen() {
   const colors = useColors();
+  const router = useRouter();
   const { signIn } = useAuth();
   const passwordRef = useRef<TextInput>(null);
 
@@ -43,6 +45,11 @@ export default function SignInScreen() {
       await signIn(email, password);
       // Pas de navigation ici : la garde du layout racine bascule sur (app) dès que la session arrive.
     } catch (error) {
+      // Compte inscrit mais jamais confirmé : on envoie un nouveau code plutôt que de laisser l'utilisateur devant un refus sans issue.
+      if (error instanceof AuthError && error.code === 'email_not_confirmed') {
+        router.push({ pathname: '/confirm-email', params: { email: email.trim(), resend: '1' } });
+        return;
+      }
       setFormError(authErrorMessage(error));
     } finally {
       setSubmitting(false);

@@ -1,0 +1,43 @@
+<!-- Modèle « Confirm signup » : branché sur la pile locale par supabase/config.toml, à recoller dans le tableau de bord pour le projet hébergé (Authentication → Emails → Templates). Mise en page par tableaux et styles en ligne : c'est ce que Gmail, Outlook et les messageries des téléphones affichent tous de la même façon. Le logo est publié par GitHub Pages (docs/email/logo.png) : un e-mail ne peut ni joindre un fichier, ni afficher une image collée en base64, que Gmail bloque. -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#EDF1F0;">
+  <tr>
+    <td align="center" style="padding:24px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;background-color:#FFFFFF;border-radius:16px;">
+        <tr>
+          <td style="padding:28px 28px 8px 28px;font-family:Arial,Helvetica,sans-serif;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="vertical-align:middle;">
+                  <img src="https://canteuf.github.io/WazuFinance/email/logo.png" width="48" height="48" alt="Wazu Finance" style="display:block;border:0;border-radius:12px;">
+                </td>
+                <td style="vertical-align:middle;padding-left:12px;font-size:20px;font-weight:bold;color:#12201C;">
+                  Wazu Finance
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 28px 0 28px;font-family:Arial,Helvetica,sans-serif;color:#12201C;">
+            <h1 style="margin:0 0 12px 0;font-size:22px;line-height:28px;">Confirmer votre adresse</h1>
+            <p style="margin:0;font-size:16px;line-height:24px;">Bienvenue sur Wazu Finance. Pour activer votre compte, saisissez ce code dans l'application :</p>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:24px 28px;">
+            <div style="display:inline-block;background-color:#EDF1F0;border-radius:12px;padding:14px 22px;font-family:'Courier New',Courier,monospace;font-size:30px;font-weight:bold;letter-spacing:6px;color:#08775A;">{{ .Token }}</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 28px 28px 28px;font-family:Arial,Helvetica,sans-serif;color:#5E6E69;font-size:15px;line-height:22px;">
+            <p style="margin:0 0 12px 0;">Le code est valable 15 minutes et ne sert qu'une fois.</p>
+            <p style="margin:0;">Si vous n'avez pas créé de compte, ignorez cet e-mail : sans ce code, le compte n'est jamais activé.</p>
+          </td>
+        </tr>
+      </table>
+      <p style="max-width:480px;margin:16px auto 0 auto;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:19px;color:#5E6E69;text-align:center;">
+        Wazu Finance · <a href="https://canteuf.github.io/WazuFinance/legal/confidentialite.html" style="color:#08775A;">Confidentialité</a> · <a href="mailto:wazufinance@gmail.com" style="color:#08775A;">wazufinance@gmail.com</a>
+      </p>
+    </td>
+  </tr>
+</table>
