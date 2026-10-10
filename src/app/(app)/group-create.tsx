@@ -58,8 +58,9 @@ export default function GroupCreateScreen() {
         </Pressable>
       </View>
 
-      {/* Sans défilement, le champ ouvert d'office passait sous le clavier : la feuille, ajustée à son contenu, est posée au bas de l'écran, là où le clavier s'ouvre. */}
+      {/* Défilement automatique coupé (`enabled={false}`) : la feuille, ajustée à son contenu et courte, est remontée en entier au-dessus du clavier par react-native-screens. Le champ prend le focus pendant que la feuille glisse encore ; la bibliothèque faisait alors défiler le contenu d'autant, en plus de la remontée, et le champ comme le bouton passaient au-dessus de la partie visible : la feuille paraissait vide (Pixel 7, APK 1.1.2). Le défilement reste possible au doigt. */}
       <SheetScrollView
+        enabled={false}
         style={styles.scroll}
         contentContainerStyle={styles.form}
         keyboardShouldPersistTaps="handled"
