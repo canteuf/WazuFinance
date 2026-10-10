@@ -5,10 +5,11 @@
 create extension if not exists pgtap with schema extensions;
 
 BEGIN;
-SELECT plan(10);
+SELECT plan(11);
 
 insert into auth.users (id, email, raw_user_meta_data) values
-  ('00000000-0000-0000-0000-0000000002e1', 'alice-i@example.com', '{"display_name": "Alice"}'::jsonb);
+  ('00000000-0000-0000-0000-0000000002e1', 'alice-i@example.com', '{"display_name": "Alice"}'::jsonb),
+  ('00000000-0000-0000-0000-0000000002e2', 'bob-i@example.com', '{"display_name": "Bob"}'::jsonb);
 
 insert into public.budgets (id, group_id, category_id, amount)
 values (
@@ -76,6 +77,21 @@ SELECT throws_ok(
   '42501',
   NULL,
   'Les marques ne se lisent pas'
+);
+
+-- La marque d'un compte ne touche pas aux gestes d'un autre (migration 20261010000100_scoped_request_claims.sql) : Bob marque d'avance un identifiant, l'ajustement d'Alice qui le porte s'applique quand même.
+select set_config('request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-0000000002e2","role":"authenticated"}', true);
+select public.claim_request('00000000-0000-0000-0000-0000000002c9');
+select set_config('request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-0000000002e1","role":"authenticated"}', true);
+select public.adjust_budget_amount('00000000-0000-0000-0000-0000000002b1', 1000, '00000000-0000-0000-0000-0000000002c9');
+select public.adjust_budget_amount('00000000-0000-0000-0000-0000000002b1', -1000, '00000000-0000-0000-0000-0000000002ca');
+
+SELECT is(
+  (select amount from public.budgets where id = '00000000-0000-0000-0000-0000000002b1'),
+  10000::numeric,
+  'Un identifiant marqué par un autre compte ne bloque pas le geste'
 );
 
 -- ---------------------------------------------------------------------------
