@@ -77,9 +77,9 @@ function writePng(relativePath, svgSource) {
 }
 
 /**
- * Icône adaptative Android : le lanceur découpe une forme (rond, squircle…) dans les 72 dp centraux d'un calque de 108 dp, et la zone sûre est un cercle de 66 dp. Avec `scale` 0.72, l'anneau mesure 41,8 % du calque, soit 63 % de la partie visible : nettement dans la zone sûre, et aussi présent que sur l'icône carrée.
+ * Icône adaptative Android : le lanceur découpe une forme (rond, squircle…) dans les 72 dp centraux d'un calque de 108 dp, et la zone sûre est un cercle de 66 dp. Avec `scale` 0.9, l'anneau mesure 52,2 % du calque, soit 78 % de la partie visible, dans la zone sûre (92 %). À 0.72 (63 %, version 1.1.2), la molette paraissait petite à côté de WhatsApp ou Telegram ; 0.95 (83 %) est le plus grand possible, mais frôle le bord des lanceurs qui découpent en goutte.
  */
-const ADAPTIVE_SCALE = 0.72;
+const ADAPTIVE_SCALE = 0.9;
 
 const outputs = {
   // iOS et web : l'icône finie, carré arrondi compris.

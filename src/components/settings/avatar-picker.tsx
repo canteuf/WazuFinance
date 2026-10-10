@@ -6,7 +6,7 @@ import { AVATAR_IDS, type AvatarId } from '@/lib/avatars';
 import { iconGridLayout } from '@/lib/icon-grid';
 import { radius, spacing, useColors } from '@/theme/tokens';
 
-/** Case tactile minimale : les 44 points recommandés, comme les grilles d'icônes. Plus haut, les dix-huit choix (initiales et dix-sept visages) ne tiennent pas en trois rangées de six sur la carte d'un téléphone, large d'environ 330 points. */
+/** Case tactile minimale : les 44 points recommandés, comme les grilles d'icônes. Plus haut, les choix ne tiennent pas à six par rangée sur la carte d'un téléphone, large d'environ 330 points : les trente-deux (initiales et trente et un visages) y font cinq rangées de six et une de deux. */
 const MIN_TILE = 44;
 const RING = 2;
 const INSET = 3;

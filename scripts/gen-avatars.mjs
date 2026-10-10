@@ -1,5 +1,7 @@
 /**
- * Régénère les avatars de assets/avatars/ (a01.png à a17.png).
+ * Régénère les avatars de assets/avatars/ (a01.png à a31.png).
+ *
+ * a18 à a31 (version 1.1.3) rééquilibrent les teintes : 15 peaux foncées (D, B), 15 claires (L, P) et 3 moyennes (T), autant de femmes que d'hommes parmi les ajouts, avec des aînés. La version de DiceBear utilisée alors (10.7) redessinait a01 à a17 au pixel près ; en ajoutant des visages, ne recopier tout de même que les nouveaux fichiers.
  *
  * Les visages viennent du style Avataaars de DiceBear (Pablo Stanley, libre pour un usage personnel et commercial), rastérisés en PNG par resvg. Chaque avatar fixe tout ce qui se voit — coiffure, teinte, tenue, expression, lunettes, barbe — au lieu de dépendre d'une graine : un identifiant donne toujours le même visage, quelle que soit la version de la bibliothèque, et les teintes sont réparties à dessein plutôt que tirées au hasard.
  *
@@ -56,6 +58,20 @@ const PRESETS = [
   { id: 'a15', skin: D, top: 'shortRound', hair: '#e8e1e1', clothes: 'blazerAndShirt', clothesColor: '#3c4f5c', eyes: 'default', brows: 'flatNatural', mouth: 'smile', ...glasses('prescription01'), ...beard('beardMedium', '#e8e1e1') },
   { id: 'a16', skin: B, top: 'turban', hat: '#ff5c5c', clothes: 'shirtVNeck', clothesColor: '#ffffff', eyes: 'happy', brows: 'defaultNatural', mouth: 'smile', ...NO_ACCESSORY, ...NO_BEARD },
   { id: 'a17', skin: T, top: 'curvy', hair: '#2c1b18', clothes: 'shirtCrewNeck', clothesColor: '#ffc5a8', eyes: 'happy', brows: 'defaultNatural', mouth: 'smile', ...NO_ACCESSORY, ...NO_BEARD },
+  { id: 'a18', skin: D, top: 'straightAndStrand', hair: '#2c1b18', clothes: 'shirtVNeck', clothesColor: '#ff488e', eyes: 'happy', brows: 'raisedExcitedNatural', mouth: 'smile', ...NO_ACCESSORY, ...NO_BEARD },
+  { id: 'a19', skin: B, top: 'shortWaved', hair: '#2c1b18', clothes: 'blazerAndSweater', clothesColor: '#262e33', eyes: 'default', brows: 'defaultNatural', mouth: 'smile', ...NO_ACCESSORY, ...beard('moustacheFancy', '#2c1b18') },
+  { id: 'a20', skin: D, top: 'theCaesar', hair: '#e8e1e1', clothes: 'collarAndSweater', clothesColor: '#ffc5a8', eyes: 'happy', brows: 'defaultNatural', mouth: 'smile', ...glasses('prescription01'), ...beard('beardLight', '#e8e1e1') },
+  { id: 'a21', skin: L, top: 'longButNotTooLong', hair: '#4a312c', clothes: 'shirtScoopNeck', clothesColor: '#5199e4', eyes: 'happy', brows: 'defaultNatural', mouth: 'smile', ...NO_ACCESSORY, ...NO_BEARD },
+  { id: 'a22', skin: P, top: 'shaggyMullet', hair: '#d6b370', clothes: 'graphicShirt', clothesColor: '#ff5c5c', graphic: 'hola', eyes: 'wink', brows: 'raisedExcitedNatural', mouth: 'twinkle', ...NO_ACCESSORY, ...NO_BEARD },
+  { id: 'a23', skin: L, top: 'shortRound', hair: '#4a312c', clothes: 'shirtCrewNeck', clothesColor: '#ffffff', eyes: 'default', brows: 'defaultNatural', mouth: 'smile', ...NO_ACCESSORY, ...beard('beardMedium', '#4a312c') },
+  { id: 'a24', skin: P, top: 'theCaesar', hair: '#b58143', clothes: 'blazerAndShirt', clothesColor: '#25557c', eyes: 'default', brows: 'defaultNatural', mouth: 'smile', ...glasses('round'), ...NO_BEARD },
+  { id: 'a25', skin: L, top: 'bun', hair: '#724133', clothes: 'overall', clothesColor: '#a7ffc4', eyes: 'happy', brows: 'defaultNatural', mouth: 'twinkle', ...NO_ACCESSORY, ...NO_BEARD },
+  { id: 'a26', skin: P, top: 'straight01', hair: '#e8e1e1', clothes: 'blazerAndSweater', clothesColor: '#ff488e', eyes: 'default', brows: 'defaultNatural', mouth: 'smile', ...glasses('prescription02'), ...NO_BEARD },
+  { id: 'a27', skin: L, top: 'dreads01', hair: '#2c1b18', clothes: 'shirtVNeck', clothesColor: '#ffdeb5', eyes: 'happy', brows: 'defaultNatural', mouth: 'smile', ...NO_ACCESSORY, ...NO_BEARD },
+  { id: 'a28', skin: P, top: 'winterHat03', hat: '#5199e4', clothes: 'hoodie', clothesColor: '#ffafb9', eyes: 'default', brows: 'defaultNatural', mouth: 'smile', ...NO_ACCESSORY, ...beard('beardLight', '#d6b370') },
+  { id: 'a29', skin: L, top: 'miaWallace', hair: '#2c1b18', clothes: 'collarAndSweater', clothesColor: '#ff5c5c', eyes: 'happy', brows: 'raisedExcitedNatural', mouth: 'smile', ...NO_ACCESSORY, ...NO_BEARD },
+  { id: 'a30', skin: P, top: 'shortCurly', hair: '#c93305', clothes: 'graphicShirt', clothesColor: '#a7ffc4', graphic: 'pizza', eyes: 'happy', brows: 'defaultNatural', mouth: 'smile', ...NO_ACCESSORY, ...NO_BEARD },
+  { id: 'a31', skin: L, top: 'turban', hat: '#929598', clothes: 'shirtVNeck', clothesColor: '#ffffff', eyes: 'happy', brows: 'defaultNatural', mouth: 'smile', ...NO_ACCESSORY, ...NO_BEARD },
 ];
 
 function toOptions(preset) {
