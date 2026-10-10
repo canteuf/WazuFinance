@@ -260,11 +260,21 @@ content_path = "./supabase/templates/confirmation.html"
 # subject = "You have been invited"
 # content_path = "./supabase/templates/invite.html"
 
-# Uncomment to customize notification email template
-# [auth.email.notification.password_changed]
-# enabled = true
-# subject = "Your password has been changed"
-# content_path = "./supabase/templates/password_changed_notification.html"
+# Changement d'adresse : avec double_confirm_changes (plus haut), le lien part vers l'ancienne et la nouvelle adresse. L'app n'offre pas ce changement ; le modèle prévient donc qu'il a été demandé hors de l'app. Le projet hébergé doit porter le même modèle (Authentication → Emails → Templates → Change email address) et « Secure email change » activé.
+[auth.email.template.email_change]
+subject = "Wazu Finance : changement d'adresse demandé"
+content_path = "./supabase/templates/email_change.html"
+
+# Alertes de sécurité, envoyées après coup à l'adresse du compte : un mot de passe ou une adresse changés par quelqu'un d'autre ne passent plus inaperçus. Le projet hébergé doit les activer et porter les mêmes modèles (Authentication → Emails, notifications de sécurité).
+[auth.email.notification.password_changed]
+enabled = true
+subject = "Wazu Finance : votre mot de passe a été changé"
+content_path = "./supabase/templates/password_changed.html"
+
+[auth.email.notification.email_changed]
+enabled = true
+subject = "Wazu Finance : l'adresse de votre compte a changé"
+content_path = "./supabase/templates/email_changed.html"
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
