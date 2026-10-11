@@ -11,14 +11,14 @@ Les montants sont en francs CFA (FCFA), sans centimes : l’app vaut pour le XAF
 <!-- markdownlint-disable MD033 -->
 <table>
   <tr>
-    <td align="center" width="33%"><img src="docs/screenshots/synthese.png" alt="Écran Synthèse : solde du mois, entrées, sorties et répartition des dépenses par catégorie" width="240"><br><sub><b>Synthèse</b> : le mois en un coup d'œil</sub></td>
-    <td align="center" width="33%"><img src="docs/screenshots/saisie.png" alt="Formulaire de saisie : montant de 12 500 XAF et catégorie Alimentation sélectionnée" width="240"><br><sub><b>Saisie</b> : montant, catégorie, valider</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/synthese.png" alt="Écran Synthèse : solde d'octobre, entrées, sorties et solde de chaque portefeuille" width="240"><br><sub><b>Synthèse</b> : le mois en un coup d'œil</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/saisie.png" alt="Formulaire de saisie : montant de 12 500 FCFA, portefeuille Espèces et catégorie Alimentation sélectionnés" width="240"><br><sub><b>Saisie</b> : montant, catégorie, valider</sub></td>
     <td align="center" width="33%"><img src="docs/screenshots/operations.png" alt="Écran Opérations : recherche, filtres et opérations regroupées par jour" width="240"><br><sub><b>Opérations</b> : l'historique, jour par jour</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/budgets.png" alt="Écran Budgets : total des budgets du mois et un budget Restaurants en dépassement" width="240"><br><sub><b>Budgets</b> : les plafonds et leurs alertes</sub></td>
+    <td align="center"><img src="docs/screenshots/budgets.png" alt="Écran Budgets : un budget Restaurants en dépassement, suivi des budgets sous contrôle" width="240"><br><sub><b>Budgets</b> : les plafonds et leurs alertes</sub></td>
     <td align="center"><img src="docs/screenshots/epargne.png" alt="Écran Épargne : total mis de côté et progression de chaque objectif" width="240"><br><sub><b>Épargne</b> : la progression des objectifs</sub></td>
-    <td align="center"><img src="docs/screenshots/groupe.png" alt="Détail d'un groupe partagé : membres et code d'invitation" width="240"><br><sub><b>Groupe</b> : un budget partagé à deux</sub></td>
+    <td align="center"><img src="docs/screenshots/groupe.png" alt="Détail d'un groupe partagé : deux membres et le code d'invitation pour des lecteurs" width="240"><br><sub><b>Groupe</b> : un budget partagé à deux</sub></td>
   </tr>
 </table>
 
@@ -26,6 +26,10 @@ Les montants sont en francs CFA (FCFA), sans centimes : l’app vaut pour le XAF
 <!-- markdownlint-enable MD033 -->
 
 ## Ce que fait l'application
+
+### Bien démarrer
+
+À la première ouverture, trois questions préparent l'application : à quoi elle va servir (budget personnel, famille, commerce, tontine), le jour où tombe la paie, et les portefeuilles qu'on utilise (Orange Money, MTN MoMo, Airtel Money, Moov Money, Wave, carte bancaire ou un autre). Tout reste modifiable ensuite.
 
 ### Noter une dépense en trois gestes
 
@@ -42,6 +46,8 @@ L'écran **Synthèse** résume la période en cours :
 
 S'y ajoutent, quand ils ont lieu d'être : les opérations récurrentes arrivées à échéance, le solde de chaque portefeuille, les prêts et dettes en cours, et une carte **Commerce** (ventes, achats de stock, marge) dès que la période contient une vente ou un achat de stock.
 
+Une carte vide ne s'affiche pas : tant qu'on n'a ni budget, ni objectif d'épargne, ni prêt, ni second portefeuille, l'écran reste court, et une rubrique **Aller plus loin** propose de les découvrir.
+
 Le mois budgétaire n'a pas besoin de commencer le 1er : on choisit le jour qui correspond à sa paie, du 1 au 28.
 
 ### Retrouver une opération
@@ -50,7 +56,7 @@ L'écran **Opérations** liste tout l'historique, jour par jour, avec le total d
 
 ### Classer ses dépenses
 
-L'application propose des catégories courantes, chacune avec son icône : alimentation, logement, transport, loisirs, santé, etc., ainsi que celles de la vie en zone CFA : tontine, famille, crédit et data, frais mobile money, cérémonies, dons et église, achat de stock. On peut créer les siennes directement dans le formulaire de saisie.
+L'application propose des catégories courantes, chacune avec son icône : alimentation, logement, transport, loisirs, santé, etc., ainsi que celles de la vie en zone CFA : tontine, famille, crédit et data, frais mobile money, cérémonies, dons et église, achat de stock. On peut créer les siennes directement dans le formulaire de saisie, puis les renommer, changer leur icône ou les supprimer depuis les Paramètres. Supprimer une catégorie déjà utilisée demande dans quelle autre ranger ses opérations.
 
 ### Fixer des limites avec les budgets
 
@@ -75,13 +81,13 @@ Loyer, abonnement, versement de tontine : en saisissant une opération, **Répé
 
 ### Mettre de l'argent de côté
 
-L'écran **Épargne** sert à suivre des objectifs : un voyage, un fonds d'urgence, un équipement. Pour chacun, on fixe le montant visé et, si on le souhaite, une date. On y ajoute des versements au fil du temps, et une barre montre la progression. L'application calcule aussi combien mettre de côté chaque mois pour tenir les échéances.
+L'écran **Épargne** sert à suivre des objectifs : un voyage, un fonds d'urgence, un équipement. Pour chacun, on choisit une icône, on fixe le montant visé et, si on le souhaite, une date. On y ajoute des versements au fil du temps, et une barre montre la progression. L'application calcule aussi combien mettre de côté chaque mois pour tenir les échéances.
 
 Un versement sort du solde du mois, sur la ligne « épargne », et un retrait l'y fait revenir. Les objectifs d'épargne restent personnels, même à l'intérieur d'un budget partagé.
 
 ### Partager un budget
 
-On peut créer un groupe et y inviter d'autres personnes par un **lien** à envoyer sur WhatsApp ou par SMS, ou par le **code d'invitation** qu'il contient. Un code sert à toutes les personnes qui le reçoivent pendant 7 jours ; le propriétaire du groupe peut en générer un nouveau à tout moment, ce qui désactive l'ancien. On invite chacun avec un rôle :
+On peut créer un groupe et y inviter d'autres personnes par un **lien** à envoyer sur WhatsApp ou par SMS, ou par le **code d'invitation** qu'il contient. Chaque rôle a son propre code, qui sert à toutes les personnes qui le reçoivent pendant 7 jours ; on peut en générer un nouveau à tout moment, ce qui désactive l'ancien. On invite chacun avec un rôle :
 
 - **membre** : voit tout et saisit des opérations ;
 - **lecteur** : voit tout mais ne modifie rien. C'est le fonctionnement d'une tontine : le trésorier tient les comptes, les autres les suivent.
@@ -105,16 +111,17 @@ Depuis l'écran Opérations, le bouton **Exporter** produit un fichier des opér
 
 ### Continuer sans réseau
 
-L'application reste utilisable sans connexion. Elle affiche les derniers chiffres connus, et les dépenses et remboursements saisis hors ligne sont mis de côté puis envoyés automatiquement au retour du réseau, sans doublon même si la connexion coupe pendant l'envoi. Un bandeau indique qu'on est hors ligne et combien de saisies attendent leur envoi.
+L'application reste utilisable sans connexion. Elle affiche les derniers chiffres connus, et les dépenses et remboursements saisis hors ligne sont mis de côté puis envoyés automatiquement au retour du réseau, sans doublon même si la connexion coupe pendant l'envoi. Un bandeau indique qu'on est hors ligne et combien de saisies attendent leur envoi. Si le serveur refuse une saisie mise de côté (parce qu'un autre membre a modifié la même opération entre-temps, par exemple), elle n'est pas perdue : elle apparaît dans **À corriger**, prête à être reprise.
 
 ### Régler son compte
 
 Dans les **Paramètres**, on peut :
 
-- choisir un avatar parmi dix-sept visages, ou garder ses initiales ;
+- choisir un avatar parmi trente et un visages, ou garder ses initiales ;
 - changer son nom affiché et son mot de passe ;
 - choisir le thème clair, sombre, ou celui du téléphone ;
 - régler le jour de début du mois budgétaire ;
+- gérer ses catégories personnalisées ;
 - verrouiller l'application par un code à 4 chiffres, et l'ouvrir avec son empreinte ou son visage ;
 - télécharger toutes ses données en un seul fichier ;
 - relire les conditions d'utilisation et la politique de confidentialité ;
@@ -144,7 +151,14 @@ Ces fonctions ont été écartées de la première version, chacune pour une rai
 
 ## Version actuelle
 
-**Version 1.0.0** : toutes les fonctionnalités ci-dessus sont disponibles. L'application a été installée et testée sur Android (Pixel 7 et Galaxy S21 Ultra).
+**Version 1.1.3** : toutes les fonctionnalités ci-dessus sont disponibles. L'application a été installée et testée sur Android (Pixel 7 et Galaxy S21 Ultra) ; sa publication sur Google Play est en préparation.
+
+Depuis la version 1.0.0 :
+
+- **1.1.0** : champs qui ne passent plus sous le clavier, catégories personnalisées gérables depuis les Paramètres ;
+- **1.1.1** : « Autre portefeuille » proposé à l'accueil, inscription confirmée par un code reçu par e-mail ;
+- **1.1.2** : nouveau logo, la molette de coffre ; alertes par e-mail quand le mot de passe ou l'adresse du compte change ;
+- **1.1.3** : logo agrandi sur l'écran d'accueil du téléphone, 35 icônes pour les objectifs d'épargne et 14 nouveaux avatars.
 
 ## Pour les développeurs
 

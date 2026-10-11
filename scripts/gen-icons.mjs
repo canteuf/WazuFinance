@@ -91,6 +91,8 @@ const outputs = {
   // L'écran de démarrage pose l'image sur son propre fond (#062019) : la molette seule, qui remplit l'image (anneau de 29 → 50).
   'assets/images/splash-icon.png': svg({ size: 1024, scale: 50 / 29, id: 'splash' }),
   'assets/images/favicon.png': svg({ size: 48, background: COLORS.background }),
+  // Icône de la fiche Play Store : 512 × 512, carré plein sans coin arrondi (Google applique lui-même son masque, à 20 % de rayon). La molette y est agrandie comme sur le lanceur.
+  'assets/store/play-icon-512.png': `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 100 100"><rect width="100" height="100" fill="${COLORS.background}"/><g transform="translate(50 50) scale(1.2) translate(-50 -50)">${dial({ id: 'play' })}</g></svg>`,
   // Logo des e-mails, publié par GitHub Pages : affiché à 48 px, dessiné à 96 pour les écrans denses.
   'docs/email/logo.png': svg({ size: 96, background: COLORS.background }),
 };
