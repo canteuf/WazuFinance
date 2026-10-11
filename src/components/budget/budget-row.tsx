@@ -30,15 +30,12 @@ function statusText(item: BudgetProgress): string {
   return `Reste ${formatMoney(item.remaining)}${scope}`;
 }
 
-/** La pastille qualifie l'état en quelques mots, d'après la maquette : « Seuil d'alerte (84 %) », « Sous contrôle (57 %) ». */
-function badgeText(item: BudgetProgress, percent: number): string {
+/** La pastille qualifie l'état d'un mot. Elle partage sa rangée avec le nom et ce qui reste : avec le pourcentage ou le montant du dépassement (« Sous contrôle (63 %) », « Dépassement +3 500 FCFA »), elle coupait les deux à la largeur d'un téléphone (« Reste 15 000 FC… », « Sous contrôle (63 … »), et le montant répétait la ligne sous le nom. Le pourcentage est sur la ligne du plafond. */
+function badgeText(item: BudgetProgress): string {
   if (item.status === 'over') {
-    return item.remaining === 0 ? 'Épuisé (100 %)' : `Dépassement +${formatMoney(Math.abs(item.remaining))}`;
+    return item.remaining === 0 ? 'Épuisé' : 'Dépassé';
   }
-  if (item.status === 'warning') {
-    return `Seuil d’alerte (${percent} %)`;
-  }
-  return `Sous contrôle (${percent} %)`;
+  return item.status === 'warning' ? 'Alerte' : 'Sous contrôle';
 }
 
 /** Repli quand RLS masque la catégorie jointe (voir BudgetWithCategory). */
@@ -124,14 +121,17 @@ export function BudgetRow({
                 styles.sub,
                 { color: item.status === 'over' ? colors.danger : colors.textMuted },
               ]}
-              numberOfLines={1}
+              numberOfLines={2}
             >
               {statusText(item)}
               {edited ? ' · modifié' : ''}
             </Text>
           </View>
         </View>
-        <StatusBadge tone={item.status} label={badgeText(item, percent)} />
+        {/* Un seul mot : c'est le texte d'à côté qui passe à la ligne, jamais la pastille qui se coupe. */}
+        <View style={styles.badge}>
+          <StatusBadge tone={item.status} label={badgeText(item)} />
+        </View>
       </View>
 
       {/* Le dépensé passe devant : c'est le chiffre qu'on vient chercher, le plafond lui donne son échelle. */}
@@ -140,7 +140,7 @@ export function BudgetRow({
           {formatMoney(item.spent)}
         </Text>
         <Text style={[styles.ceiling, { color: colors.textMuted }]}>
-          sur {formatMoney(item.budget.amount)}{item.status === 'over' ? ` (${percent} %)` : ''}
+          sur {formatMoney(item.budget.amount)} ({percent} %)
         </Text>
       </View>
 
@@ -171,6 +171,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm + 4,
     // Cède au badge plutôt que de le pousser hors de l'écran à fort grossissement de police.
     flexShrink: 1,
+  },
+  badge: {
+    flexShrink: 0,
   },
   identityText: {
     gap: 2,

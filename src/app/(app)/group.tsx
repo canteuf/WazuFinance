@@ -283,41 +283,44 @@ export default function GroupScreen() {
                     {index > 0 ? (
                       <View style={[styles.divider, { backgroundColor: colors.border }]} />
                     ) : null}
-                    <Pressable
-                      style={styles.memberRow}
-                      disabled={!manageable || isChangingRole}
-                      accessibilityRole={manageable ? 'button' : undefined}
-                      accessibilityLabel={`${member.displayName}, ${roleLabel(member.role)}${isMe ? ', vous' : ''}`}
-                      accessibilityHint={manageable ? 'Changer son rôle ou lui confier le groupe' : undefined}
-                      onPress={() => handleMemberActions(member)}
-                    >
-                      <MemberAvatar name={member.displayName} avatar={member.avatar} size={44} />
-                      <View style={styles.memberInfo}>
-                        <Text style={[styles.memberName, { color: colors.text }]} numberOfLines={1}>
-                          {member.displayName}
-                          {isMe ? (
-                            <Text style={[styles.you, { color: colors.textMuted }]}> (vous)</Text>
-                          ) : null}
-                        </Text>
-                        <View
-                          style={[
-                            styles.roleTag,
-                            {
-                              backgroundColor:
-                                owner && !isDark ? `${colors.positive}33` : colors.surfaceMuted,
-                            },
-                          ]}
-                        >
-                          <Text
+                    {/* Deux boutons côte à côte, jamais l'un dans l'autre : imbriqué dans la ligne, « Exclure » était un <button> dans un <button> sur le web, et TalkBack lisait la ligne comme un seul élément. */}
+                    <View style={styles.memberRow}>
+                      <Pressable
+                        style={styles.memberMain}
+                        disabled={!manageable || isChangingRole}
+                        accessibilityRole={manageable ? 'button' : undefined}
+                        accessibilityLabel={`${member.displayName}, ${roleLabel(member.role)}${isMe ? ', vous' : ''}`}
+                        accessibilityHint={manageable ? 'Changer son rôle ou lui confier le groupe' : undefined}
+                        onPress={() => handleMemberActions(member)}
+                      >
+                        <MemberAvatar name={member.displayName} avatar={member.avatar} size={44} />
+                        <View style={styles.memberInfo}>
+                          <Text style={[styles.memberName, { color: colors.text }]} numberOfLines={1}>
+                            {member.displayName}
+                            {isMe ? (
+                              <Text style={[styles.you, { color: colors.textMuted }]}> (vous)</Text>
+                            ) : null}
+                          </Text>
+                          <View
                             style={[
-                              styles.roleLabel,
-                              { color: owner ? colors.positive : colors.text },
+                              styles.roleTag,
+                              {
+                                backgroundColor:
+                                  owner && !isDark ? `${colors.positive}33` : colors.surfaceMuted,
+                              },
                             ]}
                           >
-                            {roleLabel(member.role)}
-                          </Text>
+                            <Text
+                              style={[
+                                styles.roleLabel,
+                                { color: owner ? colors.positive : colors.text },
+                              ]}
+                            >
+                              {roleLabel(member.role)}
+                            </Text>
+                          </View>
                         </View>
-                      </View>
+                      </Pressable>
                       {isOwner && !isMe ? (
                         <Pressable
                           accessibilityRole="button"
@@ -329,7 +332,7 @@ export default function GroupScreen() {
                           <Text style={[styles.exclude, { color: colors.danger }]}>Exclure</Text>
                         </Pressable>
                       ) : null}
-                    </Pressable>
+                    </View>
                   </Fragment>
                 );
               })}
@@ -596,6 +599,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     padding: spacing.md,
+  },
+  memberMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
   },
   memberInfo: {
     flex: 1,
