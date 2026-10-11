@@ -1,15 +1,14 @@
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { StyleSheet, Text, View, type TextInput } from 'react-native';
 
 import { InvitationCodeInput } from '@/components/group/invitation-code-input';
 import { Button } from '@/components/ui/button';
-import { CONTENT_GUTTER, contentColumn } from '@/components/ui/screen';
-import { SheetScrollView } from '@/components/ui/sheet-scroll-view';
+import { Screen } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useGroupMutations } from '@/hooks/use-group-mutations';
-import { useSheetMaxHeight } from '@/hooks/use-sheet-max-height';
+import { useFocusOnceSettled } from '@/hooks/use-transition-settled';
 import { dataErrorMessage } from '@/lib/data-errors';
 import {
   INVITATION_CODE_LENGTH,
@@ -23,11 +22,12 @@ import { font, spacing, useColors } from '@/theme/tokens';
  * Rejoindre un groupe par code d'invitation (spec section 1, écran 7).
  *
  * Un code refusé — inconnu, révoqué ou expiré — reçoit toujours le même message : la base ne dit pas lequel (migration harden_group_access).
+ *
+ * Un écran qui glisse depuis la droite, pas une feuille : même raison que group-create.tsx, le code et le bouton disparaissaient au-dessus du clavier.
  */
 export default function GroupJoinScreen() {
   const colors = useColors();
   const router = useRouter();
-  const sheetMaxHeight = useSheetMaxHeight();
   // Présent quand l'écran s'ouvre depuis un lien d'invitation (usePendingInvite) : le code est déjà là, il ne reste qu'à confirmer.
   const { code: linkedCode } = useLocalSearchParams<{ code?: string }>();
   const { setActiveGroupId } = useActiveGroup();
@@ -37,6 +37,8 @@ export default function GroupJoinScreen() {
   );
   const [touched, setTouched] = useState(false);
   const [errorText, setErrorText] = useState<string>();
+  const codeRef = useRef<TextInput>(null);
+  useFocusOnceSettled(codeRef);
 
   const valid = code.length === INVITATION_CODE_LENGTH;
 
@@ -57,33 +59,17 @@ export default function GroupJoinScreen() {
   }
 
   return (
-    <View style={[styles.sheet, { backgroundColor: colors.background, maxHeight: sheetMaxHeight }]}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Rejoindre un groupe</Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Fermer"
-          hitSlop={spacing.sm}
-          onPress={() => goBackOr(router, '/groups')}
-          style={styles.closeButton}
-        >
-          <MaterialCommunityIcons name="close" size={20} color={colors.textMuted} />
-        </Pressable>
-      </View>
+    <Screen
+      align="top"
+      header={<ScreenHeader title="Rejoindre un groupe" onBack={() => goBackOr(router, '/groups')} />}
+    >
+      <Text style={[styles.hint, { color: colors.textMuted }]}>
+        Saisissez ou collez le code à 8 caractères reçu du propriétaire du groupe.
+      </Text>
 
-      {/* Défilement automatique coupé (`enabled={false}`) : la feuille, ajustée à son contenu et courte, est remontée en entier au-dessus du clavier par react-native-screens. Le champ prend le focus pendant que la feuille glisse encore ; la bibliothèque faisait alors défiler le contenu d'autant, en plus de la remontée, et le champ comme le bouton passaient au-dessus de la partie visible : la feuille paraissait vide (Pixel 7, APK 1.1.2). Le défilement reste possible au doigt. */}
-      <SheetScrollView
-        enabled={false}
-        style={styles.scroll}
-        contentContainerStyle={styles.form}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-      >
-        <Text style={[styles.hint, { color: colors.textMuted }]}>
-          Saisissez ou collez le code à 8 caractères reçu du propriétaire du groupe.
-        </Text>
-
+      <View style={styles.form}>
         <InvitationCodeInput
+          ref={codeRef}
           value={code}
           onChangeText={(next) => {
             setCode(next);
@@ -91,7 +77,6 @@ export default function GroupJoinScreen() {
           }}
           onSubmitEditing={handleSubmit}
           invalid={(touched && !valid) || errorText !== undefined}
-          autoFocus
         />
 
         {touched && !valid ? (
@@ -102,46 +87,19 @@ export default function GroupJoinScreen() {
         {errorText ? <Text style={[styles.error, { color: colors.danger }]}>{errorText}</Text> : null}
 
         <Button title="Rejoindre" loading={isJoining} onPress={handleSubmit} />
-      </SheetScrollView>
-    </View>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  sheet: {
-    // Le fond garde la pleine largeur de la feuille ; ce sont les blocs qui se centrent, sur la même colonne que les écrans (voir `contentColumn`). Sans cela, le contenu d'une feuille s'étalait d'un bord à l'autre sur une tablette là où les cartes des écrans s'arrêtent à 420 points.
-    alignItems: 'center',
-  },
-  header: {
-    ...contentColumn,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: spacing.lg,
-    paddingHorizontal: CONTENT_GUTTER,
-  },
-  title: {
-    // Même famille de titres que les autres feuilles et que les en-têtes d'écran, en plus court : ici le titre partage sa ligne avec la fermeture, et 28 points passeraient à la ligne sur un téléphone étroit.
-    fontFamily: font.black,
-    fontSize: 22,
-    letterSpacing: -0.5,
-    flexShrink: 1,
-  },
-  closeButton: {
-    padding: spacing.xs,
-  },
-  scroll: {
-    alignSelf: 'stretch',
-  },
-  form: {
-    ...contentColumn,
-    gap: spacing.md,
-    padding: spacing.lg,
-  },
   hint: {
     fontFamily: font.regular,
-    fontSize: 15,
-    lineHeight: 21,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  form: {
+    gap: spacing.md,
   },
   error: {
     fontFamily: font.medium,

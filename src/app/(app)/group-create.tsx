@@ -1,29 +1,33 @@
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
-import { CONTENT_GUTTER, contentColumn } from '@/components/ui/screen';
-import { SheetScrollView } from '@/components/ui/sheet-scroll-view';
+import { Screen } from '@/components/ui/screen';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { useGroupMutations } from '@/hooks/use-group-mutations';
-import { useSheetMaxHeight } from '@/hooks/use-sheet-max-height';
+import { useFocusOnceSettled } from '@/hooks/use-transition-settled';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { goBackOr } from '@/lib/navigation';
 import { GROUP_NAME_MAX_LENGTH } from '@/lib/validation';
 import { font, radius, spacing, useColors } from '@/theme/tokens';
 
-/** Créer un groupe partagé (spec section 1, écran 7). formSheet, un seul champ. */
+/**
+ * Créer un groupe partagé (spec section 1, écran 7). Un seul champ.
+ *
+ * Un écran qui glisse depuis la droite, pas une feuille qui monte du bas : la feuille, courte, était remontée en entier au-dessus du clavier par react-native-screens pendant que la bibliothèque de clavier faisait défiler son contenu d'autant, et le champ comme le bouton disparaissaient au-dessus de la partie visible (Pixel 7, APK 1.1.3). Trois corrections sur la feuille n'en sont pas venues à bout ; un écran gère le clavier comme la connexion ou le mot de passe oublié.
+ */
 export default function GroupCreateScreen() {
   const colors = useColors();
   const router = useRouter();
-  const sheetMaxHeight = useSheetMaxHeight();
   const { setActiveGroupId } = useActiveGroup();
   const { createGroup, isCreating } = useGroupMutations();
   const [name, setName] = useState('');
   const [touched, setTouched] = useState(false);
   const [errorText, setErrorText] = useState<string>();
+  const nameRef = useRef<TextInput>(null);
+  useFocusOnceSettled(nameRef);
 
   const valid = name.trim() !== '';
 
@@ -44,36 +48,25 @@ export default function GroupCreateScreen() {
   }
 
   return (
-    <View style={[styles.sheet, { backgroundColor: colors.background, maxHeight: sheetMaxHeight }]}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Créer un groupe partagé</Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Fermer"
-          hitSlop={spacing.sm}
-          onPress={() => goBackOr(router, '/groups')}
-          style={styles.closeButton}
-        >
-          <MaterialCommunityIcons name="close" size={20} color={colors.textMuted} />
-        </Pressable>
-      </View>
+    <Screen
+      align="top"
+      header={<ScreenHeader title="Créer un groupe" onBack={() => goBackOr(router, '/groups')} />}
+    >
+      <Text style={[styles.hint, { color: colors.textMuted }]}>
+        Un budget partagé : vous pourrez ensuite inviter vos proches avec un code.
+      </Text>
 
-      {/* Défilement automatique coupé (`enabled={false}`) : la feuille, ajustée à son contenu et courte, est remontée en entier au-dessus du clavier par react-native-screens. Le champ prend le focus pendant que la feuille glisse encore ; la bibliothèque faisait alors défiler le contenu d'autant, en plus de la remontée, et le champ comme le bouton passaient au-dessus de la partie visible : la feuille paraissait vide (Pixel 7, APK 1.1.2). Le défilement reste possible au doigt. */}
-      <SheetScrollView
-        enabled={false}
-        style={styles.scroll}
-        contentContainerStyle={styles.form}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-      >
+      <View style={styles.form}>
         <TextInput
+          ref={nameRef}
           accessibilityLabel="Nom du groupe"
           placeholder="Coloc, Famille…"
           placeholderTextColor={colors.textMuted}
           value={name}
           onChangeText={setName}
           maxLength={GROUP_NAME_MAX_LENGTH}
-          autoFocus
+          returnKeyType="done"
+          onSubmitEditing={handleSubmit}
           style={[
             styles.name,
             { backgroundColor: colors.surface, borderColor: colors.inputBorder, color: colors.text },
@@ -86,41 +79,19 @@ export default function GroupCreateScreen() {
         {errorText ? <Text style={[styles.error, { color: colors.danger }]}>{errorText}</Text> : null}
 
         <Button title="Créer" loading={isCreating} onPress={handleSubmit} />
-      </SheetScrollView>
-    </View>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  sheet: {
-    // Le fond garde la pleine largeur de la feuille ; ce sont les blocs qui se centrent, sur la même colonne que les écrans (voir `contentColumn`). Sans cela, le contenu d'une feuille s'étalait d'un bord à l'autre sur une tablette là où les cartes des écrans s'arrêtent à 420 points.
-    alignItems: 'center',
-  },
-  header: {
-    ...contentColumn,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: spacing.lg,
-    paddingHorizontal: CONTENT_GUTTER,
-  },
-  title: {
-    // Même famille de titres que les autres feuilles et que les en-têtes d'écran, en plus court : ici le titre partage sa ligne avec la fermeture, et 28 points passeraient à la ligne sur un téléphone étroit.
-    fontFamily: font.black,
-    fontSize: 22,
-    letterSpacing: -0.5,
-    flexShrink: 1,
-  },
-  closeButton: {
-    padding: spacing.xs,
-  },
-  scroll: {
-    alignSelf: 'stretch',
+  hint: {
+    fontFamily: font.regular,
+    fontSize: 16,
+    lineHeight: 22,
   },
   form: {
-    ...contentColumn,
     gap: spacing.md,
-    padding: spacing.lg,
   },
   name: {
     fontFamily: font.semibold,

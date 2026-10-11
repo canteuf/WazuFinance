@@ -1,18 +1,13 @@
-import { useNavigation } from 'expo-router';
-import type { NativeStackNavigationProp } from 'expo-router/native-stack';
-import type { ParamListBase } from 'expo-router/react-navigation';
-import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
   KeyboardAwareScrollView,
   type KeyboardAwareScrollViewProps,
 } from 'react-native-keyboard-controller';
 
+import { useTransitionSettled } from '@/hooks/use-transition-settled';
+
 /** Espace laissé entre le champ et le haut du clavier, pour voir aussi son libellé d'erreur ou son indication. */
 const MARGIN_ABOVE_KEYBOARD = 24;
-
-/** Repli quand l'écran n'annonce pas la fin de son ouverture (un onglet n'a pas de transition) : au-delà, on considère qu'elle est finie. */
-const TRANSITION_FALLBACK_MS = 600;
 
 /**
  * Défilement qui garde le champ en cours de saisie au-dessus du clavier, pour les feuilles de formulaire comme pour les écrans (`Screen` s'en sert aussi). Ne jamais lui préférer un `ScrollView` nu là où l'on saisit.
@@ -35,32 +30,6 @@ export function SheetScrollView({ enabled = true, ...props }: KeyboardAwareScrol
       <KeyboardAwareScrollView bottomOffset={MARGIN_ABOVE_KEYBOARD} enabled={enabled && settled} {...props} />
     </View>
   );
-}
-
-/** Vrai une fois l'écran ou la feuille qui contient ce composant arrivé à sa place. */
-function useTransitionSettled(): boolean {
-  const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
-  const [settled, setSettled] = useState(false);
-
-  useEffect(() => {
-    if (settled) {
-      return;
-    }
-    const fallback = setTimeout(() => setSettled(true), TRANSITION_FALLBACK_MS);
-    const unsubscribe = navigation.addListener('transitionEnd', (event) => {
-      // Lu sans présumer de `data` : dans un onglet, `useNavigation()` renvoie la navigation par onglets, dont le `transitionEnd` n'a pas de `data` — le lire tel quel plantait chaque onglet. Le type de la pile le déclare toujours présent, à tort ici.
-      const data = event.data as { closing?: boolean } | undefined;
-      if (!data?.closing) {
-        setSettled(true);
-      }
-    });
-    return () => {
-      clearTimeout(fallback);
-      unsubscribe();
-    };
-  }, [navigation, settled]);
-
-  return settled;
 }
 
 const styles = StyleSheet.create({

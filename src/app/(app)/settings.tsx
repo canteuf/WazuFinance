@@ -1,5 +1,6 @@
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
+import * as Updates from 'expo-updates';
 import { StyleSheet, Text } from 'react-native';
 
 import { AppLockSection } from '@/components/settings/app-lock-section';
@@ -27,6 +28,7 @@ export default function SettingsScreen() {
   const { activeGroup } = useActiveGroup();
 
   const version = Constants.expoConfig?.version;
+  const update = describeRunningUpdate();
 
   return (
     <Screen
@@ -47,10 +49,30 @@ export default function SettingsScreen() {
       <DeleteAccountSection />
 
       {version ? (
-        <Text style={[styles.footer, { color: colors.textMuted }]}>Wazu Finance v{version}</Text>
+        <Text style={[styles.footer, { color: colors.textMuted }]}>
+          Wazu Finance v{version}
+          {update ? ` · ${update}` : ''}
+        </Text>
       ) : null}
     </Screen>
   );
+}
+
+/**
+ * Ce que le téléphone exécute vraiment : le code livré avec l'APK, ou une mise à jour EAS et sa date. Sans cette ligne, impossible de savoir si une mise à jour publiée est déjà appliquée — elle ne l'est qu'au lancement qui suit son téléchargement.
+ *
+ * `null` en développement, où expo-updates est désactivé.
+ */
+function describeRunningUpdate(): string | null {
+  if (!Updates.isEnabled) {
+    return null;
+  }
+  if (Updates.isEmbeddedLaunch || !Updates.createdAt) {
+    return 'version d’origine';
+  }
+  const date = Updates.createdAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+  const time = Updates.createdAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  return `mise à jour du ${date} à ${time}`;
 }
 
 const styles = StyleSheet.create({
