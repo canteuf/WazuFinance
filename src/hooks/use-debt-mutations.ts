@@ -6,6 +6,7 @@ import {
   type CreateDebtInput,
   type RecordDebtPaymentInput,
 } from '@/data/debts';
+import { useWriteAuthor } from '@/hooks/use-transaction-mutations';
 import { mutationKeys, queryKeys } from '@/lib/query-keys';
 
 /**
@@ -27,6 +28,7 @@ export function useDebtMutations() {
 
   const pay = useMutation<void, Error, RecordDebtPaymentInput>({
     mutationKey: mutationKeys.recordDebtPayment(),
+    meta: useWriteAuthor(),
   });
 
   const remove = useMutation({

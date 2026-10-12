@@ -1,12 +1,15 @@
 import {
+  capQueries,
   isRetryingWrite,
   keepQueueAcrossVersions,
+  mergeFromDisk,
   mergeSavedRow,
   patchIsApplied,
   PERSISTED_HISTORY_PAGES,
   prepareForDisk,
   queueOnly,
   rescueExpiredQueue,
+  splitForDisk,
   transportRetryDelay,
   VersionChain,
   type PersistedCache,
@@ -229,5 +232,49 @@ describe('queueOnly', () => {
 
   it('rend null quand il n’y a rien à garder', () => {
     expect(queueOnly(cache({ mutations: [done], queries: [summary] }))).toBeNull();
+  });
+});
+
+describe('splitForDisk / mergeFromDisk', () => {
+  it('écrit la file et les données lues sous deux clés, et les relit ensemble', () => {
+    const { queue, data } = splitForDisk(cache({ mutations: [paused], queries: [summary] }));
+    expect(queue.clientState).toEqual({ mutations: [paused], queries: [] });
+    expect(data.clientState).toEqual({ mutations: [], queries: [summary] });
+    expect(mergeFromDisk(data, queue)?.clientState).toEqual({ mutations: [paused], queries: [summary] });
+  });
+
+  it('garde la file quand les données lues sont illisibles ou absentes', () => {
+    const { queue } = splitForDisk(cache({ mutations: [paused], queries: [summary] }));
+    expect(mergeFromDisk(undefined, queue)?.clientState).toEqual({ mutations: [paused], queries: [] });
+  });
+
+  it('reprend la file d’un cache écrit avant la séparation', () => {
+    const old = cache({ mutations: [paused], queries: [summary] });
+    expect(mergeFromDisk(old, undefined)?.clientState.mutations).toEqual([paused]);
+  });
+
+  it('rend undefined quand rien n’est sur le disque', () => {
+    expect(mergeFromDisk(undefined, undefined)).toBeUndefined();
+  });
+});
+
+describe('capQueries', () => {
+  const old = { queryKey: ['a'], state: { data: 1, dataUpdatedAt: 1 } };
+  const mid = { queryKey: ['b'], state: { data: 2, dataUpdatedAt: 2 } };
+  const recent = { queryKey: ['c'], state: { data: 3, dataUpdatedAt: 3 } };
+
+  it('rend tel quel un cache sous la limite', () => {
+    const small = cache({ queries: [old, recent] });
+    expect(capQueries(small, 10, () => 5)).toBe(small);
+  });
+
+  it('retire les requêtes les plus anciennes jusqu’à passer sous la limite', () => {
+    const capped = capQueries(cache({ queries: [recent, old, mid] }), 10, () => 5);
+    expect(capped.clientState.queries).toEqual([recent, mid]);
+  });
+
+  it('ne touche jamais à la file', () => {
+    const capped = capQueries(cache({ mutations: [paused], queries: [old] }), 0, () => 5);
+    expect(capped.clientState).toEqual({ mutations: [paused], queries: [] });
   });
 });

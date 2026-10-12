@@ -43,7 +43,7 @@ export type WalletKind = Enums<'wallet_kind'>;
 `;
 
 // `execSync` et non `execFileSync` : la CLI Supabase n'est pas une dépendance du projet, elle passe par npx, et Node refuse depuis la v20 de lancer un `.cmd` sans shell (EINVAL). La commande est écrite en dur ici, sans aucune entrée extérieure, donc le shell n'ouvre pas d'injection.
-const generated = execSync('npx supabase gen types typescript --linked', {
+const generated = execSync('npx supabase@2.117.0 gen types typescript --linked', {
   cwd: root,
   encoding: 'utf8',
   maxBuffer: 32 * 1024 * 1024,

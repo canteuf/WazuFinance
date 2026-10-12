@@ -8,6 +8,7 @@ import { OnboardingGate } from '@/components/onboarding/onboarding-gate';
 import { OfflineBanner, useOfflineBannerVisible } from '@/components/ui/offline-banner';
 import { useBudgetsRealtime } from '@/hooks/use-budgets-realtime';
 import { useDailyOpenEvent } from '@/hooks/use-daily-open-event';
+import { useDeletionBroadcasts } from '@/hooks/use-deletion-broadcasts';
 import { useMembershipsRealtime } from '@/hooks/use-memberships-realtime';
 import { usePendingInvite } from '@/hooks/use-pending-invite';
 import { useRecurringRealtime } from '@/hooks/use-recurring-realtime';
@@ -41,6 +42,7 @@ function AppStack() {
   useMembershipsRealtime();
   useRecurringRealtime();
   useWalletsRealtime();
+  useDeletionBroadcasts();
   usePendingInvite();
   useDailyOpenEvent();
 

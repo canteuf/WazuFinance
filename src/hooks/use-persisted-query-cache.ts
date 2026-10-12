@@ -15,11 +15,25 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/hooks/use-auth';
 import { deserializeCache, serializeCache } from '@/lib/cache-serialization';
+import { cacheStorageKey, queueStorageKey } from '@/lib/device-data';
 import { reportError } from '@/lib/monitoring';
-import { keepQueueAcrossVersions, prepareForDisk, queueOnly, rescueExpiredQueue } from '@/lib/offline-queue';
+import {
+  capQueries,
+  keepQueueAcrossVersions,
+  mergeFromDisk,
+  prepareForDisk,
+  queueOnly,
+  rescueExpiredQueue,
+  splitForDisk,
+} from '@/lib/offline-queue';
 import { mutationKeys } from '@/lib/query-keys';
 
 const STORAGE_PREFIX = 'query-cache:';
+
+// La file des saisies pas encore envoyées vit sous queueStorageKey() (splitForDisk). Jamais effacée à la déconnexion : elle repart à la prochaine connexion de son auteur ; seule la suppression du compte l'efface (forgetAccountOnDevice).
+
+/** Taille maximale des données lues écrites sur le disque, en caractères. Au-delà d'environ 2 Mo, une valeur AsyncStorage s'écrit mais ne se relit plus sur Android ; les requêtes les plus anciennes sont retirées avant (capQueries). */
+const MAX_DATA_CHARS = 1_500_000;
 
 /**
  * Format du cache écrit, ajouté à la version de l'app dans le `buster`. À incrémenter quand l'écriture change sans nouvelle version de l'app : un cache au format précédent est alors jeté au lieu d'être relu. Passé à 2 quand les `Map` ont cessé d'être écrites comme `{}` (cache-serialization.ts) — les caches déjà écrits les contenaient vides et faisaient planter l'historique et l'épargne.
@@ -31,8 +45,16 @@ const CACHE_FORMAT = 2;
  */
 export const PERSISTED_CACHE_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
 
-function storageKey(userId: string): string {
-  return `${STORAGE_PREFIX}${userId}`;
+const storageKey = cacheStorageKey;
+const queueKey = queueStorageKey;
+
+/** Les données lues, écrites sous MAX_DATA_CHARS. Appelée par le persister de la bibliothèque, donc au plus une fois par seconde. */
+function serializeCapped(client: PersistedClient): string {
+  const serialized = serializeCache(client);
+  if (serialized.length <= MAX_DATA_CHARS) {
+    return serialized;
+  }
+  return serializeCache(capQueries(client, MAX_DATA_CHARS, (query) => serializeCache(query).length));
 }
 
 /**
@@ -83,31 +105,68 @@ const retryWrite: PersistRetryer = (props) => {
 };
 
 /**
- * Le persister de la bibliothèque, entouré de deux transformations (`offline-queue.ts`) : à l'écriture, les saisies en cours d'envoi passent sur le disque comme des pauses et les historiques n'y gardent que leurs premières pages ; à la relecture, un cache écrit par une autre version de l'app garde ses saisies en file et perd seulement ses données lues.
+ * Le persister de la bibliothèque, entouré de transformations (`offline-queue.ts`) : à l'écriture, les saisies en cours d'envoi passent sur le disque comme des pauses, les historiques n'y gardent que leurs premières pages, et la file est écrite à part, sous sa propre clé ; à la relecture, un cache écrit par une autre version de l'app garde ses saisies en file et perd seulement ses données lues.
+ *
+ * La file est écrite à chaque changement, sans attendre : elle est petite, et c'est elle qu'un arrêt de l'app ne doit pas perdre. Elle n'est réécrite que si elle a changé. Les données lues passent par le persister de la bibliothèque, qui les écrit au plus une fois par seconde, plafonnées.
  */
 function createPersister(userId: string, buster: string): Persister {
   const base = createAsyncStoragePersister({
     storage: AsyncStorage,
     key: storageKey(userId),
-    serialize: serializeCache,
+    serialize: serializeCapped,
     deserialize: deserializeCache,
     retry: retryWrite,
   });
-  return {
-    persistClient: (client) => base.persistClient(prepareForDisk(client)),
-    restoreClient: async () => {
-      let client: PersistedClient | undefined;
-      try {
-        client = await base.restoreClient();
-      } catch (error) {
-        // Cache illisible : la bibliothèque va l'effacer, saisies en file comprises. Rien à sauver d'un contenu qu'on ne sait pas lire, mais on veut savoir que ça arrive.
-        reportError(error, 'query-cache-read');
-        throw error;
+  // La file telle qu'elle est sur le disque ; undefined tant qu'on ne le sait pas.
+  let writtenQueue: string | null | undefined;
+
+  async function writeQueue(queue: PersistedClient): Promise<void> {
+    const serialized = queue.clientState.mutations.length > 0 ? serializeCache(queue) : null;
+    if (serialized === writtenQueue) {
+      return;
+    }
+    writtenQueue = serialized;
+    try {
+      if (serialized === null) {
+        await AsyncStorage.removeItem(queueKey(userId));
+      } else {
+        await AsyncStorage.setItem(queueKey(userId), serialized);
       }
+    } catch (error) {
+      writtenQueue = undefined;
+      reportError(error, 'query-queue-write');
+    }
+  }
+
+  return {
+    persistClient: async (client) => {
+      const { queue, data } = splitForDisk(prepareForDisk(client));
+      await writeQueue(queue);
+      return base.persistClient(data);
+    },
+    restoreClient: async () => {
+      let data: PersistedClient | undefined;
+      try {
+        data = await base.restoreClient();
+      } catch (error) {
+        // Données illisibles : on les efface et on repart de la file seule, qui vit sous sa propre clé.
+        reportError(error, 'query-cache-read');
+        await AsyncStorage.removeItem(storageKey(userId)).catch(() => undefined);
+      }
+      let queue: PersistedClient | undefined;
+      try {
+        const raw = await AsyncStorage.getItem(queueKey(userId));
+        queue = raw === null ? undefined : deserializeCache<PersistedClient>(raw);
+        writtenQueue = raw;
+      } catch (error) {
+        reportError(error, 'query-queue-read');
+      }
+      const client = mergeFromDisk(data, queue);
       return client
         ? keepQueueAcrossVersions(rescueExpiredQueue(client, Date.now(), PERSISTED_CACHE_MAX_AGE), buster)
         : client;
     },
+    // La bibliothèque efface le cache qu'elle juge trop vieux ou d'une autre version : seulement les données lues. La file, que restoreClient a déjà sauvée de ces deux cas, reste.
     removeClient: () => base.removeClient(),
   };
 }

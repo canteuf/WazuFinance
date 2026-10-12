@@ -109,14 +109,16 @@ SELECT is(
   'Seuls les objectifs en cours avec une échéance ont un rythme, et seulement ceux de l''appelant'
 );
 
--- 1 200,00 − 1 000,00 = 200,00 à répartir sur 3 mois : 66,666… arrondi au centime supérieur.
+-- 1 200,00 − 1 000,00 = 200,00 à répartir sur 3 mois : 66,666… arrondi au franc supérieur. current_amount ne s'écrit plus que par add_to_savings_goal() : la fixture est posée en postgres.
+set local role postgres;
 update public.savings_goals set current_amount = 1000.00, target_date = '2026-12-01'
  where id = '00000000-0000-0000-0000-0000000000a2';
+set local role authenticated;
 
 SELECT is(
   (select monthly_rhythm from public.savings_plans('2026-09-19') where goal_id = '00000000-0000-0000-0000-0000000000a2'),
-  66.67::numeric,
-  'Le rythme est arrondi au centime supérieur'
+  67::numeric,
+  'Le rythme est arrondi au franc supérieur : épargner le rythme affiché atteint la cible'
 );
 
 -- Échéance passée : tout le reste, en un mois.
@@ -126,10 +128,10 @@ SELECT is(
   'Une échéance passée demande tout le reste'
 );
 
--- 2 000,00 + 1 000,00 épargnés ; 150,00 + 66,67 par mois. L'objectif de Bob n'entre dans aucun des deux.
+-- 2 000,00 + 1 000,00 épargnés ; 150 + 67 par mois. L'objectif de Bob n'entre dans aucun des deux.
 SELECT results_eq(
   $$select total_saved, monthly_effort from public.savings_overview('2026-09-19')$$,
-  $$values (3000.00::numeric, 216.67::numeric)$$,
+  $$values (3000.00::numeric, 217::numeric)$$,
   'Le total épargné et l''effort mensuel ne portent que sur les objectifs de l''appelant'
 );
 

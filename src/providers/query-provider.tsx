@@ -12,7 +12,8 @@ import { Alert, AppState, Platform, type AppStateStatus } from 'react-native';
 
 import { PERSISTED_CACHE_MAX_AGE } from '@/hooks/use-persisted-query-cache';
 import { registerTransactionMutationDefaults } from '@/hooks/use-transaction-mutations';
-import { dataErrorMessage, RECURRENCE_FAILED } from '@/lib/data-errors';
+import { dataErrorMessage, RECURRENCE_FAILED, SESSION_MISMATCH } from '@/lib/data-errors';
+import { sensitiveAlertsHidden } from '@/lib/lock-state';
 import { describeRejected } from '@/lib/rejected-writes';
 import { addRejected } from '@/lib/rejected-writes-store';
 import { supabase } from '@/lib/supabase';
@@ -41,6 +42,13 @@ if (Platform.OS !== 'web') {
   );
 }
 
+/** Une alerte d'écriture refusée, sauf derrière l'écran de verrouillage, où elle passerait par-dessus (lock-state.ts). La saisie, elle, reste dans « À corriger ». */
+function showAlert(title: string, message: string): void {
+  if (!sensitiveAlertsHidden()) {
+    Alert.alert(title, message);
+  }
+}
+
 /**
  * Les saisies mises en file hors ligne sont envoyées plus tard, souvent après la fermeture du formulaire qui les a faites : si la base les refuse alors (catégorie supprimée entre-temps, accès retiré au groupe, opération modifiée par un autre membre), plus aucun écran n'est là pour afficher l'erreur. On retient donc les mutations passées par la pause, et c'est à elles seules qu'une alerte est réservée — une erreur sur une saisie envoyée tout de suite s'affiche déjà sous le formulaire, et l'alerte ferait doublon.
  */
@@ -52,10 +60,14 @@ function createMutationCache(): MutationCache {
       if (!queued.has(mutation)) {
         return;
       }
+      // Écriture d'un autre compte, abandonnée en mémoire : sa copie sur le disque repartira sous son auteur. Rien à montrer à la personne connectée.
+      if ((error as { code?: unknown }).code === SESSION_MISMATCH) {
+        return;
+      }
       const reason = dataErrorMessage(error);
       // L'opération est passée, seule sa répétition a été refusée : rien à refaire, donc rien à garder dans « À corriger ».
       if ((error as { code?: unknown }).code === RECURRENCE_FAILED) {
-        Alert.alert('Répétition non créée', reason);
+        showAlert('Répétition non créée', reason);
         return;
       }
       const entry = describeRejected(
@@ -66,16 +78,21 @@ function createMutationCache(): MutationCache {
         new Date().toISOString()
       );
       if (!entry) {
-        Alert.alert('Une opération n’a pas pu être envoyée', reason);
+        showAlert('Une opération n’a pas pu être envoyée', reason);
         return;
       }
-      // La saisie est gardée, avec de quoi la refaire : elle ne disparaît plus sur une simple alerte. La file appartient au compte connecté (un cache par compte).
-      void supabase.auth.getSession().then(({ data }) => {
-        if (data.session) {
-          void addRejected(data.session.user.id, entry);
-        }
-      });
-      Alert.alert(
+      // La saisie est gardée, avec de quoi la refaire : elle ne disparaît plus sur une simple alerte. Elle va dans « À corriger » de son auteur, gardé avec la mutation ; à défaut (écriture mise en file par une version antérieure), du compte connecté.
+      const author = mutation.meta?.userId;
+      if (typeof author === 'string') {
+        void addRejected(author, entry);
+      } else {
+        void supabase.auth.getSession().then(({ data }) => {
+          if (data.session) {
+            void addRejected(data.session.user.id, entry);
+          }
+        });
+      }
+      showAlert(
         'Une opération n’a pas pu être envoyée',
         `${entry.summary} : ${reason}\n\nElle est gardée dans « À corriger », sur la Synthèse.`
       );

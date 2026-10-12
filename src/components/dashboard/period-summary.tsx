@@ -212,7 +212,10 @@ export function PeriodSummary() {
           <View style={[styles.statIcon, { backgroundColor: colors.surfaceMuted }]}>
             <MaterialCommunityIcons name="piggy-bank-outline" size={13} color={colors.textMuted} />
           </View>
-          <Text style={[styles.savingsText, { color: colors.textMuted }]}>
+          <Text
+            style={[styles.savingsText, { color: colors.textMuted }]}
+            accessibilityLabel={`${summary.savings > 0 ? 'Mis de côté en épargne' : 'Repris sur l’épargne'} : ${spokenAmount(Math.abs(summary.savings))}`}
+          >
             {summary.savings > 0 ? 'Mis de côté en épargne : ' : 'Repris sur l’épargne : '}
             <Text style={{ color: colors.text }}>{formatMoney(Math.abs(summary.savings))}</Text>
           </Text>
@@ -225,7 +228,10 @@ export function PeriodSummary() {
           <View style={[styles.statIcon, { backgroundColor: colors.surfaceMuted }]}>
             <MaterialCommunityIcons name="handshake-outline" size={13} color={colors.textMuted} />
           </View>
-          <Text style={[styles.savingsText, { color: colors.textMuted }]}>
+          <Text
+            style={[styles.savingsText, { color: colors.textMuted }]}
+            accessibilityLabel={`${summary.debts < 0 ? 'Sorti en prêts et remboursements' : 'Entré par prêts et remboursements'} : ${spokenAmount(Math.abs(summary.debts))}`}
+          >
             {summary.debts < 0 ? 'Sorti en prêts et remboursements : ' : 'Entré par prêts et remboursements : '}
             <Text style={{ color: colors.text }}>{formatMoney(Math.abs(summary.debts))}</Text>
           </Text>

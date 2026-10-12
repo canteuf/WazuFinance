@@ -268,7 +268,9 @@ export async function listPage(
 
   if (cursor !== null) {
     // PostgREST n'exprime pas la comparaison de couples `(a, b) < (c, d)` : ce `or` produit le même prédicat. Les deux valeurs viennent d'une ligne déjà renvoyée par le serveur, jamais d'une saisie.
-    query = query.or(
+    //
+    // Le `lte` redit la borne hors du `or` : seul, celui-ci n'était qu'un filtre, et l'index était parcouru depuis le début du groupe à chaque page — la page k relisait les k × 20 lignes d'avant (13 ms contre 0,6 ms à 600 jours de profondeur, mesuré).
+    query = query.lte('occurred_on', cursor.occurredOn).or(
       `occurred_on.lt.${cursor.occurredOn},` +
         `and(occurred_on.eq.${cursor.occurredOn},id.lt.${cursor.id})`
     );

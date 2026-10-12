@@ -242,22 +242,22 @@ SELECT throws_ok(
 );
 
 -- ---------------------------------------------------------------------------
--- La garde ne bloque pas une cascade : suppression du compte de Dora,
--- propriétaire de Cascade, alors qu'Eve y est encore membre.
+-- Suppression du compte de Dora, propriétaire de Cascade, alors qu'Eve y est encore membre : guard_owner_deletion() (20261012000100) la refuse, y compris depuis le tableau de bord, plutôt que d'emporter le groupe d'Eve.
 -- ---------------------------------------------------------------------------
 
 set local role postgres;
 
-SELECT lives_ok(
+SELECT throws_like(
   $$delete from auth.users where id = '00000000-0000-0000-0000-0000000000f4'$$,
-  'La suppression du compte de Dora réussit malgré Eve, encore membre'
+  'Groupes partagés dont vous êtes propriétaire%Cascade%',
+  'La suppression du compte de Dora est refusée tant qu''Eve est membre de Cascade'
 );
 
 SELECT is(
   (select count(*)::int from public.account_memberships
     where group_id = '00000000-0000-0000-0000-0000000000f7'),
-  0,
-  'La cascade a bien retiré Dora et Eve de Cascade'
+  2,
+  'Cascade garde Dora et Eve'
 );
 
 SELECT * FROM finish();

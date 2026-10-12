@@ -294,7 +294,13 @@ function PaymentForm({ debtId, onDone }: { debtId: string; onDone: () => void })
   const { debts } = useDebts();
   const { pay, remove } = useDebtMutations();
   const debt = debts.find((candidate) => candidate.id === debtId);
-  const { activeGroupId } = useActiveGroup();
+  // Le groupe de l'ouverture : si le groupe actif change sous la feuille (exclusion, groupe supprimé), la dette ne part pas en silence dans le compte personnel.
+  const { activeGroupId: currentGroupId } = useActiveGroup();
+  const [openedGroupId, setOpenedGroupId] = useState(currentGroupId);
+  if (openedGroupId === null && currentGroupId) {
+    setOpenedGroupId(currentGroupId);
+  }
+  const activeGroupId = openedGroupId;
   const wallet = useWalletChoice(activeGroupId);
   const online = useIsOnline();
 

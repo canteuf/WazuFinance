@@ -115,17 +115,23 @@ describe('normalizeInvitationCode', () => {
 });
 
 describe('daysUntilExpiry', () => {
-  const now = new Date('2026-09-19T12:00:00Z');
+  // Dates construites à l'heure locale : le décompte se fait en jours de calendrier du téléphone.
+  const now = new Date(2026, 8, 19, 23, 0);
 
-  it('arrondit au-dessus : 30 heures font 2 jours', () => {
-    expect(daysUntilExpiry('2026-09-20T18:00:00Z', now)).toBe(2);
+  it('vaut zéro pour un code qui expire plus tard aujourd’hui, même dans trente minutes', () => {
+    expect(daysUntilExpiry(new Date(2026, 8, 19, 23, 30).toISOString(), now)).toBe(0);
+  });
+
+  it('vaut un pour un code qui expire demain, quelle que soit l’heure', () => {
+    expect(daysUntilExpiry(new Date(2026, 8, 20, 0, 30).toISOString(), now)).toBe(1);
+    expect(daysUntilExpiry(new Date(2026, 8, 20, 22, 0).toISOString(), now)).toBe(1);
   });
 
   it('compte 7 jours pour une invitation toute neuve', () => {
-    expect(daysUntilExpiry('2026-09-26T12:00:00Z', now)).toBe(7);
+    expect(daysUntilExpiry(new Date(2026, 8, 26, 23, 0).toISOString(), now)).toBe(7);
   });
 
   it('vaut zéro une fois expirée, jamais négatif', () => {
-    expect(daysUntilExpiry('2026-09-18T12:00:00Z', now)).toBe(0);
+    expect(daysUntilExpiry(new Date(2026, 8, 18, 12, 0).toISOString(), now)).toBe(0);
   });
 });

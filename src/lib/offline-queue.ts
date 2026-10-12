@@ -87,7 +87,7 @@ export function patchIsApplied(
 
 // Forme du cache écrit par @tanstack/react-query-persist-client, réduite à ce que ces fonctions lisent. Tout le reste est recopié tel quel.
 type PersistedMutation = { mutationKey?: readonly unknown[]; state: { status: string; isPaused: boolean } };
-type PersistedQuery = { queryKey: readonly unknown[]; state: { data?: unknown } };
+type PersistedQuery = { queryKey: readonly unknown[]; state: { data?: unknown; dataUpdatedAt?: number } };
 export type PersistedCache = {
   buster: string;
   timestamp: number;
@@ -226,4 +226,65 @@ export function queueOnly<T extends PersistedCache>(cache: T): T | null {
     return null;
   }
   return { ...cache, clientState: { ...cache.clientState, mutations, queries: [] } };
+}
+
+/**
+ * Le cache coupé en deux pour le disque : la file d'un côté, les données lues de l'autre, chacune sous sa propre clé.
+ *
+ * Écrites ensemble, une valeur de plus de 2 Mo s'écrivait mais ne se relisait plus sur Android (limite de la fenêtre SQLite d'AsyncStorage) : la bibliothèque effaçait alors le cache entier, et avec lui les saisies pas encore envoyées. La file, petite, ne dépend plus de la taille des données lues.
+ */
+export function splitForDisk<T extends PersistedCache>(cache: T): { queue: T; data: T } {
+  return {
+    queue: { ...cache, clientState: { ...cache.clientState, queries: [] } },
+    data: { ...cache, clientState: { ...cache.clientState, mutations: [] } },
+  };
+}
+
+/**
+ * Le cache relu à partir de ses deux moitiés. Un cache écrit avant la séparation porte encore sa file avec ses données : elle est reprise tant que la clé de la file est vide. `undefined` quand il n'y a rien sur le disque.
+ */
+export function mergeFromDisk<T extends PersistedCache>(data: T | undefined, queue: T | undefined): T | undefined {
+  const base = data ?? queue;
+  if (!base) {
+    return undefined;
+  }
+  const mutations =
+    queue && queue.clientState.mutations.length > 0
+      ? queue.clientState.mutations
+      : (data?.clientState.mutations ?? []);
+  return {
+    ...base,
+    clientState: { mutations, queries: data?.clientState.queries ?? [] },
+  };
+}
+
+/**
+ * Les données lues, ramenées sous `maxSize` en retirant les requêtes les plus anciennes. `sizeOf` mesure une requête une fois écrite ; le total ne compte que les requêtes, l'enveloppe est négligeable. La file n'est jamais concernée : elle vit sous sa propre clé.
+ */
+export function capQueries<T extends PersistedCache>(
+  cache: T,
+  maxSize: number,
+  sizeOf: (query: PersistedQuery) => number
+): T {
+  const queries = cache.clientState.queries;
+  const sizes = queries.map(sizeOf);
+  let total = sizes.reduce((sum, size) => sum + size, 0);
+  if (total <= maxSize) {
+    return cache;
+  }
+  const oldestFirst = queries
+    .map((query, index) => ({ index, updatedAt: query.state.dataUpdatedAt ?? 0 }))
+    .sort((a, b) => a.updatedAt - b.updatedAt);
+  const dropped = new Set<number>();
+  for (const { index } of oldestFirst) {
+    if (total <= maxSize) {
+      break;
+    }
+    dropped.add(index);
+    total -= sizes[index];
+  }
+  return {
+    ...cache,
+    clientState: { ...cache.clientState, queries: queries.filter((_, index) => !dropped.has(index)) },
+  };
 }

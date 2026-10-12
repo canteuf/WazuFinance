@@ -73,6 +73,15 @@ describe('formatPeriodLabel', () => {
     expect(formatPeriodLabel('2026-09-01', '2026-10-01')).toBe('de septembre');
   });
 
+  it('élide la préposition devant une voyelle', () => {
+    expect(formatPeriodLabel('2026-10-01', '2026-11-01')).toBe('d’octobre');
+    expect(formatPeriodLabel('2026-08-01', '2026-09-01')).toBe('d’août');
+  });
+
+  it('nomme le premier et le dernier mois d’une période de plusieurs mois', () => {
+    expect(formatPeriodLabel('2026-08-01', '2026-11-01')).toBe('d’août à octobre');
+  });
+
   // La borne haute est exclue : la date affichée est la veille.
   it('affiche l\'intervalle quand la période chevauche deux mois', () => {
     expect(formatPeriodLabel('2026-09-03', '2026-10-03')).toBe('du 3 sept. au 2 oct.');

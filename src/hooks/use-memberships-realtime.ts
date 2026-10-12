@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
+import { uniqueChannelName } from '@/data/realtime';
 import { useAuth } from '@/hooks/use-auth';
 import { queryKeys } from '@/lib/query-keys';
 import { supabase } from '@/lib/supabase';
@@ -8,9 +9,7 @@ import { supabase } from '@/lib/supabase';
 /**
  * Sync temps réel des adhésions : un membre exclu voit le groupe disparaître de sa liste sans recharger l'app, et le propriétaire voit arriver celui qui vient de rejoindre avec un code.
  *
- * Un seul abonnement, sans filtre serveur. Pour INSERT et UPDATE, RLS s'applique aux messages Realtime : un abonné ne reçoit que les adhésions des groupes dont il est membre. Pour DELETE, Supabase n'applique pas RLS et l'ancien tuple ne porte que la clé primaire (`account_memberships` n'a pas `replica identity full`) — un `id` uuid, rien d'autre ne fuit. C'est justement ce qui fait marcher l'exclusion : au moment du DELETE, la ligne de l'exclu n'existe plus et aucune policy ne pourrait plus la lui montrer, et un filtre `user_id=eq.…` ne correspondrait jamais faute de `user_id` dans l'ancien tuple.
- *
- * Le prix : chaque suppression d'adhésion, dans n'importe quel groupe, recharge la liste des groupes de tous les clients connectés. C'est une requête légère, sur un événement rare.
+ * INSERT et UPDATE, sans filtre serveur : RLS s'applique aux messages Realtime, un abonné ne reçoit que les adhésions des groupes dont il est membre. Les suppressions — un départ, une exclusion — n'arrivent pas ici : Supabase n'applique pas RLS aux DELETE, et l'abonnement à `*` faisait recharger la liste des groupes de tous les clients connectés à chaque départ dans n'importe quel groupe. La base annonce désormais la suppression sur le canal privé du groupe et sur celui de la personne qui part ou est exclue (useDeletionBroadcasts()).
  *
  * Quand le groupe actif disparaît de la liste, ActiveGroupProvider retombe de lui-même sur le compte personnel : rien d'autre à faire ici.
  */
@@ -30,8 +29,9 @@ export function useMembershipsRealtime(): void {
     }
 
     const channel = supabase
-      .channel(`memberships:${userId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'account_memberships' }, invalidate)
+      .channel(uniqueChannelName(`memberships:${userId}`))
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'account_memberships' }, invalidate)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'account_memberships' }, invalidate)
       // Le nom et le jour de début de période d'un groupe arrivent avec les adhésions (listMemberships). Sans cet abonnement, un propriétaire qui déplaçait le début de période ne le faisait voir aux autres membres qu'à leur prochain rechargement, et leurs totaux décrivaient une autre période que les siens. UPDATE seulement : une création ou une suppression de groupe passe déjà par les adhésions. RLS filtre les messages comme les lectures.
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'budget_groups' }, invalidate)
       .subscribe((status) => {

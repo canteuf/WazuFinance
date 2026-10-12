@@ -22,7 +22,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useIsOnline } from '@/hooks/use-offline-status';
 import { useRejectedWrites } from '@/hooks/use-rejected-writes';
 import { useSheetMaxHeight } from '@/hooks/use-sheet-max-height';
-import { useTransaction } from '@/hooks/use-transaction';
+import { usePendingUpdate, useTransaction } from '@/hooks/use-transaction';
 import { useToast } from '@/hooks/use-toast';
 import { useTransactionMutations } from '@/hooks/use-transaction-mutations';
 import { dataErrorMessage, isTransportError } from '@/lib/data-errors';
@@ -46,7 +46,7 @@ export default function TransactionScreen() {
   const { session } = useAuth();
   const {
     activeGroupId,
-    activeGroup,
+    groups,
     isLoading: groupLoading,
     error: groupError,
   } = useActiveGroup();
@@ -67,21 +67,37 @@ export default function TransactionScreen() {
   const [recurrenceId] = useState(randomUUID);
 
   const existing = useTransaction(id);
+  // Une modification de cette opération encore en file : le formulaire repart de ses valeurs, pas de la version d'avant restée en cache.
+  const pendingPatch = usePendingUpdate(id);
+  // Lu une fois, comme les autres valeurs du formulaire.
+  const [initialPatch] = useState(pendingPatch);
   // Version de la ligne sur laquelle le formulaire s'est ouvert : il lit ses valeurs au montage, et une relecture arrivée ensuite (Realtime, retour du réseau) ne les change pas. La modification n'est écrite que si la ligne en est toujours là (voir `update` dans src/data/transactions.ts).
   const [baseVersion, setBaseVersion] = useState<string>();
   if (existing.data && baseVersion === undefined) {
     setBaseVersion(existing.data.updated_at);
   }
 
-  // Une écriture qui bute sur un réseau instable (NetInfo dit « connecté », la requête échoue) est renvoyée seule, et gardée sur le disque d'ici là : la feuille n'a plus à l'attendre derrière un bouton qui tourne.
+  // Une écriture qui bute sur un réseau instable (NetInfo dit « connecté », la requête échoue) est renvoyée seule, et gardée sur le disque d'ici là : la feuille n'a plus à l'attendre derrière un bouton qui tourne. Une reprise d'« À corriger » est alors dans la file : si la base la refuse encore, elle y reviendra.
+  const dismissDraft = rejected.dismiss;
   useEffect(() => {
     if (isRetrying) {
+      if (typeof draftId === 'string') {
+        dismissDraft(draftId);
+      }
       toast.show('Réseau instable. L’opération est gardée sur le téléphone et partira dès que possible.', 'info');
       goBackOr(router, '/');
     }
-  }, [isRetrying, toast, router]);
+  }, [isRetrying, toast, router, draftId, dismissDraft]);
 
   const userId = session?.user.id;
+
+  // Le groupe où la feuille écrit, figé à son ouverture. Une modification écrit dans le groupe de l'opération, quel que soit le groupe actif : « Corriger » une modification refusée d'un autre groupe ouvrait le formulaire dans le groupe actif — catégorie effacée, portefeuille d'un autre groupe, nouvel échec. Une création reste dans le groupe où elle a été commencée : si le groupe actif change sous la feuille (exclusion, groupe supprimé), elle ne part pas en silence dans le compte personnel ; la base la refuse, et la feuille le dit.
+  const [openedGroupId, setOpenedGroupId] = useState<string | null>(null);
+  if (openedGroupId === null && activeGroupId) {
+    setOpenedGroupId(activeGroupId);
+  }
+  const sheetGroupId = existing.data?.group_id ?? openedGroupId ?? activeGroupId;
+  const sheetGroupName = groups.find((group) => group.groupId === sheetGroupId)?.name ?? '';
 
   // Tous les hooks ci-dessus s'exécutent à chaque rendu ; les retours conditionnels qui suivent n'en court-circuitent aucun. Une reprise attend la lecture de « À corriger » : le formulaire lit ses valeurs au montage, et s'ouvrirait vide.
   if (groupLoading || (typeof draftId === 'string' && !rejected.isLoaded)) {
@@ -93,7 +109,7 @@ export default function TransactionScreen() {
   }
 
   // Sans cette branche, un chargement des adhésions en échec (ou l'absence de groupe actif) tombait sur une feuille fitToContents vide : ni contenu, ni message, ni sortie. Le bouton Retour reste la seule issue fiable, la poignée de la feuille ne l'étant pas sur toutes les plateformes.
-  if (groupError || !activeGroupId || !userId) {
+  if (groupError || !sheetGroupId || !userId) {
     return (
       <View style={styles.centered}>
         <Text style={[styles.errorTitle, { color: colors.danger }]}>
@@ -149,6 +165,9 @@ export default function TransactionScreen() {
   // Hors ligne, l'opération se met en file et ne réussira qu'au retour du réseau : attendre ce succès laisserait la feuille ouverte sur un bouton qui tourne. Elle se ferme donc aussitôt, sur un message qui le dit, et le bandeau d'état compte l'opération en attente ; un refus ultérieur de la base s'affiche en alerte (query-provider), puisque la feuille ne sera plus là pour le montrer.
   function closeIfQueued() {
     if (!online) {
+      if (typeof draftId === 'string') {
+        rejected.dismiss(draftId);
+      }
       toast.show('Enregistrée sur le téléphone. Envoi au retour du réseau.', 'info');
       goBackOr(router, '/');
     }
@@ -174,7 +193,7 @@ export default function TransactionScreen() {
         repeat && anchorDay !== null
           ? {
               id: recurrenceId,
-              groupId: activeGroupId as string,
+              groupId: sheetGroupId as string,
               userId: userId as string,
               categoryId: entry.categoryId,
               type: entry.type,
@@ -187,19 +206,20 @@ export default function TransactionScreen() {
               walletId: entry.walletId,
             }
           : undefined;
-      // La reprise est une saisie neuve, sous son propre id : la ligne d'« À corriger » s'en va dès maintenant. Si elle est refusée à son tour, elle y reviendra.
-      if (typeof draftId === 'string') {
-        rejected.dismiss(draftId);
-      }
+      // La reprise est une saisie neuve, sous son propre id. La ligne d'« À corriger » ne s'en va qu'une fois la saisie acceptée, ou partie dans la file (closeIfQueued, isRetrying) : un nouveau refus immédiat, affiché sous le formulaire, ne passe pas par la file, et fermer la feuille l'aurait perdue.
       createTransaction.mutate(
-        { ...entry, id: newId, groupId: activeGroupId as string, userId: userId as string, recurrence },
+        { ...entry, id: newId, groupId: sheetGroupId as string, userId: userId as string, recurrence },
         {
-          onSuccess: () =>
+          onSuccess: () => {
+            if (typeof draftId === 'string') {
+              rejected.dismiss(draftId);
+            }
             succeed(
               repeat && anchorDay !== null
                 ? `${saved} · ${describeRecurrence(repeat, anchorDay).toLowerCase()}`
                 : saved
-            ),
+            );
+          },
           onError,
         }
       );
@@ -225,6 +245,7 @@ export default function TransactionScreen() {
         repeat: null,
         walletId: existing.data.wallet_id,
         tags: existing.data.tags ?? [],
+        ...initialPatch,
       }
     : draft
       ? {
@@ -271,8 +292,8 @@ export default function TransactionScreen() {
         mode="layout"
       >
         <TransactionForm
-          groupId={activeGroupId}
-          groupName={activeGroup?.name ?? ''}
+          groupId={sheetGroupId}
+          groupName={sheetGroupName}
           initialValues={initialValues}
           submitLabel="Enregistrer"
           submitting={isSaving}

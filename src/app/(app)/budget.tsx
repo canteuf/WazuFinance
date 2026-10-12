@@ -25,7 +25,7 @@ import { useRequestIds } from '@/hooks/use-request-ids';
 import { useSheetMaxHeight } from '@/hooks/use-sheet-max-height';
 import { budgetProgress, WARNING_RATIO } from '@/lib/budget-progress';
 import { dataErrorMessage } from '@/lib/data-errors';
-import { formatMoney } from '@/lib/money';
+import { formatMoney, spokenAmount } from '@/lib/money';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 import { goBackOr } from '@/lib/navigation';
 
@@ -54,10 +54,15 @@ export default function BudgetScreen() {
   const requestIdFor = useRequestIds();
 
   const existing = typeof id === 'string' ? budgets.find((budget) => budget.id === id) : undefined;
+  // Un budget hebdomadaire se compare à la semaine en cours, comme sur sa carte : sans ces tranches, la feuille affichait 0 FCFA dépensé et 0 % pendant que la carte disait « Alerte ».
+  const { slices: weekSlices } = useCategoryBreakdown({
+    scope: 'week',
+    enabled: existing?.period === 'weekly',
+  });
   // La dépense de l'enveloppe, par la même fonction que la liste : la feuille et la carte touchée affichent les mêmes chiffres.
   const progress = useMemo(
-    () => (existing ? budgetProgress([existing], slices)[0] : undefined),
-    [existing, slices]
+    () => (existing ? budgetProgress([existing], slices, weekSlices)[0] : undefined),
+    [existing, slices, weekSlices]
   );
 
   /**
@@ -209,7 +214,11 @@ export default function BudgetScreen() {
         {existing && progress ? (
           <>
             <View style={[styles.status, { backgroundColor: colors.surface }, elevation.card]}>
-              <View style={styles.statusRow}>
+              <View
+                style={styles.statusRow}
+                accessible
+                accessibilityLabel={`${spokenAmount(progress.spent)} dépensés sur ${spokenAmount(existing.amount)}`}
+              >
                 <Text style={[styles.statusSpent, { color: colors.text }]}>
                   {formatMoney(progress.spent)}
                 </Text>

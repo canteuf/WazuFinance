@@ -1,12 +1,13 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
+import { uniqueChannelName } from '@/data/realtime';
 import { useActiveGroup } from '@/hooks/use-active-group';
 import { queryKeys } from '@/lib/query-keys';
 import { supabase } from '@/lib/supabase';
 
 /**
- * Sync temps réel des modèles récurrents du groupe actif : le loyer confirmé par un membre disparaît aussitôt de la liste « À confirmer » des autres, qui ne le confirmeront pas une seconde fois. Même construction que useBudgetsRealtime(), dont les commentaires valent ici : filtre serveur par groupe pour l'économie de trafic, second abonnement DELETE sans filtre, invalidation par la racine.
+ * Sync temps réel des modèles récurrents du groupe actif : le loyer confirmé par un membre disparaît aussitôt de la liste « À confirmer » des autres, qui ne le confirmeront pas une seconde fois. Même construction que useBudgetsRealtime(), dont les commentaires valent ici : filtre serveur par groupe pour l'économie de trafic, invalidation par la racine. Les suppressions arrivent par useDeletionBroadcasts().
  */
 export function useRecurringRealtime(): void {
   const queryClient = useQueryClient();
@@ -22,7 +23,7 @@ export function useRecurringRealtime(): void {
     }
 
     const channel = supabase
-      .channel(`recurring:${activeGroupId}`)
+      .channel(uniqueChannelName(`recurring:${activeGroupId}`))
       .on(
         'postgres_changes',
         {
@@ -31,12 +32,6 @@ export function useRecurringRealtime(): void {
           table: 'recurring_transactions',
           filter: `group_id=eq.${activeGroupId}`,
         },
-        invalidate
-      )
-      // Voir useBudgetsRealtime() : un DELETE ne porte que la clé primaire, le filtre par groupe ne peut pas s'y appliquer.
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'recurring_transactions' },
         invalidate
       )
       .subscribe((status) => {

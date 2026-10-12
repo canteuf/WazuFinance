@@ -19,7 +19,8 @@ const NBSP = ' ';
 /** Espace fine insécable (U+202F), celle que Intl place entre les milliers en français : un montant tapé s'affiche comme un montant formaté. */
 const THIN_NBSP = ' ';
 
-const MAX_AMOUNT = 9_999_999_999;
+/** Le plus grand montant que garde une colonne numeric(12,2). */
+export const MAX_AMOUNT = 9_999_999_999;
 
 /** Renvoie null si la saisie ne peut pas devenir un montant valide : des chiffres seuls, sans décimale. */
 export function parseAmount(input: string): number | null {
@@ -93,9 +94,14 @@ export function groupDigits(digits: string): string {
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, THIN_NBSP);
 }
 
-/** Les chiffres seuls d'un champ de montant : retire les espaces que groupDigits a insérés, et tout ce qu'un collage aurait apporté. */
+/**
+ * Les chiffres seuls d'un champ de montant : retire les espaces que groupDigits a insérés, et ce qu'un collage apporte autour du nombre (« 12 500 FCFA »).
+ *
+ * Un séparateur décimal ou un signe n'est pas retiré : « 1 500,50 » devenait 150050, une dépense multipliée par cent sans un mot. Le texte est alors rendu tel quel, et parseAmount le refuse (« Montant invalide »), ce que l'utilisateur voit et corrige.
+ */
 export function amountDigits(text: string): string {
-  return text.replace(/\D/g, '');
+  const cleaned = text.replace(/[\s\u00a0\u202f]|[a-z]/gi, '');
+  return /^\d*$/.test(cleaned) ? cleaned : text;
 }
 
 /** Texte d'un champ de saisie pour un montant existant : « 1500 », sans séparateur de milliers, que parseAmount refuserait. */

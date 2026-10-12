@@ -196,6 +196,11 @@ SELECT is(
 
 set local role postgres;
 
+-- Bob quitte d'abord Famille : guard_owner_deletion() refuse la suppression d'un propriétaire dont le groupe partagé a encore d'autres membres.
+delete from public.account_memberships
+ where group_id = '00000000-0000-0000-0000-0000000002b1'
+   and user_id <> '00000000-0000-0000-0000-0000000002a1';
+
 SELECT lives_ok(
   $$delete from auth.users where id = '00000000-0000-0000-0000-0000000002a1'$$,
   'La suppression du compte emporte les opérations d''épargne'

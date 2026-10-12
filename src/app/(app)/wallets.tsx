@@ -103,7 +103,18 @@ export default function WalletsScreen() {
             {transfers.map((transfer, index) => (
               <Fragment key={transfer.id}>
                 {index > 0 ? <View style={[styles.divider, { backgroundColor: colors.border }]} /> : null}
-                <View style={styles.transfer} accessible>
+                <View
+                  style={styles.transfer}
+                  accessible
+                  accessibilityLabel={[
+                    `${names.get(transfer.fromWalletId) ?? 'Portefeuille'} vers ${names.get(transfer.toWalletId) ?? 'portefeuille'}`,
+                    spokenAmount(transfer.amount),
+                    formatOccurredOn(transfer.occurredOn),
+                    transfer.note,
+                  ]
+                    .filter(Boolean)
+                    .join(', ')}
+                >
                   <MaterialCommunityIcons name="swap-horizontal" size={20} color={colors.textMuted} />
                   <View style={styles.text}>
                     <Text numberOfLines={1} style={[styles.name, { color: colors.text }]}>

@@ -27,8 +27,8 @@ export async function listActivityPage(
   let query = supabase.from('activity_log').select('*').eq('group_id', groupId);
 
   if (cursor !== null) {
-    // PostgREST n'exprime pas la comparaison de couples `(a, b) < (c, d)` : ce `or` produit le même prédicat. Les deux valeurs viennent d'une ligne déjà renvoyée par le serveur, jamais d'une saisie.
-    query = query.or(
+    // PostgREST n'exprime pas la comparaison de couples `(a, b) < (c, d)` : ce `or` produit le même prédicat. Les deux valeurs viennent d'une ligne déjà renvoyée par le serveur, jamais d'une saisie. Le `lte` redit la borne hors du `or`, pour que l'index la prenne (voir listPage dans transactions.ts).
+    query = query.lte('occurred_at', cursor.occurredAt).or(
       `occurred_at.lt."${cursor.occurredAt}",` +
         `and(occurred_at.eq."${cursor.occurredAt}",id.lt.${cursor.id})`
     );

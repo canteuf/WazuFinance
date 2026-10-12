@@ -70,7 +70,8 @@ export function BudgetRow({
     over: colors.danger,
   };
 
-  const percent = Math.round(item.ratio * 100);
+  // Arrondi vers le bas : 99,7 % s'affichait « 100 % » à côté de « Reste 300 FCFA », et 79,6 % « 80 % » sous « Sous contrôle ». Le pourcentage ne dépasse un seuil que quand le statut le dit.
+  const percent = Math.floor(item.ratio * 100);
 
   // La pastille de catégorie prend la couleur du statut dès qu'il y a une alerte : c'est le premier élément que l'œil rencontre sur la carte, et une liste triée par urgence doit se lire sans traverser chaque ligne. Sous le seuil, elle garde la teinte du poste, qui sert à le reconnaître.
   const iconTint = item.status === 'ok' ? tone.tint : statusColor[item.status];

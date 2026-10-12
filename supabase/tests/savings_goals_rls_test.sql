@@ -105,7 +105,7 @@ SELECT is(
 -- prouver seule (une policy absente ou un `using (true)` passeraient tout
 -- autant ce test), d'ou la relecture en role postgres plus bas.
 SELECT lives_ok(
-  $$update public.savings_goals set current_amount = 999
+  $$update public.savings_goals set target_amount = 999
      where id = '00000000-0000-0000-0000-0000000000e4'$$,
   'Bob ne modifie aucune ligne sur l''objectif d''Alice, sans erreur'
 );
@@ -123,9 +123,9 @@ SELECT lives_ok(
 set local role postgres;
 
 SELECT is(
-  (select current_amount from public.savings_goals
+  (select target_amount from public.savings_goals
     where id = '00000000-0000-0000-0000-0000000000e4'),
-  100.00::numeric(12,2),
+  1000.00::numeric(12,2),
   'L''objectif d''Alice est intact : Bob ne l''a pas modifie'
 );
 

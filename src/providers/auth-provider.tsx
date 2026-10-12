@@ -4,6 +4,7 @@ import { createContext, useEffect, useMemo, useRef, useState, type ReactNode } f
 import { deleteOwnAccount } from '@/data/account';
 import { CurrentPasswordError } from '@/lib/auth-errors';
 import { clockSkewMs as measureClockSkew } from '@/lib/clock';
+import { forgetAccountOnDevice } from '@/lib/device-data';
 import { TERMS_VERSION } from '@/lib/legal';
 import { reportError } from '@/lib/monitoring';
 import type { Usage } from '@/lib/onboarding';
@@ -232,9 +233,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async deleteAccount(currentPassword) {
         await verifyPassword(currentPassword);
+        const deletedUserId = (await supabase.auth.getSession()).data.session?.user.id;
         await deleteOwnAccount();
         // Portée locale, pas le signOut() par défaut : sa portée globale appellerait l'API de déconnexion avec le jeton d'un utilisateur qui n'existe plus, et lèverait une erreur après une suppression réussie. La déconnexion locale efface la session stockée, sans réseau ; Stack.Protected bascule sur la connexion. Sur les autres appareils, RLS ne renvoie déjà plus rien, et le prochain rafraîchissement de jeton échoue et les déconnecte.
         await supabase.auth.signOut({ scope: 'local' });
+        // Le cache, la file qui ne partira jamais, « À corriger » et le verrou du compte supprimé. Une seconde fois un peu plus tard : le cache est écrit sur le disque au plus une fois par seconde, et une écriture déjà programmée le recréerait.
+        if (deletedUserId) {
+          await forgetAccountOnDevice(deletedUserId);
+          setTimeout(() => void forgetAccountOnDevice(deletedUserId), 2_000);
+        }
       },
     };
   }, [session, isLoading, clockSkewMs]);

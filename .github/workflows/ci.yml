@@ -23,9 +23,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           # Même version que les builds EAS (eas.json) : les paquets Supabase exigent Node 22 ou plus.
           node-version: 22.20.0
@@ -42,14 +42,26 @@ jobs:
       - name: Tests Jest
         run: npm test -- --ci
 
+      # Versions alignées sur le SDK : une dépendance qui dérive est signalée ici plutôt qu'au build EAS.
+      - name: Versions des dépendances Expo
+        run: npx expo install --check
+
+      # Le bundle que Metro construit pour Android : tsc ne voit ni un require d'image cassé, ni une résolution de module que seul Metro fait. Valeurs factices : elles ne sont qu'inlinées, jamais appelées.
+      - name: Bundle Android
+        run: npx expo export --platform android --output-dir ${{ runner.temp }}/bundle
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+
   database:
     name: Migrations et tests pgTAP
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - uses: supabase/setup-cli@v1
+      # Épinglée par commit, comme toutes les actions : `v1` est une branche, que son propriétaire peut déplacer, et ce dépôt est public.
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1.7.3
         with:
           # Même version que la CLI du projet (npx supabase --version), comme db-backup.yml dans canteuf/WazuFinance-ops.
           version: 2.117.0

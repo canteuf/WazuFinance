@@ -36,14 +36,18 @@ export function sanitizeInvitationCodeInput(input: string): string {
 }
 
 /**
- * Jours pleins restants avant l'expiration, arrondis au-dessus : une invitation qui expire dans 30 heures « expire dans 2 jours », pas dans 1, qui laisserait croire qu'elle ne passera pas le lendemain soir.
+ * Jours de calendrier entre aujourd'hui et le jour de l'expiration, à l'heure du téléphone : 0 si elle tombe aujourd'hui, 1 demain.
  *
- * Zéro une fois expirée, jamais négatif.
+ * Compter des tranches de 24 heures arrondies au-dessus faisait dire « Expire demain » à un code qui expirait dans trente minutes, et le message partagé promettait « valable jusqu'à demain ». Zéro une fois expirée, jamais négatif.
  */
 export function daysUntilExpiry(expiresAt: string, now: Date = new Date()): number {
-  const msPerDay = 24 * 60 * 60 * 1000;
-  const remaining = new Date(expiresAt).getTime() - now.getTime();
-  return Math.max(Math.ceil(remaining / msPerDay), 0);
+  const expiry = new Date(expiresAt);
+  if (expiry.getTime() <= now.getTime()) {
+    return 0;
+  }
+  const expiryDay = new Date(expiry.getFullYear(), expiry.getMonth(), expiry.getDate());
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((expiryDay.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
 }
 
 /**

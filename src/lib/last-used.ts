@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { lastGroupStorageKey } from '@/lib/device-data';
 import type { TransactionType } from '@/types/database';
 
 /**
@@ -75,7 +76,7 @@ export async function writeLastType(groupId: string, type: TransactionType): Pro
  */
 export async function readLastGroup(userId: string): Promise<string | null> {
   try {
-    return await AsyncStorage.getItem(`last-group:${userId}`);
+    return await AsyncStorage.getItem(lastGroupStorageKey(userId));
   } catch {
     return null;
   }
@@ -83,7 +84,7 @@ export async function readLastGroup(userId: string): Promise<string | null> {
 
 export async function writeLastGroup(userId: string, groupId: string): Promise<void> {
   try {
-    await AsyncStorage.setItem(`last-group:${userId}`, groupId);
+    await AsyncStorage.setItem(lastGroupStorageKey(userId), groupId);
   } catch {
     // Préférence d'affichage seulement.
   }

@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
+import { uniqueChannelName } from '@/data/realtime';
 import { useAuth } from '@/hooks/use-auth';
 import { queryKeys } from '@/lib/query-keys';
 import { supabase } from '@/lib/supabase';
@@ -8,7 +9,7 @@ import { supabase } from '@/lib/supabase';
 /**
  * Sync temps réel des objectifs d'épargne de l'utilisateur courant.
  *
- * Deux abonnements, comme use-budgets-realtime.ts et pour la même raison : aucune table du projet n'a de `replica identity full` (vérifié dans les migrations), donc l'ancien tuple d'un DELETE ne porte que l'id, jamais user_id — un filtre serveur sur user_id ne peut donc jamais le matcher. Le second abonnement, sans filtre serveur, se contente d'invalider ; RLS s'applique aux deux, ce n'est qu'une économie de trafic.
+ * Les insertions et modifications arrivent ici, filtrées sur user_id. Un DELETE ne porte que l'id, jamais user_id, et Supabase ne lui applique pas RLS : la base annonce la suppression sur le canal privé de l'utilisateur, qu'écoute useDeletionBroadcasts().
  */
 export function useSavingsGoalsRealtime(): void {
   const queryClient = useQueryClient();
@@ -25,7 +26,7 @@ export function useSavingsGoalsRealtime(): void {
     }
 
     const channel = supabase
-      .channel(`savings-goals:${userId}`)
+      .channel(uniqueChannelName(`savings-goals:${userId}`))
       .on(
         'postgres_changes',
         {
@@ -34,11 +35,6 @@ export function useSavingsGoalsRealtime(): void {
           table: 'savings_goals',
           filter: `user_id=eq.${userId}`,
         },
-        invalidate
-      )
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'savings_goals' },
         invalidate
       )
       .subscribe((status) => {

@@ -1,4 +1,4 @@
-import { dataErrorMessage, isTransportError } from '@/lib/data-errors';
+import { dataErrorMessage, isTransportError, SESSION_PENDING_MESSAGE } from '@/lib/data-errors';
 
 describe('dataErrorMessage', () => {
   it("traduit un refus de RLS", () => {
@@ -9,13 +9,13 @@ describe('dataErrorMessage', () => {
 
   it("traduit une clé étrangère rompue", () => {
     expect(dataErrorMessage({ code: '23503', message: 'violates foreign key' })).toBe(
-      "Cette catégorie n'existe plus."
+      "Un élément lié (catégorie, portefeuille…) n'existe plus."
     );
   });
 
   it("traduit une contrainte de vérification", () => {
     expect(dataErrorMessage({ code: '23514', message: 'violates check' })).toBe(
-      'Montant invalide.'
+      'Valeur refusée : vérifiez le montant et les textes saisis.'
     );
   });
 
@@ -88,5 +88,11 @@ describe('isTransportError', () => {
     expect(isTransportError({ code: '42501', message: 'Network request failed' })).toBe(false);
     expect(isTransportError({ code: 'P0001', message: 'Le remboursement dépasse ce qui reste dû.' })).toBe(false);
     expect(isTransportError(undefined)).toBe(false);
+  });
+
+  it("renvoie plus tard une écriture retenue faute de session, comme une coupure", () => {
+    const error = Object.assign(new Error(SESSION_PENDING_MESSAGE), { code: '' });
+    expect(isTransportError(error)).toBe(true);
+    expect(dataErrorMessage(error)).toBe('Pas de connexion. Réessayez.');
   });
 });

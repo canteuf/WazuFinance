@@ -30,7 +30,7 @@ import { useWallets } from '@/hooks/use-wallets';
 import { dataErrorMessage } from '@/lib/data-errors';
 import { formatPeriodLabel, periodPresets, todayIso } from '@/lib/dates';
 import { dayTitle, groupByDay } from '@/lib/ledger';
-import { formatDelta, withCurrency } from '@/lib/money';
+import { formatDelta, spokenAmount, withCurrency } from '@/lib/money';
 import { normalizeSearch } from '@/lib/search';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 
@@ -328,6 +328,7 @@ export default function HistoryScreen() {
                       styles.dayTotal,
                       { color: day.total > 0 ? colors.positive : colors.text },
                     ]}
+                    accessibilityLabel={`Total du jour : ${day.total < 0 ? 'moins ' : ''}${spokenAmount(Math.abs(day.total))}`}
                   >
                     Total : {withCurrency(formatDelta(day.total))}
                   </Text>

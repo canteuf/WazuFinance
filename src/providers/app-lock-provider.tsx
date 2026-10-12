@@ -18,6 +18,7 @@ import {
   MAX_FAILURES,
   shouldLockOnReturn,
 } from '@/lib/app-lock';
+import { setSensitiveAlertsHidden } from '@/lib/lock-state';
 import {
   clearAppLock,
   createAppLock,
@@ -65,10 +66,11 @@ export function AppLockProvider({ children }: { children: ReactNode }) {
           setLocked(stored !== null);
         }
       });
-    Promise.all([LocalAuthentication.hasHardwareAsync(), LocalAuthentication.isEnrolledAsync()])
-      .then(([hardware, enrolled]) => {
+    // Biométrie forte seulement (empreinte, visage 3D) : une reconnaissance faciale 2D, qu'une photo trompe parfois, ne déverrouille pas l'app.
+    Promise.all([LocalAuthentication.hasHardwareAsync(), LocalAuthentication.getEnrolledLevelAsync()])
+      .then(([hardware, level]) => {
         if (active) {
-          setBiometricsAvailable(hardware && enrolled);
+          setBiometricsAvailable(hardware && level >= LocalAuthentication.SecurityLevel.BIOMETRIC_STRONG);
         }
       })
       .catch(() => undefined);
@@ -87,6 +89,13 @@ export function AppLockProvider({ children }: { children: ReactNode }) {
       .then(() => setSettings(corrected))
       .catch((error: unknown) => reportError(error, 'app-lock-clock'));
   }, [settings, userId]);
+
+  // Les alertes des écritures refusées attendent que l'app soit déverrouillée — ou que l'on sache qu'aucun verrou n'est posé (lock-state.ts).
+  useEffect(() => {
+    setSensitiveAlertsHidden(settings === undefined || locked);
+  }, [settings, locked]);
+
+  useEffect(() => () => setSensitiveAlertsHidden(true), []);
 
   const onAppStateChange = useEffectEvent((state: string) => {
     // `inactive` (iOS : centre de contrôle, invite biométrique) ne compte pas comme un départ.
@@ -161,6 +170,8 @@ export function AppLockProvider({ children }: { children: ReactNode }) {
         const result = await LocalAuthentication.authenticateAsync({
           promptMessage: 'Déverrouiller Wazu Finance',
           cancelLabel: 'Utiliser le code',
+          // La valeur par défaut est 'weak' : un visage 2D aurait déverrouillé l'app.
+          biometricsSecurityLevel: 'strong',
           // Pas de repli sur le code du téléphone : l'app a le sien.
           disableDeviceFallback: true,
         });
@@ -193,6 +204,7 @@ export function AppLockProvider({ children }: { children: ReactNode }) {
           const result = await LocalAuthentication.authenticateAsync({
             promptMessage: 'Confirmer votre empreinte',
             cancelLabel: 'Annuler',
+            biometricsSecurityLevel: 'strong',
             disableDeviceFallback: true,
           });
           if (!result.success) {

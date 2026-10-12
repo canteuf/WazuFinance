@@ -5,7 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { AmountInput } from '@/components/transaction/amount-input';
 import { PrimaryAction } from '@/components/ui/form-actions';
 import { SegmentedControl } from '@/components/ui/segmented-control';
-import { formatMoney, parseAmount, previewSum } from '@/lib/money';
+import { formatMoney, MAX_AMOUNT, parseAmount, previewSum } from '@/lib/money';
 import { font, radius, spacing, useColors, useElevation } from '@/theme/tokens';
 
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
@@ -54,10 +54,12 @@ export function AmountAdjuster({
   const delta = amount === null ? null : mode === 'add' ? amount : -amount;
   const next = delta === null ? null : previewSum(current, delta);
   const tooLow = next !== null && next < minimumAfter;
+  // Au-delà, la base répondait par un dépassement numérique que l'app ne savait que traduire en « erreur inattendue ».
+  const tooHigh = next !== null && next > MAX_AMOUNT;
 
   function handleSubmit() {
     setTouched(true);
-    if (delta === null || tooLow) {
+    if (delta === null || tooLow || tooHigh) {
       return;
     }
     onSubmit(delta);
@@ -81,6 +83,8 @@ export function AmountAdjuster({
 
       {tooLow ? (
         <Text style={[styles.message, { color: colors.danger }]}>{tooLowMessage}</Text>
+      ) : tooHigh ? (
+        <Text style={[styles.message, { color: colors.danger }]}>Montant trop élevé.</Text>
       ) : touched && delta === null ? (
         <Text style={[styles.message, { color: colors.danger }]}>
           Saisissez un montant supérieur à zéro.

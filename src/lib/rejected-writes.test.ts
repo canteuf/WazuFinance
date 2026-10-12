@@ -1,4 +1,4 @@
-import { todayIso } from '@/lib/dates';
+import { formatDate, todayIso } from '@/lib/dates';
 import { formatMoney } from '@/lib/money';
 import { describeRejected, MAX_REJECTED, parseRejected, withRejected, type RejectedWrite } from '@/lib/rejected-writes';
 
@@ -42,7 +42,7 @@ describe('describeRejected', () => {
     expect(entry?.summary).toContain(`Dépense de ${formatMoney(5000)} du `);
   });
 
-  it('dit « d’aujourd’hui » plutôt que « du Aujourd’hui »', () => {
+  it('date le résumé en absolu : il est relu des jours plus tard, quand « d’hier » ne serait plus vrai', () => {
     const entry = describeRejected(
       ['transactionWrites', 'create'],
       { groupId: 'g1', type: 'income', amount: 800, categoryId: 'c1', occurredOn: todayIso() },
@@ -50,7 +50,7 @@ describe('describeRejected', () => {
       'r1',
       AT
     );
-    expect(entry?.summary).toBe(`Revenu de ${formatMoney(800)} d'aujourd'hui`);
+    expect(entry?.summary).toBe(`Revenu de ${formatMoney(800)} du ${formatDate(todayIso())}`);
   });
 
   it('lit une saisie mise en file par une version plus ancienne, sans portefeuille ni étiquettes', () => {

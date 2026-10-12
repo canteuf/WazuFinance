@@ -1,4 +1,4 @@
-import { formatOccurredOn } from '@/lib/dates';
+import { formatDate } from '@/lib/dates';
 import { formatMoney } from '@/lib/money';
 import type { TransactionType } from '@/types/database';
 
@@ -53,10 +53,8 @@ function amountOf(value: unknown): number | null {
 function describeEntry(type: unknown, amount: unknown, occurredOn: unknown): string {
   const label = type === 'income' ? 'Revenu' : 'Dépense';
   const value = amountOf(amount);
-  const day = typeof occurredOn === 'string' ? formatOccurredOn(occurredOn) : null;
-  // formatOccurredOn dit « Aujourd'hui » et « Hier » pour les jours proches : « du Aujourd'hui » ne se dit pas.
-  const date =
-    day === null ? '' : day === "Aujourd'hui" ? " d'aujourd'hui" : day === 'Hier' ? " d'hier" : ` du ${day}`;
+  // Une date absolue : le résumé est gardé sur le téléphone et relu des jours plus tard, quand « d'hier » ne serait plus vrai.
+  const date = typeof occurredOn === 'string' ? ` du ${formatDate(occurredOn)}` : '';
   return value === null ? `${label}${date}` : `${label} de ${formatMoney(value)}${date}`;
 }
 

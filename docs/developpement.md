@@ -13,7 +13,7 @@ Ce document s'adresse aux personnes qui installent, font évoluer ou maintiennen
 Prérequis :
 - Node.js ;
 - un projet Supabase ;
-- Expo Go ou un build de développement sur téléphone ;
+- un build de développement sur téléphone (`eas build -p android --profile development`, puis `npx expo start --dev-client`) : Expo Go ne suffit pas, l'app utilise des modules natifs qu'il n'embarque pas (`react-native-keyboard-controller`) ;
 - Docker Desktop, pour les tests de base de données uniquement ;
 - `eas-cli` en global et les platform-tools Android, pour produire et installer un APK.
 
@@ -68,7 +68,7 @@ Prérequis :
 
 ## Build natif (EAS)
 
-Expo Go suffit pour développer, mais pas pour valider : le partage de fichiers, l'impression PDF et les modules natifs s'y comportent autrement que dans une app installée. Le profil `preview` de [eas.json](../eas.json) produit un APK qu'on installe directement sur un appareil, sans passer par le Play Store.
+On développe dans un build de développement (profil `development`), reconstruit seulement quand un module natif change : Expo Go n'embarque pas tous les modules natifs de l'app, et elle ne s'y lance pas. Le partage de fichiers, l'impression PDF et les modules natifs se valident sur un APK installé. Le profil `preview` de [eas.json](../eas.json) produit un APK qu'on installe directement sur un appareil, sans passer par le Play Store.
 
 ```bash
 npm install -g eas-cli                          # une fois, outil de développement, pas une dépendance du projet

@@ -94,6 +94,7 @@ function TotalCard({ label, amount, positive = false }: { label: string; amount:
         style={[styles.totalValue, { color: positive ? colors.positive : colors.text }]}
         numberOfLines={1}
         adjustsFontSizeToFit
+        accessibilityLabel={spokenAmount(amount)}
       >
         {formatMoney(amount)}
       </Text>

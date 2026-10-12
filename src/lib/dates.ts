@@ -29,6 +29,11 @@ const dateFormatter = new Intl.DateTimeFormat('fr-FR', {
   year: 'numeric',
 });
 
+/** « 2 sept. 2026 », sans « Aujourd'hui » ni « Hier » : pour un texte gardé et relu des jours plus tard. */
+export function formatDate(iso: string): string {
+  return dateFormatter.format(isoToDate(iso));
+}
+
 /** « Aujourd'hui », « Hier », sinon « 2 sept. 2026 ». */
 export function formatOccurredOn(iso: string): string {
   if (iso === todayIso()) {
@@ -94,19 +99,28 @@ export function weekBounds(today: string): { from: string; to: string } {
   };
 }
 
+/** « de septembre », « d’octobre » : la préposition s'élide devant une voyelle (avril, août, octobre). */
+function deMonth(month: string): string {
+  return /^[aeiouyàâéèêîïôû]/i.test(month) ? `d’${month}` : `de ${month}`;
+}
+
 /**
  * Libellé d'une période, à placer derrière un nom : « Solde » + ce libellé.
  *
- * Démarrage le 1er : la période est un mois calendaire et se nomme par son mois. Sinon elle chevauche deux mois, et seul l'intervalle est exact. `to` étant exclue, la date affichée en fin de période est la veille.
+ * Du 1er au 1er : la période se nomme par ses mois — « de septembre » pour un mois, « d’août à octobre » pour plusieurs (préréglage « 3 derniers mois », qui s'intitulait « de août » alors que la liste couvrait trois mois). Sinon seul l'intervalle est exact. `to` étant exclue, la date affichée en fin de période est la veille.
  */
 export function formatPeriodLabel(from: string, to: string): string {
   const start = isoToDate(from);
-  if (start.getDate() === 1) {
-    return `de ${monthFormatter.format(start)}`;
-  }
-
   const last = isoToDate(to);
   last.setDate(last.getDate() - 1);
+
+  if (start.getDate() === 1 && isoToDate(to).getDate() === 1) {
+    const sameMonth = start.getFullYear() === last.getFullYear() && start.getMonth() === last.getMonth();
+    return sameMonth
+      ? deMonth(monthFormatter.format(start))
+      : `${deMonth(monthFormatter.format(start))} à ${monthFormatter.format(last)}`;
+  }
+
   return `du ${shortDateFormatter.format(start)} au ${shortDateFormatter.format(last)}`;
 }
 

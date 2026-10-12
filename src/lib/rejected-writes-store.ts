@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { rejectedStorageKey } from '@/lib/device-data';
 import { parseRejected, withRejected, type RejectedWrite } from '@/lib/rejected-writes';
 
 /**
@@ -10,9 +11,7 @@ import { parseRejected, withRejected, type RejectedWrite } from '@/lib/rejected-
 
 const listeners = new Set<() => void>();
 
-function key(userId: string): string {
-  return `rejected-writes:${userId}`;
-}
+const key = rejectedStorageKey;
 
 export function subscribeRejected(listener: () => void): () => void {
   listeners.add(listener);

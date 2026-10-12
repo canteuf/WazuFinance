@@ -227,8 +227,8 @@ SELECT is(
 SELECT throws_ok(
   $$insert into public.transactions (group_id, user_id, type, amount, occurred_on, note)
     values ('00000000-0000-0000-0000-0000000009c1', '00000000-0000-0000-0000-0000000009e1', 'expense', 100, '2026-09-28', repeat('x', 121))$$,
-  '23514',
-  NULL,
+  'P0001',
+  'La note ne peut pas dépasser 120 caractères.',
   'Une note d''opération dépasse 120 caractères : refusée'
 );
 
@@ -240,8 +240,8 @@ SELECT lives_ok(
 
 SELECT throws_ok(
   $$update public.users set display_name = repeat('x', 65) where id = '00000000-0000-0000-0000-0000000009e1'$$,
-  '23514',
-  NULL,
+  'P0001',
+  'Le nom ne peut pas dépasser 64 caractères.',
   'Un nom affiché de plus de 64 caractères est refusé'
 );
 

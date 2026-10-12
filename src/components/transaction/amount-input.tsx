@@ -35,6 +35,8 @@ export function AmountInput({ value, onChangeText, autoFocus = false }: AmountIn
         placeholderTextColor={colors.textMuted}
         value={groupDigits(value)}
         onChangeText={(text) => onChangeText(amountDigits(text))}
+        // Dix chiffres et leurs trois espaces : le plus grand montant que la base garde (MAX_AMOUNT). Au-delà, la frappe s'arrête au lieu de laisser un montant que le formulaire refuserait sans dire pourquoi.
+        maxLength={13}
         maxFontSizeMultiplier={MAX_FONT_SCALE}
         style={[styles.input, { color: colors.text }]}
       />

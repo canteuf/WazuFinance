@@ -17,7 +17,8 @@ export type SavingsProgress = {
  * Pas de palier d'alerte façon budgets (80 %/100 %) : la spec 2.5 ne demande qu'une barre ou un pourcentage, contrairement à la spec 2.4 qui fixe des seuils explicites pour les budgets.
  */
 export function savingsProgress(goal: SavingsGoal): SavingsProgress {
-  const percent = Math.round((goal.current_amount / goal.target_amount) * 100);
+  // Arrondi vers le bas : 99,6 % s'affichait « 100 % » pour un objectif pas encore atteint.
+  const percent = Math.floor((goal.current_amount / goal.target_amount) * 100);
   const status: SavingsStatus =
     goal.current_amount >= goal.target_amount ? 'reached' : 'in_progress';
 

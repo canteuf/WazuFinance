@@ -158,8 +158,8 @@ export default function BudgetsScreen() {
             })}
           </View>
 
-          {/* Absente tant que les totaux chargent ou s'ils ont échoué : un total manquant vaut mieux qu'un total faux. */}
-          {totals ? (
+          {/* Absente tant que les totaux chargent ou s'ils ont échoué : un total manquant vaut mieux qu'un total faux. Absente aussi sans aucun budget mensuel : budget_totals() ne somme que ceux-là, et la carte disait « 0 FCFA (0 %) » à côté de budgets hebdomadaires bien remplis. */}
+          {totals && totals.ceiling > 0 ? (
             <SummaryCard
               label={formatPeriodLabel(from, to)}
               spent={totals.spent}

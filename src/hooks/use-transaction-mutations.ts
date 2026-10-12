@@ -1,7 +1,8 @@
-import { useMutation, type QueryClient } from '@tanstack/react-query';
+import { useMutation, type MutationFunctionContext, type QueryClient } from '@tanstack/react-query';
 
 import { recordDebtPayment, type RecordDebtPaymentInput } from '@/data/debts';
 import { createRecurring } from '@/data/recurring';
+import { withWriteSession } from '@/data/session';
 import {
   create,
   remove,
@@ -12,6 +13,8 @@ import {
 import { isTransportError, RECURRENCE_FAILED } from '@/lib/data-errors';
 import { writeLastCategory, writeLastType, writeLastWallet } from '@/lib/last-used';
 import { isRetryingWrite, mergeSavedRow, transportRetryDelay, VersionChain } from '@/lib/offline-queue';
+import { useAuth } from '@/hooks/use-auth';
+import { ownTransactionWrites } from '@/lib/own-writes';
 import { mutationKeys, queryKeys } from '@/lib/query-keys';
 import type { Tables } from '@/types/database';
 
@@ -66,7 +69,11 @@ function findCachedCategory(
  * Chaque mutation invalide le préfixe ['transactions'] : ça touche à la fois la liste récente et les détails en cache (queryKeys.transaction), et ça ne dépend pas du groupe actif au moment où la réponse arrive — le mutate() peut avoir été déclenché sous un autre groupe entre-temps, ou la veille pour une saisie rejouée.
  */
 export function registerTransactionMutationDefaults(queryClient: QueryClient): void {
+  // Une seule vague de rechargement quand la file se vide : trente ventes saisies hors ligne et envoyées au retour du réseau rechargeaient tout trente fois, environ 500 requêtes sur une 2G. Appelée à la fin de chaque écriture (onSettled), réussie ou refusée ; l'écriture en cours compte encore dans isMutating.
   function invalidate() {
+    if (queryClient.isMutating({ mutationKey: mutationKeys.transactionWrites() }) > 1) {
+      return;
+    }
     return queryClient.invalidateQueries({ queryKey: queryKeys.transactions() });
   }
 
@@ -80,20 +87,21 @@ export function registerTransactionMutationDefaults(queryClient: QueryClient): v
   queryClient.setMutationDefaults(mutationKeys.createTransaction(), {
     ...common,
     // L'opération, puis sa récurrence s'il y en a une : dans la même fonction, pour qu'un renvoi après une panne de réseau reprenne les deux. Chacune porte un id tiré par l'app, donc un renvoi ne double ni l'une ni l'autre. Un refus de la récurrence seule ne doit pas se lire comme une opération perdue : il est levé sous RECURRENCE_FAILED, que data-errors traduit.
-    mutationFn: async (input: CreateTransactionInput) => {
-      const row = await create(input);
-      if (input.recurrence) {
-        try {
-          await createRecurring(input.recurrence);
-        } catch (error) {
-          if (isTransportError(error)) {
-            throw error;
+    mutationFn: (input: CreateTransactionInput, context: MutationFunctionContext) =>
+      withWriteSession(context.meta?.userId ?? input.userId, async () => {
+        const row = await create(input);
+        if (input.recurrence) {
+          try {
+            await createRecurring(input.recurrence);
+          } catch (error) {
+            if (isTransportError(error)) {
+              throw error;
+            }
+            throw Object.assign(new Error('Répétition refusée'), { code: RECURRENCE_FAILED, cause: error });
           }
-          throw Object.assign(new Error('Répétition refusée'), { code: RECURRENCE_FAILED, cause: error });
         }
-      }
-      return row;
-    },
+        return row;
+      }),
     // Les préférences sont retenues dès la saisie, même mise en file sans réseau : attendre la réponse de la base laissait, un matin hors ligne, la présélection de la veille à chaque nouvelle vente. Une saisie refusée ensuite ne change qu'un défaut, que l'utilisateur corrige d'un toucher.
     onMutate: async (input: CreateTransactionInput) => {
       await Promise.all([
@@ -102,62 +110,79 @@ export function registerTransactionMutationDefaults(queryClient: QueryClient): v
         input.walletId ? writeLastWallet(input.groupId, input.walletId) : Promise.resolve(),
       ]);
     },
-    onSuccess: (_data: unknown, input: CreateTransactionInput) => {
-      void invalidate();
+    onSuccess: (row: Tables<'transactions'>, input: CreateTransactionInput) => {
+      ownTransactionWrites.record(row.id);
       if (input.recurrence) {
         void queryClient.invalidateQueries({ queryKey: queryKeys.recurringAll() });
       }
     },
+    onSettled: () => void invalidate(),
   });
 
   queryClient.setMutationDefaults(mutationKeys.updateTransaction(), {
     ...common,
-    mutationFn: async ({ id, patch, expectedUpdatedAt }: UpdateVariables) => {
-      const expected = ownVersions.resolve(id, expectedUpdatedAt);
-      const saved = await update(id, patch, expected);
-      if (expected !== undefined) {
-        ownVersions.record(id, expected, saved.updated_at);
-      }
-      return saved;
-    },
+    mutationFn: ({ id, patch, expectedUpdatedAt }: UpdateVariables, context: MutationFunctionContext) =>
+      withWriteSession(context.meta?.userId, async () => {
+        const expected = ownVersions.resolve(id, expectedUpdatedAt);
+        const saved = await update(id, patch, expected);
+        if (expected !== undefined) {
+          ownVersions.record(id, expected, saved.updated_at);
+        }
+        return saved;
+      }),
     // La ligne enregistrée est reportée tout de suite dans les listes et la fiche (mergeSavedRow), puis le cache est invalidé comme avant. Si le réseau tombe avant le rechargement, le cache — et le disque — restent sur la bonne version, et la correction suivante ne bute pas sur un faux conflit.
     onSuccess: (saved: Tables<'transactions'>) => {
       const category = findCachedCategory(queryClient, saved.category_id);
       queryClient.setQueriesData<unknown>({ queryKey: queryKeys.transactions() }, (data: unknown) =>
         mergeSavedRow(data, saved, category)
       );
-      void invalidate();
+      ownTransactionWrites.record(saved.id);
     },
+    onSettled: () => void invalidate(),
   });
 
   queryClient.setMutationDefaults(mutationKeys.deleteTransaction(), {
     ...common,
-    mutationFn: (id: string) => remove(id),
-    onSuccess: () => void invalidate(),
+    mutationFn: (id: string, context: MutationFunctionContext) =>
+      withWriteSession(context.meta?.userId, () => remove(id)),
+    onSettled: () => void invalidate(),
   });
 
   // Le remboursement d'une dette patiente lui aussi : la commerçante encaisse son client au marché, souvent sans réseau. Rejouable sans doublon (l'id du mouvement vient de l'app), et un remboursement devenu trop grand entre-temps — un autre membre a soldé la dette — est refusé par la base, jamais renvoyé, et signalé par l'alerte des écritures en file.
   queryClient.setMutationDefaults(mutationKeys.recordDebtPayment(), {
     ...common,
-    mutationFn: (input: RecordDebtPaymentInput) => recordDebtPayment(input),
-    onSuccess: () => void invalidate(),
+    mutationFn: (input: RecordDebtPaymentInput, context: MutationFunctionContext) =>
+      withWriteSession(context.meta?.userId, () => recordDebtPayment(input)),
+    onSettled: () => void invalidate(),
   });
+}
+
+/** L'auteur d'une écriture de la file, gardé avec elle sur le disque : withWriteSession() refuse de la rejouer sous un autre compte. */
+export function useWriteAuthor(): { userId: string } | undefined {
+  const { session } = useAuth();
+  const userId = session?.user.id;
+  return userId ? { userId } : undefined;
 }
 
 /**
  * Création, modification et suppression d'une transaction. Le comportement vit dans `registerTransactionMutationDefaults` ; ce hook ne fait que s'y brancher par clé.
  */
 export function useTransactionMutations() {
+  const meta = useWriteAuthor();
+
   const createTransaction = useMutation<Tables<'transactions'>, Error, CreateTransactionInput>({
     mutationKey: mutationKeys.createTransaction(),
+    meta,
   });
 
   const updateTransaction = useMutation<Tables<'transactions'>, Error, UpdateVariables>({
     mutationKey: mutationKeys.updateTransaction(),
+    meta,
   });
 
   const deleteTransaction = useMutation<void, Error, string>({
     mutationKey: mutationKeys.deleteTransaction(),
+    meta,
   });
 
   return {

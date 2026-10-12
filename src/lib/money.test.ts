@@ -45,6 +45,15 @@ describe('amountDigits', () => {
   });
 });
 
+describe('amountDigits, saisies ambiguës', () => {
+  it('ne fait pas d’un montant décimal ou négatif un montant cent fois plus grand', () => {
+    expect(amountDigits('1 500,50')).toBe('1 500,50');
+    expect(parseAmount(amountDigits('1 500,50'))).toBeNull();
+    expect(parseAmount(amountDigits('12.5'))).toBeNull();
+    expect(parseAmount(amountDigits('-2000'))).toBeNull();
+  });
+});
+
 describe('parseAmount', () => {
   it('accepte un entier', () => {
     expect(parseAmount('650')).toBe(650);

@@ -6,13 +6,23 @@
 
 import { TIMEOUT_MESSAGE, UNAVAILABLE_MESSAGE } from '@/lib/fetch-with-timeout';
 
+/** Message d'une écriture partie sans session utilisable (src/data/session.ts) : elle est renvoyée plus tard, comme sur une coupure de réseau. */
+export const SESSION_PENDING_MESSAGE = 'Session en cours de rétablissement';
+
+/** Code d'une écriture en file rejouée sous un autre compte que celui de son auteur : abandonnée sans alerte (src/data/session.ts). */
+export const SESSION_MISMATCH = 'SESSION_MISMATCH';
+
 /** Code d'une opération enregistrée dont la récurrence a été refusée : elle n'est pas perdue, et ne doit pas se lire comme telle. */
 export const RECURRENCE_FAILED = 'RECURRENCE_FAILED';
 
 const MESSAGES: Record<string, string> = {
   '42501': "Vous n'avez pas accès à ce budget.",
-  '23503': "Cette catégorie n'existe plus.",
-  '23514': 'Montant invalide.',
+  // Toute clé étrangère rompue : une catégorie, mais aussi un portefeuille, une dette ou un objectif supprimé pendant qu'une saisie attendait dans la file.
+  '23503': "Un élément lié (catégorie, portefeuille…) n'existe plus.",
+  // Toute contrainte de vérification, pas seulement celle du montant.
+  '23514': 'Valeur refusée : vérifiez le montant et les textes saisis.',
+  // Dépassement de numeric(12,2) : un plafond ou un versement au-delà de 9 999 999 999.
+  '22003': 'Montant trop élevé.',
   // Formulation neutre : ce code sert désormais aux budgets, dont le triplet (group_id, category_id, period) est unique. Les transactions, elles, n'ont aucune contrainte d'unicité — ce message n'a jamais pu s'y afficher.
   '23505': 'Un enregistrement identique existe déjà.',
   PGRST116: 'Cette opération est introuvable.',
@@ -27,8 +37,14 @@ const MESSAGES: Record<string, string> = {
 
 const GENERIC = 'Une erreur inattendue est survenue.';
 
-// Les deux derniers viennent de fetch-with-timeout.ts : une requête restée sans réponse, et une passerelle momentanément indisponible (502, 503…).
-const NETWORK_MESSAGE_PATTERNS = ['Network request failed', 'Failed to fetch', TIMEOUT_MESSAGE, UNAVAILABLE_MESSAGE];
+// TIMEOUT_MESSAGE et UNAVAILABLE_MESSAGE viennent de fetch-with-timeout.ts : une requête restée sans réponse, et une passerelle momentanément indisponible (502, 503…). SESSION_PENDING_MESSAGE : une écriture retenue faute de session, à renvoyer de même.
+const NETWORK_MESSAGE_PATTERNS = [
+  'Network request failed',
+  'Failed to fetch',
+  TIMEOUT_MESSAGE,
+  UNAVAILABLE_MESSAGE,
+  SESSION_PENDING_MESSAGE,
+];
 
 function hasCode(error: unknown): error is { code: string } {
   return (
