@@ -42,9 +42,9 @@ jobs:
       - name: Tests Jest
         run: npm test -- --ci
 
-      # Versions alignées sur le SDK : une dépendance qui dérive est signalée ici plutôt qu'au build EAS.
+      # Versions alignées sur le SDK : une dépendance qui dérive est signalée ici plutôt qu'au build EAS. Un avertissement, pas un échec : Expo publie des correctifs de modules natifs (expo-updates, expo-dev-client) que l'on ne peut prendre qu'avec un nouveau build, et la CI virait au rouge à chaque publication, sans que le code ait changé.
       - name: Versions des dépendances Expo
-        run: npx expo install --check
+        run: npx expo install --check || echo "::warning title=Dépendances Expo::Des paquets sont en retard sur le SDK (voir ce journal). Les aligner avec npx expo install --fix, puis un nouveau build si un module natif change."
 
       # Le bundle que Metro construit pour Android : tsc ne voit ni un require d'image cassé, ni une résolution de module que seul Metro fait. Valeurs factices : elles ne sont qu'inlinées, jamais appelées.
       - name: Bundle Android
