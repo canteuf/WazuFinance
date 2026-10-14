@@ -167,6 +167,42 @@ export async function joinGroupWithCode(code: string): Promise<string> {
   return data;
 }
 
+/** Ce qu'un code d'invitation fait rejoindre, montré avant de confirmer. */
+export type InvitationPreview = {
+  groupName: string;
+  /** Nom affiché du propriétaire ; `null` s'il n'en a pas. */
+  ownerName: string | null;
+  memberCount: number;
+  role: MembershipRole;
+  alreadyMember: boolean;
+};
+
+/**
+ * Le groupe qu'un code fait rejoindre, sans y entrer : son nom, celui de son propriétaire, le nombre de membres et le rôle offert.
+ *
+ * Rejoindre se faisait à l'aveugle : un lien envoyé par quelqu'un qui se faisait passer pour le trésorier d'une tontine faisait entrer dans son propre groupe, et ce que la personne y saisissait ensuite lui était visible. Un code inconnu, révoqué ou expiré lève la même erreur `INVITATION_REJECTED` que joinGroupWithCode, et compte dans la même limite d'essais (preview_invitation(), migration 20261014000100).
+ */
+export async function previewInvitation(code: string): Promise<InvitationPreview> {
+  const { data, error } = await supabase.rpc('preview_invitation', { invitation_code: code });
+
+  if (error) {
+    throw error;
+  }
+
+  const row = data?.[0];
+  if (!row) {
+    throw Object.assign(new Error('Invitation refusée'), { code: INVITATION_REJECTED });
+  }
+
+  return {
+    groupName: row.group_name,
+    ownerName: row.owner_name,
+    memberCount: row.member_count,
+    role: row.role,
+    alreadyMember: row.already_member,
+  };
+}
+
 /**
  * Retire un membre d'un groupe — exclusion par le propriétaire, ou départ volontaire quand `userId` est celui de l'appelant. Une seule fonction : `account_memberships_delete_owner_or_self` décide déjà qui a le droit.
  *

@@ -1216,6 +1216,16 @@ export type Database = {
           tx_count: number
         }[]
       }
+      preview_invitation: {
+        Args: { invitation_code: string }
+        Returns: {
+          already_member: boolean
+          group_name: string
+          member_count: number
+          owner_name: string
+          role: Database["public"]["Enums"]["membership_role"]
+        }[]
+      }
       purge_expired_data: { Args: never; Returns: undefined }
       record_debt_payment: {
         Args: {

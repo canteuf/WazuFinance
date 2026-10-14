@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   createSharedGroup,
   joinGroupWithCode,
+  previewInvitation,
   removeMember,
   setMemberRole,
   transferOwnership,
@@ -31,6 +32,11 @@ export function useGroupMutations() {
   const joinGroup = useMutation({
     mutationFn: (code: string) => joinGroupWithCode(code),
     onSuccess: invalidateMemberships,
+  });
+
+  // Une mutation, pas une requête : l'aperçu ne part que sur un geste de l'utilisateur, et un code erroné compte dans sa limite d'essais.
+  const previewGroup = useMutation({
+    mutationFn: (code: string) => previewInvitation(code),
   });
 
   const removeGroupMember = useMutation({
@@ -78,6 +84,7 @@ export function useGroupMutations() {
   return {
     createGroup,
     joinGroup,
+    previewGroup,
     removeGroupMember,
     updatePeriodStart,
     setRole,
